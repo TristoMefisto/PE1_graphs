@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excise vs Lump-sum Tax — Excess Burden</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --budget:#8A8780; --excise:#C62828; --lsrev:#2E7D32; --lsutil:#00897B;
+    --ic:#6A1B9A; --eq:#F9A825; --eq-stroke:#4A3000; --eb:#9E1B32; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --budget:#9A968C; --excise:#EF6C6C; --lsrev:#66BB6A; --lsutil:#4DB6AC;
+      --ic:#B57BE0; --eq:#FFD54F; --eq-stroke:#1A1A1E; --eb:#E5738A; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1040px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 480px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 280px; display:flex; flex-direction:column; gap:14px; min-width:262px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:13px; }
+  input[type=range]:last-child { margin-bottom:0; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.4; }
+  .res-box.r { background:color-mix(in srgb,var(--excise) 12%,transparent); border-left:3px solid var(--excise); }
+  .res-box.e { background:color-mix(in srgb,var(--eb) 13%,transparent); border-left:3px solid var(--eb); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.r .lbl { color:var(--excise); }
+  .res-box.e .lbl { color:var(--eb); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box .sub { font-size:10px; color:var(--muted); }
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px); height:3px; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Excise Tax vs Lump-sum Tax — The Excess Burden</h1>
+  <div class="relation">Excise pivots the budget around the good-2 intercept · Lump-sum shifts it <b>parallel</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box r"><div class="lbl">Excise revenue</div><div class="big" id="r-ex">$15.0</div></div>
+      <div class="res-box e"><div class="lbl">Excess burden</div><div class="big" id="r-eb">$2.5</div><div class="sub" id="r-ebpct">17% of revenue</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Substitutability</div>
+      <div class="slider-label"><span>Elasticity of substitution (σ)</span><span class="val" id="v-s" style="color:var(--ic)">1.5</span></div>
+      <input type="range" id="s-s" min="0" max="2.5" step="0.1" value="1.5" style="accent-color:var(--ic)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--budget)"></span> Original budget</div>
+        <div class="item" style="color:var(--excise)"><span class="sw" style="background:var(--excise)"></span> Budget with excise on good 1</div>
+        <div class="item" style="color:var(--lsrev)"><span class="sw" style="background:var(--lsrev)"></span> Lump-sum, same revenue</div>
+        <div class="item" style="color:var(--lsutil)"><span class="sw" style="background:var(--lsutil)"></span> Lump-sum, same utility</div>
+        <div class="item"><span class="sw" style="background:var(--ic)"></span> Indifference curves</div>
+        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> optimal bundles</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  budget:cssvar('--budget'),excise:cssvar('--excise'),lsrev:cssvar('--lsrev'),lsutil:cssvar('--lsutil'),
+  ic:cssvar('--ic'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),eb:cssvar('--eb') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=500,LH=500,padL=44,padR=18,padT=18,padB=42;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const X_MAX=110, Y_MAX=110, DASH_PROJ=[2,3];
+const gx=x=>padL+(x/X_MAX)*plotW, gy=y=>padT+plotH-(y/Y_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,600), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: CES utility, a=0.5, p1=p2=1, m=100
+const a=0.5,p1=1,p2=1,m=100;
+const tau=0.5;
+let sigma=1.5;
+
+function demand(q1,q2,M){
+  if(sigma<1e-6){ const k=M/(q1+q2); return {x1:k,x2:k,P:q1+q2}; }   // Leontief (perfect complements)
+  const rho=1-1/sigma;
+  if(Math.abs(rho)<2e-3){ return {x1:a*M/q1,x2:(1-a)*M/q2,P:Math.pow(q1/a,a)*Math.pow(q2/(1-a),1-a)}; }
+  const den=Math.pow(a,sigma)*Math.pow(q1,1-sigma)+Math.pow(1-a,sigma)*Math.pow(q2,1-sigma);
+  return { x1:Math.pow(a,sigma)*Math.pow(q1,-sigma)*M/den, x2:Math.pow(1-a,sigma)*Math.pow(q2,-sigma)*M/den, P:Math.pow(den,1/(1-sigma)) };
+}
+function icX2(x1,U){
+  const rho=1-1/sigma;
+  if(Math.abs(rho)<2e-3){ return Math.pow(U/Math.pow(x1,a),1/(1-a)); }
+  const inside=(Math.pow(U,rho)-a*Math.pow(x1,rho))/(1-a);
+  if(inside<=0) return null;
+  return Math.pow(inside,1/rho);
+}
+function model(){
+  const q1e=(1+tau)*p1;
+  const E=demand(p1,p2,m), U0=m/E.P;
+  const Es=demand(q1e,p2,m), U1=m/Es.P;
+  const R=tau*p1*Es.x1;
+  const R_LS=m*(1-E.P/Es.P);
+  const EB=R_LS-R;
+  const C=demand(p1,p2,m-R), UC=(m-R)/E.P;
+  const Aopt=demand(p1,p2,m-R_LS);
+  return { E,Es,C,Aopt,U0,U1,UC,R,R_LS,EB };
+}
+
+function line(x1,y1,x2,y2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(gx(x1),gy(y1)); ctx.lineTo(gx(x2),gy(y2)); ctx.stroke(); ctx.setLineDash([]); }
+function drawIC(U,col,w,al){
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.globalAlpha=al; ctx.setLineDash([]);
+  if(sigma<1e-6){  // L-shaped: corner at (U,U)
+    ctx.beginPath();
+    ctx.moveTo(gx(U),gy(Math.min(Y_MAX,U*2.2))); ctx.lineTo(gx(U),gy(U)); ctx.lineTo(gx(Math.min(X_MAX,U*2.2)),gy(U));
+    ctx.stroke(); ctx.restore(); return;
+  }
+  ctx.beginPath();
+  let started=false; const N=260;
+  for(let i=0;i<=N;i++){
+    const x1=0.6+(X_MAX-0.6)*i/N; const x2=icX2(x1,U);
+    if(x2===null||!isFinite(x2)||x2<0||x2>Y_MAX*1.04){ started=false; continue; }
+    const X=gx(x1),Y=gy(x2);
+    if(!started){ ctx.moveTo(X,Y); started=true; } else ctx.lineTo(X,Y);
+  }
+  ctx.stroke(); ctx.restore();
+}
+function dot(x,y,r,f){ ctx.beginPath(); ctx.arc(gx(x),gy(y),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,y,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const X=gx(x)+dx,Y=gy(y)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=X; if(al==='right')lx=X-w; else if(al==='center')lx=X-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,Y-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,X,Y); ctx.restore();
+}
+function projTo(x,y,col){ line(x,0,x,y,col||T.muted,1,DASH_PROJ); line(0,y,x,y,col||T.muted,1,DASH_PROJ); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let v=20;v<X_MAX;v+=20){ ctx.beginPath(); ctx.moveTo(gx(v),padT); ctx.lineTo(gx(v),padT+plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padL,gy(v)); ctx.lineTo(padL+plotW,gy(v)); ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text;
+  ctx.textAlign='right'; ctx.fillText('Good 1',padL+plotW,padT+plotH+32);
+  ctx.textAlign='left'; ctx.fillText('Good 2',padL-38,padT+10); ctx.restore();
+
+  const M=model();
+  const showOrig = step>=1 ? 0.4 : 1;
+  const icW0 = step===0?2.4:1.4;
+
+  // ── EB gap shading (step>=4): between the two LS lines ──
+  if(step>=4){
+    ctx.save(); ctx.fillStyle=T.eb; ctx.globalAlpha=0.14;
+    // region between same-rev line (income m-R) and same-util line (income m-R_LS)
+    const I1=m-M.R, I2=m-M.R_LS;
+    ctx.beginPath();
+    ctx.moveTo(gx(0),gy(I1)); ctx.lineTo(gx(I1),gy(0));
+    ctx.lineTo(gx(I2),gy(0)); ctx.lineTo(gx(0),gy(I2)); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Budgets ──
+  // original
+  line(0,m/p2,m/p1,0,T.budget,2.4*(step>=1?0.85:1),step>=1?[6,4]:[]);
+  if(step===0) label("budget m",m/p1,0,-4,-8,T.budget,11.5,'bold','right',true);
+
+  // excise (step>=1)
+  if(step>=1){
+    const xi=m/((1+tau)*p1);
+    line(0,m/p2,xi,0,T.excise,2.6);
+    label("excise",xi,0,-2,-8,T.excise,11.5,'bold','right',true);
+  }
+
+  // LS same-revenue (step>=3)
+  if(step>=3){
+    const I=m-M.R;
+    line(0,I,I,0,T.lsrev,2.4,[7,4]);
+    label("LS = same rev",I,0,-2,16,T.lsrev,11,'bold','right',true);
+  }
+  // LS same-utility (step>=4)
+  if(step>=4){
+    const I=m-M.R_LS;
+    line(0,I,I,0,T.lsutil,2.4,[2,4]);
+  }
+
+  // ── Indifference curves ──
+  drawIC(M.U0,T.ic, step===0?2.4:1.5, step===0?0.95:0.4);
+  if(step>=1) drawIC(M.U1,T.ic, 2.2, 0.9);
+  if(step>=3) drawIC(M.UC,T.ic, 2.0, 0.85);
+
+  // curve labels
+  function _cl(txt,U){ // local placement helper, robust to Leontief
+    let lx,ly;
+    if(sigma<1e-6){ lx=U; ly=Math.min(Y_MAX-4,U+16); }
+    else { lx=18; ly=icX2(18,U); if(ly==null||!isFinite(ly)||ly>Y_MAX){ lx=U*0.55; ly=icX2(lx,U); } }
+    if(ly!=null&&isFinite(ly)) label(txt,lx,ly,-2,-4,T.ic,11.5,'bold','right',true);
+  }
+  if(step===0) _cl("U₀",M.U0);
+  if(step>=1) _cl("U₁",M.U1);
+  if(step>=3){ const ly=(sigma<1e-6)?Math.min(Y_MAX-4,M.UC+16):(icX2(70,M.UC)); if(ly!=null&&isFinite(ly)) label("U_C",(sigma<1e-6?M.UC:70),ly,8,-4,T.ic,11,'bold','left',true); }
+
+  // ── Revenue segment (step>=2) ──
+  if(step>=2){
+    const xs=M.Es.x1, yTop=m/p2-(p1/p2)*xs, yBot=M.Es.x2;
+    ctx.save(); ctx.strokeStyle=T.excise; ctx.lineWidth=2.4;
+    ctx.beginPath(); ctx.moveTo(gx(xs),gy(yBot)); ctx.lineTo(gx(xs),gy(yTop)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx(xs)-3,gy(yTop)); ctx.lineTo(gx(xs)+3,gy(yTop)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx(xs)-3,gy(yBot)); ctx.lineTo(gx(xs)+3,gy(yBot)); ctx.stroke();
+    ctx.restore();
+    label("revenue",xs,(yTop+yBot)/2,8,3,T.excise,10.5,'bold','left',true);
+  }
+
+  // ── EB gap label (step>=4) ──
+  if(step>=4 && model().EB>0.08){
+    const I1=m-M.R, I2=m-M.R_LS;
+    label("excess",6,(I1+I2)/2,6,-3,T.eb,10.5,'bold','left',true);
+    label("burden",6,(I1+I2)/2,6,9,T.eb,10.5,'bold','left',true);
+  }
+
+  // ── Optima ──
+  // original E
+  if(step===0){ projTo(M.E.x1,M.E.x2,T.muted); }
+  dot(M.E.x1,M.E.x2,6,T.eq);
+  label("E",M.E.x1,M.E.x2,11,-8,T.text,12.5,'bold','left',true);
+
+  // excise E*
+  if(step>=1){
+    projTo(M.Es.x1,M.Es.x2,T.muted);
+    dot(M.Es.x1,M.Es.x2,6,T.eq);
+    label("E*",M.Es.x1,M.Es.x2,-10,-8,T.excise,12.5,'bold','right',true);
+  }
+  // same-rev C
+  if(step>=3){
+    dot(M.C.x1,M.C.x2,6,T.eq);
+    label("C",M.C.x1,M.C.x2,12,16,T.lsrev,12.5,'bold','left',true);
+  }
+  // same-util A
+  if(step>=4){
+    dot(M.Aopt.x1,M.Aopt.x2,4.5,T.lsutil);
+    label("A",M.Aopt.x1,M.Aopt.x2,-11,12,T.lsutil,11.5,'bold','right',true);
+  }
+}
+
+function stepContent(){
+  const M=model();
+  return [
+    { t:"Step 0 · Original choice",
+      b:`At prices p₁ = p₂ = 1 and income m = ${m}, the consumer picks bundle <b>E</b> = (${M.E.x1.toFixed(0)}, ${M.E.x2.toFixed(0)}) — the tangency of the budget line with the highest reachable indifference curve <b>U₀</b>.` },
+    { t:"Step 1 · Excise tax on good 1",
+      b:`A ${(tau*100).toFixed(0)}% tax raises the price of good 1 to (1+τ)p₁, so the budget line <b>pivots inward</b> around the good-2 intercept. The consumer moves to <b>E*</b> on a lower curve <b>U₁</b>, substituting away from the now-dearer good 1.` },
+    { t:"Step 2 · Tax revenue",
+      b:`Revenue is τ·p₁·x₁* = <b>$${M.R.toFixed(2)}</b> — the vertical gap (in good-2 units) between the original and excise budget lines, measured at the chosen x₁*.` },
+    { t:"Step 3 · Lump-sum raising the same revenue",
+      b:`Now collect the <i>same</i> $${M.R.toFixed(2)} with a lump-sum income tax: the budget shifts <b>parallel</b> inward through E*. The consumer re-optimises at <b>C</b> on curve <b>U_C</b> — <b>higher</b> than U₁. Same revenue, but the consumer is strictly better off.` },
+    { t:"Step 4 · The excess burden",
+      b:`Equivalently: a lump-sum reaching the <i>same utility</i> U₁ (the lighter line, tangent at <b>A</b>) raises <b>$${M.R_LS.toFixed(2)}</b> — more than the excise. The gap is the <b style="color:var(--eb)">excess burden = $${M.EB.toFixed(2)}</b>: welfare destroyed by the substitution distortion, over and above the transfer.` },
+    { t:"Step 5 · When does it vanish?",
+      b:`The excess burden comes entirely from the <b>substitution effect</b>. Drag σ down toward 0 (goods become complements, L-shaped curves): E* slides back toward A and C, and the excess burden collapses to <b>$${M.EB.toFixed(2)}</b>. With no substitution, an excise and a lump-sum raising the same revenue cause the <i>same</i> utility loss.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const M=model();
+  document.getElementById('results').style.display=step>=2?'grid':'none';
+  document.getElementById('r-ex').textContent='$'+M.R.toFixed(2);
+  document.getElementById('r-eb').textContent='$'+M.EB.toFixed(2);
+  document.getElementById('r-ebpct').textContent=(M.R>0?Math.round(100*M.EB/M.R):0)+'% of revenue';
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-s').addEventListener('input',e=>{ sigma=parseFloat(e.target.value); document.getElementById('v-s').textContent=sigma.toFixed(1); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
