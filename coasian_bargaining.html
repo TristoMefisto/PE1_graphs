@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coasian Bargaining — Steel and Fish</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B;
+    --d:#C62828; --s:#1565C0; --smc:#2E7D32; --md:#2E7D32;
+    --gain:#F9A825; --damage:#7E57C2; --zigzag:#C2185B; --accent:#2E7D32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --d:#EF6C6C; --s:#5B9BE8; --smc:#66BB6A; --md:#66BB6A;
+      --gain:#FFD54F; --damage:#B39DDB; --zigzag:#F06292; --accent:#66BB6A;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:13px; color:var(--muted); font-style:italic; margin-top:4px; }
+  header .relation b.gain { color:var(--gain); } header .relation b.dmg { color:var(--damage); }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; height:4px; cursor:pointer; margin-bottom:4px; }
+  input[type=range]:disabled { opacity:.35; cursor:default; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .res-box { border-radius:4px; padding:8px 7px; font-size:11px; text-align:center; }
+  .res-box.g { background:color-mix(in srgb,var(--gain) 16%,transparent); border-top:3px solid var(--gain); }
+  .res-box.d2 { background:color-mix(in srgb,var(--damage) 16%,transparent); border-top:3px solid var(--damage); }
+  .res-box .lbl { font-size:9.5px; font-weight:bold; margin-bottom:2px; }
+  .res-box.g .lbl { color:var(--gain); } .res-box.d2 .lbl { color:var(--damage); }
+  .res-box .big { font-size:14px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box.dim { opacity:.3; }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { height:0; border-top:2.6px dashed var(--zigzag); }
+  .note { font-size:11px; color:var(--muted); line-height:1.55; margin-top:4px; padding-top:10px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Coasian Bargaining — Steel and Fish</h1>
+  <div class="relation">Bargaining drives the <b class="gain">gain to society</b> to zero at <b style="color:var(--smc)">Q₂</b>, whichever party holds the right</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head"><div class="step-dots" id="dots"></div><div class="step-counter" id="counter">Step 0 / 4</div></div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row"><button id="back" disabled>◀ Back</button><button id="next" class="primary">Next ▶</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Negotiate the next unit</div>
+      <div class="slider-label"><span>Case 1 — units added (right on recipient)</span><span class="val" id="v-q1">0</span></div>
+      <input type="range" id="s-q1" min="0" max="83" step="1" value="0">
+      <div class="slider-label" style="margin-top:10px;"><span>Case 2 — units cut (right on emitter)</span><span class="val" id="v-q2">100</span></div>
+      <input type="range" id="s-q2" min="84" max="100" step="1" value="100">
+    </div>
+    <div class="card">
+      <div class="results">
+        <div class="res-box g" id="b-g"><div class="lbl">Gain, this unit (Case 1)</div><div class="big" id="r-g">—</div></div>
+        <div class="res-box d2" id="b-d2"><div class="lbl">Gain, this unit (Case 2)</div><div class="big" id="r-d2">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--d)"></span> D = PMB = SMB</div>
+        <div class="item"><span class="sw" style="background:var(--s)"></span> S = PMC</div>
+        <div class="item"><span class="sw" style="background:var(--smc)"></span> SMC = PMC + MD</div>
+        <div class="item"><span class="sw dash"></span> |D − SMC| — the gap bargaining closes</div>
+      </div>
+      <div class="note" id="note">Case 1: fishery owns clean water, starts at Q=0, steelmaker buys permits unit by unit. Case 2: steelmaker owns the right to pollute, starts at Q₁, fishery pays to cut production unit by unit. Both converge to Q₂.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  d:cssvar('--d'),s:cssvar('--s'),smc:cssvar('--smc'),md:cssvar('--md'),
+  gain:cssvar('--gain'),damage:cssvar('--damage'),zigzag:cssvar('--zigzag') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=500,padL=50,padR=22,padT=24,padB=46;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const X_MAX=128, P_MIN=0, P_MAX=21;
+const qx=Q=>padL+(Q/X_MAX)*plotW;
+const py=p=>padT+plotH-((p-P_MIN)/(P_MAX-P_MIN))*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// ---------- Model ----------
+const a=20, b=0.1, c=2, e=0.08, d=3;
+function model(){
+  const Q1=(a-c)/(b+e), p1=a-b*Q1;
+  const Q2=(a-c-d)/(b+e), p2=a-b*Q2;
+  const D=Q=>a-b*Q, S=Q=>c+e*Q, SMC=Q=>c+e*Q+d;
+  const gain1=q=>D(q)-S(q)-d;       // case 1: gain to society from adding unit q
+  const gain2=q=>d-(D(q)-S(q));     // case 2: gain to society from cutting unit q
+  return {Q1,p1,Q2,p2,D,S,SMC,gain1,gain2};
+}
+
+function dot(Q,p,r,f){ ctx.beginPath(); ctx.arc(qx(Q),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,X,Y,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  if(halo){ const w=ctx.measureText(txt).width; let lx=X; if(al==='right')lx=X-w; else if(al==='center')lx=X-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,Y-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,X,Y); ctx.restore();
+}
+function dline(fn,xLo,xHi,col,w){
+  ctx.save(); ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=w;
+  let started=false;
+  for(let x=xLo;x<=xHi+1e-9;x+=0.5){ const p=fn(x); if(p<P_MIN-2||p>P_MAX+2){started=false;continue;}
+    const X=qx(x),Y=py(p); if(!started){ctx.moveTo(X,Y);started=true;} else ctx.lineTo(X,Y); }
+  ctx.stroke(); ctx.restore();
+}
+// Draws |fn1(x) - fn2(x)| as a single V-shaped path, folding at the root (where fn1=fn2)
+function dlineAbsDiff(fn1,fn2,xLo,xHi,col,w,dash){
+  ctx.save(); if(dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=w;
+  let started=false;
+  for(let x=xLo;x<=xHi+1e-9;x+=0.5){
+    const v=Math.abs(fn1(x)-fn2(x));
+    const p=P_MIN+v; // plot the gap as a price-axis value, anchored at P_MIN (so it reads as a height above the x-axis)
+    if(p<P_MIN-2||p>P_MAX+2){started=false;continue;}
+    const X=qx(x),Y=py(p); if(!started){ctx.moveTo(X,Y);started=true;} else ctx.lineTo(X,Y);
+  }
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+}
+function hline(p,xLo,xHi,col,dash){ ctx.save(); if(dash) ctx.setLineDash(dash); ctx.strokeStyle=col; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(qx(xLo),py(p)); ctx.lineTo(qx(xHi),py(p)); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+function vline(x,pLo,pHi,col,dash){ ctx.save(); if(dash) ctx.setLineDash(dash); ctx.strokeStyle=col; ctx.lineWidth=1.3;
+  ctx.beginPath(); ctx.moveTo(qx(x),py(pLo)); ctx.lineTo(qx(x),py(pHi)); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+
+// Filled vertical strip between two functions over [xLo,xHi] (a "sliver")
+function sliver(fnTop,fnBot,xLo,xHi,col,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(qx(xLo),py(fnTop(xLo)));
+  ctx.lineTo(qx(xHi),py(fnTop(xHi)));
+  ctx.lineTo(qx(xHi),py(fnBot(xHi)));
+  ctx.lineTo(qx(xLo),py(fnBot(xLo)));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+// Cumulative shaded region between two functions over a wide range (used for "all units so far")
+function fillBetween(fnTop,fnBot,xLo,xHi,col,alpha){
+  if(xHi<=xLo) return;
+  sliver(fnTop,fnBot,xLo,xHi,col,alpha);
+}
+
+let step=0;
+let q1cur=0;     // Case 1: how many units bargained in so far (0..Q2)
+let q2cur=100;   // Case 2: current quantity after cuts so far (Q1 down to Q2)
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let x=20;x<X_MAX;x+=20){ ctx.beginPath(); ctx.moveTo(qx(x),padT); ctx.lineTo(qx(x),padT+plotH); ctx.stroke(); }
+  for(let p=2;p<=P_MAX;p+=2){ ctx.beginPath(); ctx.moveTo(padL,py(p)); ctx.lineTo(padL+plotW,py(p)); ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('Price of steel',padL-44,padT-6); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Q steel',padL+plotW,padT+plotH+24); ctx.restore();
+
+  const M=model();
+
+  // ---------- Case 1 cumulative shading (steps 0-1, and persists in 4) ----------
+  if(step===0){
+    // initial allocation: recipient blocks all production -- nothing to show but the curves
+  }
+  if(step===1){
+    fillBetween(M.D, M.SMC, 0, q1cur, T.gain, 0.30);
+    // highlight the CURRENT marginal unit being negotiated (a thin strip just past q1cur)
+    sliver(M.D, M.SMC, q1cur, Math.min(q1cur+1.2, M.Q2), T.gain, 0.65);
+  }
+  if(step===4){
+    // final step: show the FULL converged region (0 to Q2), independent of slider leftovers
+    fillBetween(M.D, M.SMC, 0, M.Q2, T.gain, 0.30);
+  }
+
+  // ---------- Case 2 cumulative shading (steps 2-3, and persists in 4) ----------
+  if(step===3){
+    fillBetween(M.SMC, M.D, q2cur, M.Q1, T.damage, 0.30);
+    sliver(M.SMC, M.D, Math.max(q2cur-1.2, M.Q2), q2cur, T.damage, 0.65);
+  }
+  if(step===4){
+    fillBetween(M.SMC, M.D, M.Q2, M.Q1, T.damage, 0.30);
+  }
+  if(step===2){
+    // initial allocation: emitter produces full Q1, maximal CS+PS and maximal damage -- shade both fully
+    fillBetween(M.D, p=>M.p1, 0, M.Q1, T.gain, 0.22);
+    fillBetween(p=>M.p1, M.S, 0, M.Q1, T.s, 0.16);
+  }
+
+  // ---------- curves ----------
+  dline(M.D, 0, X_MAX, T.d, 2.4);
+  dline(M.S, 0, X_MAX, T.s, 2.4);
+  dline(M.SMC, 0, X_MAX, T.smc, 2.4);
+  hline(d, 0, X_MAX, T.smc, [3,3]);
+
+  // ---------- the zigzag |D - SMC|, only from step 4 ----------
+  if(step===4){
+    dlineAbsDiff(M.D, M.SMC, 0, M.Q1, T.zigzag, 2.6, [7,5]);
+  }
+
+  // ---------- reference points ----------
+  vline(M.Q1, 0, M.p1, T.s, [4,3]); hline(M.p1, 0, M.Q1, T.s, [4,3]);
+  dot(M.Q1, M.p1, 5, T.s); label('Q₁', qx(M.Q1), padT+plotH+22, T.s, 11.5, 'bold', 'center', true);
+
+  if(step>=1){
+    vline(M.Q2, 0, M.SMC(M.Q2), T.smc, [4,3]); hline(M.p2, 0, M.Q2, T.smc, [4,3]);
+    dot(M.Q2, M.p2, 5, T.smc); label('Q₂', qx(M.Q2), padT+plotH+22, T.smc, 11.5, 'bold', 'center', true);
+  }
+
+  // ---------- current negotiation marker ----------
+  if(step===1){ dot(q1cur, M.D(q1cur), 4, T.gain); label('current unit', qx(q1cur), py(M.D(q1cur))-10, T.gain, 10.5, 'bold', 'center', true); }
+  if(step===3){ dot(q2cur, M.D(q2cur), 4, T.damage); label('current unit', qx(q2cur), py(M.D(q2cur))-10, T.damage, 10.5, 'bold', 'center', true); }
+
+  label('D = PMB', qx(X_MAX-4), py(M.D(X_MAX-4))-6, T.d, 11.5, 'bold', 'right', true);
+  label('S = PMC', qx(X_MAX-4), py(M.S(X_MAX-4))-8, T.s, 11.5, 'bold', 'right', true);
+  label('SMC = PMC + MD', qx(X_MAX-4), py(M.SMC(X_MAX-4))-8, T.smc, 11.5, 'bold', 'right', true);
+  label('MD', qx(X_MAX-4), py(d)-6, T.smc, 11, 'bold', 'right', true);
+
+  if(step===4){
+    label('|D − SMC|', qx(40), py(Math.abs(M.D(40)-M.SMC(40)))-10, T.zigzag, 11.5, 'bold', 'left', true);
+  }
+}
+
+function stepContent(){
+  const M=model();
+  return [
+    { t:"Step 0 · Right on the recipient — initial allocation",
+      b:`If the fishery owns the right to clean water, it can <b>block all steel production</b>. Initial point: <b>Q = 0</b>, damage = 0. The steelmaker (and steel buyers) get zero surplus — but there's a lot of value being left on the table, since at low Q, <b style="color:var(--d)">D</b> sits far above <b style="color:var(--smc)">SMC</b>.` },
+    { t:"Step 1 · Bargaining unit by unit (Case 1)",
+      b:`Drag the <b style="color:var(--gain)">Case 1 slider</b>: each unit the steelmaker buys a permit for, the gain to society is <b>D − S − MD</b> (the gold sliver) — positive as long as Q &lt; Q₂. The shrinking sliver, unit by unit, is exactly <b>D − SMC</b>. Cumulative gold area starts at $0 (Q=0) and rises to <b>$${(625).toFixed(0)}</b> once every profitable unit has been bargained, at Q₂.` },
+    { t:"Step 2 · Right on the emitter — initial allocation",
+      b:`Flip the right to the steelmaker: now it can produce <b>unconstrained</b>, at the ordinary market quantity <b>Q₁ = ${M.Q1.toFixed(0)}</b>. Consumer + producer surplus is maximized — but the fishery bears the <b>full, uncompensated damage</b> at this quantity.` },
+    { t:"Step 3 · Bargaining unit by unit (Case 2)",
+      b:`Now drag the <b style="color:var(--damage)">Case 2 slider</b>: the fishery pays the steelmaker to cut production. Each unit cut from Q₁ recovers <b>MD − (D − S)</b> (the purple sliver) — positive as long as Q &gt; Q₂. This time the cumulative gain is exactly the <b>deadweight loss</b>, $25, since we start from the market equilibrium, not from zero.` },
+    { t:"Step 4 · Same Q₂, regardless of who owns the right",
+      b:`Both cases bargain to the identical <b style="color:var(--smc)">Q₂</b> — Case 1 building up from 0, Case 2 cutting down from Q₁. The dashed curve is <b style="color:var(--zigzag)">|D − SMC|</b>: it doesn't care who owns the right, and it's zero exactly at Q₂. Property rights determine <i>who pays whom</i>, never the efficient quantity.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 4';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=4;i++){ const dd=document.createElement('div'); dd.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(dd); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===4);
+  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+
+  const M=model();
+  document.getElementById('s-q1').disabled = (step!==1);
+  document.getElementById('s-q2').disabled = (step!==3);
+  document.getElementById('v-q1').textContent=q1cur.toFixed(0);
+  document.getElementById('v-q2').textContent=q2cur.toFixed(0);
+
+  const g1 = M.gain1(Math.min(q1cur,M.Q2));
+  const g2 = M.gain2(Math.max(q2cur,M.Q2));
+  document.getElementById('r-g').textContent = (step===1) ? '$'+Math.max(g1,0).toFixed(2) : '—';
+  document.getElementById('r-d2').textContent = (step===3) ? '$'+Math.max(g2,0).toFixed(2) : '—';
+  document.getElementById('b-g').classList.toggle('dim', step!==1);
+  document.getElementById('b-d2').classList.toggle('dim', step!==3);
+
+  draw();
+}
+document.getElementById('next').addEventListener('click',()=>{
+  if(step<4){
+    step++;
+    if(step===1) q1cur=0;
+    if(step===3) q2cur=100;
+    render();
+  }
+});
+document.getElementById('back').addEventListener('click',()=>{
+  if(step>0){
+    step--;
+    if(step===1) q1cur=0;
+    if(step===3) q2cur=100;
+    render();
+  }
+});
+document.getElementById('s-q1').addEventListener('input',e=>{ q1cur=parseFloat(e.target.value); render(); });
+document.getElementById('s-q2').addEventListener('input',e=>{ q2cur=parseFloat(e.target.value); render(); });
+setupCanvas(); render();
+</script>
+</body>
+</html>
