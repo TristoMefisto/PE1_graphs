@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excess Burden in Partial Equilibrium</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --demand:#6A1B9A; --supply:#1565C0; --shifted:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000; --rev:#1565C0; --eb:#9E1B32; --accent:#1565C0; --buyers:#C62828; --sellers:#E07B00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --demand:#B57BE0; --supply:#5B9BE8; --shifted:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --rev:#5B9BE8; --eb:#E5738A; --accent:#5B9BE8; --buyers:#EF6C6C; --sellers:#FFB74D;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14.5px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:13px; }
+  input[type=range]:last-child { margin-bottom:0; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.4; }
+  .res-box.r { background:color-mix(in srgb,var(--rev) 12%,transparent); border-left:3px solid var(--rev); }
+  .res-box.e { background:color-mix(in srgb,var(--eb) 13%,transparent); border-left:3px solid var(--eb); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.r .lbl { color:var(--rev); }
+  .res-box.e .lbl { color:var(--eb); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box .sub { font-size:10px; color:var(--muted); }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--shifted) 0 5px,transparent 5px 9px); height:3px; }
+  .legend .bx { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Excess Burden in Partial Equilibrium — the Harberger Triangle</h1>
+  <div class="relation">Welfare lost beyond the transfer: <b>EB ≈ ½ · t · ΔQ ≈ ½ · η · (Q/P) · t²</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box r"><div class="lbl">Tax revenue</div><div class="big" id="r-rev">$9,375</div></div>
+      <div class="res-box e"><div class="lbl">Excess burden</div><div class="big" id="r-eb">$938</div><div class="sub" id="r-ebpct">10% of revenue</div></div>
+    </div>
+
+    <div class="card" id="meb-card" style="display:none">
+      <div class="card-title">Doubling the tax (t₁ → t₂ = 2t₁)</div>
+      <div class="slider-label"><span>Original EB(t₁)</span><span class="val" id="r-eb1" style="color:#C77800">$938</span></div>
+      <div class="slider-label"><span>Added EB (yellow)</span><span class="val" id="r-ebadd" style="color:#9E8400">$2,813</span></div>
+      <div class="slider-label" style="margin-bottom:0"><span>Added ÷ original</span><span class="val" id="r-ebratio" style="color:var(--eb)">3.0×</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Demand elasticity |ε| (at A)</span><span class="val" id="v-e" style="color:var(--demand)">0.83</span></div>
+      <input type="range" id="s-e" min="0.2" max="3.5" step="0.05" value="0.833" style="accent-color:var(--demand)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--demand)"></span> Demand</div>
+        <div class="item"><span class="sw" style="background:var(--supply)"></span> Supply</div>
+        <div class="item"><span class="sw dash"></span> Supply + t (after tax)</div>
+        <div class="item"><span class="bx" style="background:color-mix(in srgb,var(--buyers) 25%,transparent);border:1px solid var(--buyers)"></span> Consumer surplus</div>
+        <div class="item"><span class="bx" style="background:color-mix(in srgb,var(--sellers) 25%,transparent);border:1px solid var(--sellers)"></span> Producer surplus</div>
+        <div class="item"><span class="bx" style="background:color-mix(in srgb,var(--rev) 30%,transparent);border:1px solid var(--rev)"></span> Tax revenue (transfer)</div>
+        <div class="item"><span class="bx" style="background:color-mix(in srgb,var(--eb) 30%,transparent);border:1px solid var(--eb)"></span> Excess burden (lost surplus)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  demand:cssvar('--demand'),supply:cssvar('--supply'),shifted:cssvar('--shifted'),eq:cssvar('--eq'),
+  eqStroke:cssvar('--eq-stroke'),rev:cssvar('--rev'),eb:cssvar('--eb'),buyers:cssvar('--buyers'),sellers:cssvar('--sellers') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=56,padR=22,padT=20,padB=46;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX=2200, P_MAX=62, DASH_PROJ=[2,3];
+const qx=q=>padL+(q/Q_MAX)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Market: both curves through A=(1500,22.5); supply slope fixed, demand slope derived from elasticity dial
+const Q0=1500, P0=22.5, d=0.012;
+const tax=7.5, tax2=2*tax;   // t1 and t2=2*t1, for the step-6 marginal comparison
+let elas=0.833;          // |point elasticity| of demand at A = (1/b)*(P0/Q0)
+function bFromElas(e){ return (P0/Q0)/e; }
+let b=bFromElas(elas);
+const demandP=q=>P0-b*(q-Q0);
+const supplyP=q=>P0+d*(q-Q0);
+const shiftedSupplyP=q=>P0+d*(q-Q0)+tax;
+const shiftedSupplyP2=q=>P0+d*(q-Q0)+tax2;
+function eqAt(t){ const Q=Q0-t/(b+d); const Pc=demandP(Q); const Pp=Pc-t; return {Q,Pc,Pp}; }
+function model(){
+  const E1=eqAt(tax), E2=eqAt(tax2);
+  const Q1=E1.Q, Pc=E1.Pc, Pp=E1.Pp;
+  const dQ=Q0-Q1;
+  const EB=0.5*tax*dQ;
+  const rev=tax*Q1;
+  const MEB=tax/(b+d);                 // dEB/dt, closed form
+  const dRevdt=Q0-2*tax/(b+d);          // dRevenue/dt, closed form
+  const MCF=dRevdt>0?MEB/dRevdt:NaN;    // marginal cost of funds: extra EB per extra $1 of revenue
+  const EB2=0.5*tax2*(Q0-E2.Q);
+  const addedEB=EB2-EB;
+  const rectPart=tax*(E1.Q-E2.Q);
+  const triPart=0.5*(tax2-tax)*(E1.Q-E2.Q);
+  return { Q1,Pc,Pp,dQ,EB,rev,elas,MEB,dRevdt,MCF, E1,E2,EB2,addedEB,rectPart,triPart };
+}
+
+function line(q1,p1,q2,p2,col,w,dd){ ctx.beginPath(); ctx.setLineDash(dd||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(q1),py(p1)); ctx.lineTo(qx(q2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(q,p,r,f){ ctx.beginPath(); ctx.arc(qx(q),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,q,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const x=qx(q)+dx,y=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=x; if(al==='right')lx=x-w; else if(al==='center')lx=x-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,y-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,x,y); ctx.restore();
+}
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+function qTick(q,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(q),padT+plotH+16); ctx.restore(); }
+function projX(q,pTop,txt,col){ line(q,0,q,pTop,col||T.muted,1,DASH_PROJ); if(txt) qTick(q,txt,col); }
+function projY(p,qR,txt,col){ line(0,p,qR,p,col||T.muted,1,DASH_PROJ); if(txt) priceTick(p,txt,col); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let p=10;p<P_MAX;p+=10){ ctx.beginPath(); ctx.moveTo(padL,py(p)); ctx.lineTo(padL+plotW,py(p)); ctx.stroke(); }
+  for(let q=500;q<Q_MAX;q+=500){ ctx.beginPath(); ctx.moveTo(qx(q),padT); ctx.lineTo(qx(q),padT+plotH); ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  label('Price',0,P_MAX,-padL+4,-4,T.text,12,'bold','left');
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Quantity',padL+plotW,padT+plotH+34); ctx.restore();
+
+  const m=model();
+
+  // ══════════════════════════════════════════════════════════════════════
+  // STEP 6: dedicated marginal-EB view — mirrors the slide's t1-vs-t2 figure
+  // ══════════════════════════════════════════════════════════════════════
+  if(step===6){
+    const E1=m.E1, E2=m.E2;
+
+    // orange rectangle: original EB(t1)'s "core" rectangle is part of the triangle;
+    // here we shade per the slide: orange = triangle EB(t1) (between A and B/C),
+    // yellow = the ADDED piece going from t1 to t2 (between B/C and B'/C')
+    // Orange triangle (EB at t1): vertices A, (Q1,Pc) ,(Q1,Pp)
+    ctx.save(); ctx.fillStyle='#FFA000'; ctx.globalAlpha=0.55;
+    ctx.beginPath();
+    ctx.moveTo(qx(Q0),py(P0)); ctx.lineTo(qx(E1.Q),py(E1.Pc)); ctx.lineTo(qx(E1.Q),py(E1.Pp)); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // Yellow trapezoid: the ADDED region from (E1 wedge) out to (E2 wedge)
+    ctx.save(); ctx.fillStyle='#FFEB3B'; ctx.globalAlpha=0.65;
+    ctx.beginPath();
+    ctx.moveTo(qx(E1.Q),py(E1.Pc)); ctx.lineTo(qx(E2.Q),py(E2.Pc));
+    ctx.lineTo(qx(E2.Q),py(E2.Pp)); ctx.lineTo(qx(E1.Q),py(E1.Pp)); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // Curves: demand, supply, supply+t1, supply+t2
+    line(0,demandP(0),Q_MAX*0.99,demandP(Q_MAX*0.99),T.demand,3);
+    label("u′ₓ",Q_MAX*0.99,demandP(Q_MAX*0.99),-6,-7,T.demand,13,'bold','right',true);
+    line(0,supplyP(0),Q_MAX,supplyP(Q_MAX),T.supply,3);
+    label("c′(S)",Q_MAX,supplyP(Q_MAX),-6,16,T.supply,13,'bold','right',true);
+    line(0,shiftedSupplyP(0),Q_MAX*0.99,shiftedSupplyP(Q_MAX*0.99),T.shifted,2.2,[7,5]);
+    label("c′(S) + t₁",Q_MAX*0.62,shiftedSupplyP(Q_MAX*0.62),6,-8,T.shifted,12,'bold','left',true);
+    line(0,shiftedSupplyP2(0),Q_MAX*0.99,shiftedSupplyP2(Q_MAX*0.99),T.shifted,2.2,[7,5]);
+    label("c′(S) + t₂",Q_MAX*0.46,shiftedSupplyP2(Q_MAX*0.46),6,-8,T.shifted,12,'bold','left',true);
+
+    // projections + points: A, B/C (t1), B'/C' (t2)
+    projX(Q0,P0,Math.round(Q0).toString()); projY(P0,Q0,'P₁');
+    projX(E1.Q,E1.Pc,Math.round(E1.Q).toString()); projY(E1.Pc,E1.Q,'P₂+t₁',T.buyers); projY(E1.Pp,E1.Q,'P₂',T.sellers);
+    projX(E2.Q,E2.Pc,Math.round(E2.Q).toString()); projY(E2.Pc,E2.Q,'P₃+t₂',T.buyers); projY(E2.Pp,E2.Q,'P₃',T.sellers);
+
+    dot(Q0,P0,6,T.eq); label("A",Q0,P0,10,16,T.text,13,'bold','left',true);
+    dot(E1.Q,E1.Pc,5.5,T.eq); label("C",E1.Q,E1.Pc,9,-7,T.text,12.5,'bold','left',true);
+    dot(E1.Q,E1.Pp,5.5,T.eq); label("B",E1.Q,E1.Pp,9,15,T.text,12.5,'bold','left',true);
+    dot(E2.Q,E2.Pc,5.5,T.eq); label("C′",E2.Q,E2.Pc,-9,-7,T.text,12.5,'bold','right',true);
+    dot(E2.Q,E2.Pp,5.5,T.eq); label("B′",E2.Q,E2.Pp,-9,15,T.text,12.5,'bold','right',true);
+
+    label("EB(t₁)",( Q0+E1.Q)/2,(P0+ (E1.Pc+E1.Pp)/2)/2,0,-4,'#8a5600',11,'bold','center',true);
+    label("added",(E1.Q+E2.Q)/2,(E1.Pc+E2.Pp)/2,0,-9,'#7a6a00',10.5,'bold','center',true);
+    label("EB",(E1.Q+E2.Q)/2,(E1.Pc+E2.Pp)/2,0,4,'#7a6a00',10.5,'bold','center',true);
+    return;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // STEPS 0–5: standard single-tax view
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ── Consumer / Producer surplus areas (step 0-1) ──
+  if(step<=1){
+    const Qs = step===0 ? Q0 : m.Q1;
+    const Ptop = step===0 ? P0 : m.Pc;
+    const Pbot = step===0 ? P0 : m.Pp;
+    // Consumer surplus: area under demand, above price paid, left of Qs
+    ctx.save(); ctx.fillStyle=T.buyers; ctx.globalAlpha=0.13;
+    ctx.beginPath(); ctx.moveTo(qx(0),py(demandP(0)));
+    const N=40; for(let i=0;i<=N;i++){ const q=Qs*i/N; ctx.lineTo(qx(q),py(demandP(q))); }
+    ctx.lineTo(qx(Qs),py(Ptop)); ctx.lineTo(qx(0),py(Ptop)); ctx.closePath(); ctx.fill(); ctx.restore();
+    // Producer surplus: area above supply, below price received, left of Qs
+    ctx.save(); ctx.fillStyle=T.sellers; ctx.globalAlpha=0.13;
+    ctx.beginPath(); ctx.moveTo(qx(0),py(supplyP(0)));
+    for(let i=0;i<=N;i++){ const q=Qs*i/N; ctx.lineTo(qx(q),py(supplyP(q))); }
+    ctx.lineTo(qx(Qs),py(Pbot)); ctx.lineTo(qx(0),py(Pbot)); ctx.closePath(); ctx.fill(); ctx.restore();
+    label("CS",Qs*0.32,(Ptop+demandP(Qs*0.32))/2+3,0,-2,T.buyers,11,'bold','center',true);
+    label("PS",Qs*0.32,(Pbot+supplyP(Qs*0.32))/2-3,0,2,T.sellers,11,'bold','center',true);
+  }
+
+  // ── Revenue rectangle (step>=2) ──
+  if(step>=2){
+    ctx.save(); ctx.fillStyle=T.rev; ctx.globalAlpha=0.15;
+    ctx.fillRect(qx(0),py(m.Pc),qx(m.Q1)-qx(0),py(m.Pp)-py(m.Pc)); ctx.restore();
+  }
+  // ── EB triangle (step>=3) ──
+  if(step>=3){
+    ctx.save(); ctx.fillStyle=T.eb; ctx.globalAlpha=0.22;
+    ctx.beginPath();
+    ctx.moveTo(qx(m.Q1),py(m.Pc)); ctx.lineTo(qx(m.Q1),py(m.Pp)); ctx.lineTo(qx(Q0),py(P0)); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Curves ──
+  line(0,demandP(0),Q_MAX*0.99,demandP(Q_MAX*0.99),T.demand,3);
+  label("Demand",Q_MAX*0.99,demandP(Q_MAX*0.99),-6,-7,T.demand,12.5,'bold','right',true);
+  line(0,supplyP(0),Q_MAX,supplyP(Q_MAX),T.supply,3);
+  label("Supply",Q_MAX,supplyP(Q_MAX),-6,16,T.supply,12.5,'bold','right',true);
+  if(step>=1){
+    line(0,shiftedSupplyP(0),Q_MAX*0.99,shiftedSupplyP(Q_MAX*0.99),T.shifted,2.4,[7,5]);
+    label("Supply + t",Q_MAX*0.80,shiftedSupplyP(Q_MAX*0.80),6,-7,T.shifted,12,'bold','left',true);
+  }
+
+  // ── Pre-tax equilibrium A ──
+  projX(Q0,P0,'1500'); projY(P0,Q0,'$22.5');
+  dot(Q0,P0,6.5,T.eq);
+  label("A",Q0,P0,11,17,T.text,13,'bold','left',true);
+
+  // ── Post-tax (step>=1) ──
+  if(step>=1){
+    projX(m.Q1,m.Pc,Math.round(m.Q1).toString());
+    projY(m.Pc,m.Q1,'$'+m.Pc.toFixed(1),T.buyers);
+    projY(m.Pp,m.Q1,'$'+m.Pp.toFixed(1),T.sellers);
+    // wedge
+    ctx.save(); ctx.strokeStyle=T.eqStroke; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(qx(m.Q1),py(m.Pc)); ctx.lineTo(qx(m.Q1),py(m.Pp)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(qx(m.Q1)-4,py(m.Pc)); ctx.lineTo(qx(m.Q1)+4,py(m.Pc)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(qx(m.Q1)-4,py(m.Pp)); ctx.lineTo(qx(m.Q1)+4,py(m.Pp)); ctx.stroke();
+    ctx.restore();
+    label("t",m.Q1,(m.Pc+m.Pp)/2,-9,4,T.eqStroke,11.5,'bold','right',true);
+    dot(m.Q1,m.Pc,5.5,T.eq);   // consumer price point
+    dot(m.Q1,m.Pp,5.5,T.eq);   // producer price point
+  }
+
+  // ── Labels for shaded areas ──
+  if(step>=2){
+    label("revenue",m.Q1*0.5,(m.Pc+m.Pp)/2,0,4,T.rev,11,'bold','center',true);
+  }
+  if(step>=3){
+    const cx=(m.Q1+Q0)/2, cyp=(m.Pc+m.Pp+P0)/3;
+    label("EB",cx,cyp,12,4,T.eb,12,'bold','left',true);
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Pre-tax equilibrium",
+      b:`Supply meets demand at <b>A</b> = (1500, $22.50). The shaded regions are <b style="color:var(--buyers)">consumer surplus</b> (under demand, above price) and <b style="color:var(--sellers)">producer surplus</b> (above supply, below price). Together they're at their maximum — total surplus is maximised and there is no deadweight loss.` },
+    { t:"Step 1 · A tax opens a wedge",
+      b:`A <span class="num">$${tax.toFixed(2)}</span> specific tax drives a wedge between the price buyers pay (<b style="color:var(--buyers)">$${m.Pc.toFixed(2)}</b>) and what sellers keep (<b style="color:var(--sellers)">$${m.Pp.toFixed(2)}</b>). Quantity falls to <span class="num">${Math.round(m.Q1)}</span>, and both <b style="color:var(--buyers)">consumer surplus</b> and <b style="color:var(--sellers)">producer surplus</b> shrink — some of that loss becomes tax revenue, some vanishes entirely.` },
+    { t:"Step 2 · Tax revenue is a transfer",
+      b:`The shaded rectangle, t × Q₁ = <b>$${m.rev.toLocaleString(undefined,{maximumFractionDigits:0})}</b>, moves from market participants to the government. It is a <b>transfer</b>, not a loss — society still holds it.` },
+    { t:"Step 3 · The excess burden",
+      b:`The red <b>Harberger triangle</b> is surplus on the units between ${Math.round(m.Q1)} and 1500 that are <b>no longer traded</b> — value that exceeded cost, now destroyed. No one captures it: this is the <b style="color:var(--eb)">excess burden = $${m.EB.toLocaleString(undefined,{maximumFractionDigits:0})}</b>.` },
+    { t:"Step 4 · Why it grows with t²",
+      b:`EB = ½ · t · ΔQ, and ΔQ itself is proportional to t, so <b>EB rises with the square of the tax</b>: double the tax and the triangle quadruples. Revenue grows roughly linearly, so the efficiency cost <i>per dollar raised</i> climbs as taxes rise. Try the tax slider.` },
+    { t:"Step 5 · Why elasticity matters",
+      b:`A flatter (more <b>elastic</b>) demand means a larger quantity response ΔQ for the same tax — a bigger triangle. Inelastic demand gives almost no excess burden. This is the Ramsey intuition: to minimise deadweight loss, tax the <b>least elastic</b> goods. Drag the elasticity slider to see it.` },
+    { t:"Step 6 · Marginal excess burden: doubling the tax",
+      b:`Raise the tax from <b>t₁ = $${tax.toFixed(2)}</b> to <b>t₂ = 2t₁ = $${tax2.toFixed(2)}</b>. The orange triangle is the original <b>EB(t₁) = $${m.EB.toFixed(0)}</b>. The added yellow region — from (B,C) out to (B′,C′) — is the <b>extra</b> deadweight loss: <b style="color:var(--eb)">$${m.addedEB.toFixed(0)}</b>, which is <b>${(m.addedEB/m.EB).toFixed(1)}×</b> the original loss, even though the tax only doubled. Why: the added area is a <b>rectangle</b> (t₁ × ΔQ = $${m.rectPart.toFixed(0)}) <i>plus</i> a triangle (½(t₂−t₁) × ΔQ = $${m.triPart.toFixed(0)}) — a "square" component stacked on top of the usual triangle. This is exactly why <b>marginal</b> EB rises faster than average EB as taxes increase.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 6';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=6;i++){ const dd=document.createElement('div'); dd.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(dd); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===6);
+  document.getElementById('next').textContent=step===6?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=(step>=2&&step<6)?'grid':'none';
+  document.getElementById('r-rev').textContent='$'+m.rev.toLocaleString(undefined,{maximumFractionDigits:0});
+  document.getElementById('r-eb').textContent='$'+m.EB.toLocaleString(undefined,{maximumFractionDigits:0});
+  document.getElementById('r-ebpct').textContent=(m.rev>0?Math.round(100*m.EB/m.rev):0)+'% of revenue';
+  document.getElementById('meb-card').style.display=step>=6?'block':'none';
+  document.getElementById('r-eb1').textContent='$'+m.EB.toLocaleString(undefined,{maximumFractionDigits:0});
+  document.getElementById('r-ebadd').textContent='$'+m.addedEB.toLocaleString(undefined,{maximumFractionDigits:0});
+  document.getElementById('r-ebratio').textContent=(m.addedEB/m.EB).toFixed(1)+'×';
+  document.getElementById('v-e').textContent=m.elas.toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<6){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-e').addEventListener('input',e=>{ elas=parseFloat(e.target.value); b=bFromElas(elas); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
