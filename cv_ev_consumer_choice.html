@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV and EV in Consumer-Choice Space</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B;
+    --ic0:#6A1B9A; --ic1:#B07BD0; --budget:#444049; --shifted:#C62828;
+    --cv:#2E7D32; --ev:#1565C0; --pt:#F9A825; --pt-stroke:#4A3000; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --ic0:#B57BE0; --ic1:#8E5BA8; --budget:#B8B4AE; --shifted:#EF6C6C;
+      --cv:#66BB6A; --ev:#5B9BE8; --pt:#FFD54F; --pt-stroke:#1A1A1E; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:13.5px; color:var(--muted); font-style:italic; margin-top:4px; line-height:1.5; }
+  header .relation b { font-style:normal; }
+  header .relation b.cv { color:var(--cv); }
+  header .relation b.ev { color:var(--ev); }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:2px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.4; }
+  .res-box.cv { background:color-mix(in srgb,var(--cv) 13%,transparent); border-left:3px solid var(--cv); }
+  .res-box.ev { background:color-mix(in srgb,var(--ev) 13%,transparent); border-left:3px solid var(--ev); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.cv .lbl { color:var(--cv); }
+  .res-box.ev .lbl { color:var(--ev); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box .sub { font-size:10px; color:var(--muted); }
+  .legend { font-size:11.5px; line-height:1.9; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { height:0; border-top:2.6px dashed var(--shifted); }
+  .legend .sw.dot { height:0; border-top:2.6px dotted var(--cv); }
+  .note { font-size:11px; color:var(--muted); line-height:1.55; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Compensating &amp; Equivalent Variation — Consumer-Choice Space</h1>
+  <div class="relation">
+    <b class="cv">CV = e(p¹, u⁰) − m</b> (WTA: hold pre-tax utility u⁰) &nbsp;·&nbsp;
+    <b class="ev">EV = m − e(p⁰, u¹)</b> (WTP: hold post-tax utility u¹)
+  </div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box cv"><div class="lbl">CV (compensating)</div><div class="big" id="r-cv">—</div><div class="sub">give back at new prices</div></div>
+      <div class="res-box ev"><div class="lbl">EV (equivalent)</div><div class="big" id="r-ev">—</div><div class="sub">take at old prices</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Tax on good 1 (price rise)</span><span class="val" id="v-t" style="color:var(--shifted)">+$0.50</span></div>
+      <input type="range" id="s-t" min="0.1" max="1.5" step="0.05" value="0.5" style="accent-color:var(--shifted)">
+      <div class="note" id="setup-note">
+        Cobb–Douglas consumer (α = 0.5), income m = $100, p₂ = 1 (numeraire), pre-tax p₁ = $1.
+        Both goods normal, so income effects make CV ≠ EV.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--ic0)"></span> Indifference curve u⁰ (pre-tax)</div>
+        <div class="item"><span class="sw" style="background:var(--ic1)"></span> Indifference curve u¹ (post-tax)</div>
+        <div class="item"><span class="sw" style="background:var(--budget)"></span> Budget at old prices (slope −p₁)</div>
+        <div class="item"><span class="sw dash"></span> Budget at new prices (slope −p₁−t)</div>
+        <div class="item"><span class="sw" style="background:var(--cv);opacity:.85"></span> Compensated to u⁰ at new prices → CV</div>
+        <div class="item"><span class="sw" style="background:var(--ev);opacity:.85"></span> Compensated to u¹ at old prices → EV</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  ic0:cssvar('--ic0'),ic1:cssvar('--ic1'),budget:cssvar('--budget'),shifted:cssvar('--shifted'),
+  cvc:cssvar('--cv'),evc:cssvar('--ev'),pt:cssvar('--pt'),ptStroke:cssvar('--pt-stroke') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=500,padL=52,padR=20,padT=22,padB=44;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const X_MAX=116, Y_MAX=136, DASH_PROJ=[2,3];
+const gx=x=>padL+(x/X_MAX)*plotW, gy=y=>padT+plotH-(y/Y_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// ── Economic primitives ─────────────────────────────────────────────
+const m=100, p1_0=1;          // income, pre-tax price of good 1 (p2 = 1)
+let tax=0.5;                  // specific tax => p1_1 = p1_0 + tax
+const a_ql=40;               // quasilinear taste parameter, U = x2 + a_ql ln x1
+
+// Cobb–Douglas (alpha = 0.5) closed forms; numeraire p2 = 1
+function modelCD(){
+  const p1=p1_0+tax, r=Math.sqrt(p1/p1_0);
+  const A={x1:0.5*m/p1_0, x2:0.5*m};            // pre-tax optimum
+  const B={x1:0.5*m/p1,   x2:0.5*m};            // post-tax optimum
+  const u0=Math.sqrt(A.x1*A.x2), u1=Math.sqrt(B.x1*B.x2);
+  const CV=m*(r-1), EV=m*(1-1/r);
+  // C = h(p1,u0): MRS=p1 => x2=p1*x1, u0=x1*sqrt(p1)
+  const C={x1:u0/Math.sqrt(p1), x2:p1*(u0/Math.sqrt(p1))};
+  // D = h(p0,u1): MRS=p1_0=1 => x1=x2=u1
+  const D={x1:u1, x2:u1};
+  return {p1,A,B,C,D,u0,u1,CV,EV,
+    icHi:x=>(u0*u0)/x, icLo:x=>(u1*u1)/x,   // x2 = u^2 / x1
+    intPre:m, intPost:m, intCV:m+CV, intEV:m-EV};
+}
+// Quasilinear  U = x2 + a_ql ln x1  (parallel indifference curves => CV = EV)
+function modelQL(){
+  const p1=p1_0+tax;
+  const A={x1:a_ql/p1_0, x2:m-p1_0*(a_ql/p1_0)};
+  const B={x1:a_ql/p1,   x2:m-p1*(a_ql/p1)};
+  const u0=A.x2+a_ql*Math.log(A.x1), u1=B.x2+a_ql*Math.log(B.x1);
+  const CV=a_ql*Math.log(p1/p1_0), EV=CV;
+  const C={x1:a_ql/p1,   x2:u0-a_ql*Math.log(a_ql/p1)};
+  const D={x1:a_ql/p1_0, x2:u1-a_ql*Math.log(a_ql/p1_0)};
+  return {p1,A,B,C,D,u0,u1,CV,EV,
+    icHi:x=>u0-a_ql*Math.log(x), icLo:x=>u1-a_ql*Math.log(x),
+    intPre:m, intPost:m, intCV:m+CV, intEV:m-EV};
+}
+
+// ── Canvas helpers ──────────────────────────────────────────────────
+function line(x1,y1,x2,y2,col,w,dd){ ctx.beginPath(); ctx.setLineDash(dd||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(gx(x1),gy(y1)); ctx.lineTo(gx(x2),gy(y2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,y,r,f){ ctx.beginPath(); ctx.arc(gx(x),gy(y),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,y,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px=gx(x)+dx, py=gy(y)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px; if(al==='right')lx=px-w; else if(al==='center')lx=px-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px,py); ctx.restore();
+}
+function curve(fn,col,w,dd){
+  ctx.beginPath(); ctx.setLineDash(dd||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  let started=false;
+  for(let x=1.2;x<=X_MAX;x+=0.7){ const y=fn(x); if(y<0||y>Y_MAX*1.4){started=false;continue;}
+    const Px=gx(x),Py=gy(y); if(!started){ctx.moveTo(Px,Py);started=true;} else ctx.lineTo(Px,Py); }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+// budget line from y-intercept I and price p1: (0,I) -> (I/p1,0)
+function budget(I,p1,col,w,dd){ line(0,I,Math.min(I/p1,X_MAX), I-p1*Math.min(I/p1,X_MAX), col,w,dd); }
+function projTo(x,y,col){ line(x,0,x,y,col||T.muted,1,DASH_PROJ); line(0,y,x,y,col||T.muted,1,DASH_PROJ); }
+// vertical measure bracket on the good-2 axis between y=lo and y=hi, drawn at good1 = xpos
+function gapBracket(xpos,lo,hi,col,txt){
+  const x=gx(xpos);
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x,gy(lo)); ctx.lineTo(x,gy(hi)); ctx.stroke();
+  // arrow heads
+  ctx.beginPath(); ctx.moveTo(x-3.5,gy(lo)-4); ctx.lineTo(x,gy(lo)); ctx.lineTo(x+3.5,gy(lo)-4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-3.5,gy(hi)+4); ctx.lineTo(x,gy(hi)); ctx.lineTo(x+3.5,gy(hi)+4); ctx.stroke();
+  // ticks to the axis
+  ctx.setLineDash(DASH_PROJ); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(gx(0),gy(lo)); ctx.lineTo(x,gy(lo)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx(0),gy(hi)); ctx.lineTo(x,gy(hi)); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+  label(txt,xpos,(lo+hi)/2,8,4,col,12.5,'bold','left',true);
+}
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  // grid
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let y=20;y<Y_MAX;y+=20){ ctx.beginPath(); ctx.moveTo(padL,gy(y)); ctx.lineTo(padL+plotW,gy(y)); ctx.stroke(); }
+  for(let x=20;x<X_MAX;x+=20){ ctx.beginPath(); ctx.moveTo(gx(x),padT); ctx.lineTo(gx(x),padT+plotH); ctx.stroke(); }
+  // axes
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  label('Good 2  (numeraire, $)',0,Y_MAX,-padL+4,-6,T.text,12,'bold','left');
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Good 1',padL+plotW,padT+plotH+32); ctx.restore();
+
+  const ql = (step===5);
+  const M = ql ? modelQL() : modelCD();
+
+  // ── Indifference curves ──
+  curve(M.icHi, T.ic0, 2.6);
+  label("u⁰",X_MAX-2, M.icHi(X_MAX-2)+ (ql?0:1), -4,-6,T.ic0,13,'bold','right',true);
+  if(step>=1){
+    curve(M.icLo, T.ic1, 2.4, ql?[]:[6,4]);
+    const lx = ql? X_MAX-2 : X_MAX-2;
+    label("u¹",lx, M.icLo(lx), -4, ql?16:15, T.ic1,13,'bold','right',true);
+  }
+
+  // ── step 5: the VERTICAL gap u⁰−u¹ is constant (same arrow height) at every x₁ ──
+  if(ql){
+    const gapVal=M.u0-M.u1;
+    [27,73].forEach((xq,i)=>{
+      const lo=M.icLo(xq), hi=M.icHi(xq), X=gx(xq);
+      ctx.save(); ctx.strokeStyle=T.muted; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(X,gy(lo)); ctx.lineTo(X,gy(hi)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X-3,gy(hi)+4); ctx.lineTo(X,gy(hi)); ctx.lineTo(X+3,gy(hi)+4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X-3,gy(lo)-4); ctx.lineTo(X,gy(lo)); ctx.lineTo(X+3,gy(lo)-4); ctx.stroke();
+      ctx.restore();
+      label((i===0?"u⁰−u¹ = $":"$")+gapVal.toFixed(2),xq,(lo+hi)/2,7,4,T.muted,11,'bold','left',true);
+    });
+  }
+
+  // ── Budget: old prices (always) ──
+  budget(M.intPre, p1_0, T.budget, 2.4);
+  // ── Post-tax budget (step>=1) ──
+  if(step>=1){ budget(M.intPost, M.p1, T.shifted, 2.2, [7,5]); }
+
+  // ── CV compensated budget: new prices, tangent to u0 (step>=2) ──
+  if(step>=2 && (step<=4 || ql)){
+    budget(M.intCV, M.p1, T.cvc, 2.0, [2,3]);
+    dot(M.C.x1,M.C.x2,5,T.cvc);
+    label("C",M.C.x1,M.C.x2,7,-7,T.cvc,12,'bold','left',true);
+    gapBracket(4.5, M.intPost, M.intCV, T.cvc, "CV");
+  }
+  // ── EV compensated budget: old prices, tangent to u1 (step>=3) ──
+  if(step>=3 && (step<=4 || ql)){
+    budget(M.intEV, p1_0, T.evc, 2.0, [2,3]);
+    dot(M.D.x1,M.D.x2,5,T.evc);
+    label("D",M.D.x1,M.D.x2,-7,16,T.evc,12,'bold','right',true);
+    gapBracket(10.5, M.intEV, M.intPre, T.evc, "EV");
+  }
+
+  // ── Optima A and B ──
+  projTo(M.A.x1,M.A.x2);
+  dot(M.A.x1,M.A.x2,6,T.pt);
+  label("A",M.A.x1,M.A.x2,9,-8,T.text,13,'bold','left',true);
+  if(step>=1){
+    projTo(M.B.x1,M.B.x2,T.shifted);
+    dot(M.B.x1,M.B.x2,6,T.pt);
+    label("B",M.B.x1,M.B.x2,-8,-8,T.text,13,'bold','right',true);
+  }
+
+  // intercept tick labels on y-axis
+  ctx.save(); ctx.font='10.5px Georgia'; ctx.textAlign='right'; ctx.fillStyle=T.muted;
+  ctx.fillText('m='+m, padL-6, gy(m)+4);
+  ctx.restore();
+}
+
+function stepContent(){
+  const M=modelCD();
+  return [
+    { t:"Step 0 · Pre-tax optimum",
+      b:`At prices (p₁ = <span class="num">$1</span>, p₂ = $1) and income m = <span class="num">$100</span>, the consumer picks bundle <b>A</b> on the highest reachable indifference curve <b style="color:var(--ic0)">u⁰</b> — where the budget line is tangent. Good 2 is the numeraire, so vertical distances read directly in dollars.` },
+    { t:"Step 1 · A tax rotates the budget line",
+      b:`A specific tax of <span class="num">$${tax.toFixed(2)}</span> raises the price of good 1 to <span class="num">$${M.p1.toFixed(2)}</span>. The budget line gets <b>steeper</b>, pivoting around the good-2 intercept (income is unchanged). The new optimum <b>B</b> sits on a <b>lower</b> curve <b style="color:var(--ic1)">u¹</b>: the consumer is worse off. We now want to put a dollar figure on that loss.` },
+    { t:"Step 2 · CV — compensating variation (WTA)",
+      b:`Ask: at the <b>new</b> prices, how much money would restore the consumer to <b style="color:var(--ic0)">u⁰</b>? Slide the steep budget line <b>outward</b> until it just touches u⁰ (bundle <b>C</b>). The required income is <span class="num">e(p¹, u⁰)</span>; the extra over m is <b style="color:var(--cv)">CV = $${M.CV.toFixed(2)}</b> — the compensation the consumer must be paid to <b>accept</b> the tax (willingness to accept).` },
+    { t:"Step 3 · EV — equivalent variation (WTP)",
+      b:`Now ask the mirror question at the <b>old</b> prices: how much income could you take away to leave the consumer exactly as badly off as the tax does (<b style="color:var(--ic1)">u¹</b>)? Slide the flat budget line <b>inward</b> until tangent to u¹ (bundle <b>D</b>). That drop is <b style="color:var(--ev)">EV = $${M.EV.toFixed(2)}</b> — the most the consumer would <b>pay</b> to avoid the tax (willingness to pay).` },
+    { t:"Step 4 · Why CV ≠ EV",
+      b:`Both measure the same welfare loss, but at different reference prices and utilities, so for a normal good they differ: <b style="color:var(--cv)">CV = $${M.CV.toFixed(2)}</b> &gt; <b style="color:var(--ev)">EV = $${M.EV.toFixed(2)}</b>. CV is evaluated at the higher pre-tax utility u⁰ (the consumer is "richer", values the good more), EV at the lower post-tax utility u¹. The Marshallian surplus sits between them. The gap is the income effect — drag the tax slider and watch it widen with the tax.` },
+    { t:"Step 5 · The quasilinear case: CV = EV",
+      b:`Switch to quasilinear preferences U = x₂ + a·ln x₁ (no income effect on good 1). MRS = a/x₁ depends only on x₁, so at every vertical slice both curves have the <b>same slope</b>: they are <b>vertical translates</b>. The gap is "parallel" only vertically — the two grey arrows have identical height (<span class="num">$${modelQL().CV.toFixed(2)}</span>) even though the curves look closer where steep and wider where flat. That constant vertical gap equals u⁰−u¹, so the two compensated shifts coincide: <b style="color:var(--cv)">CV</b> = <b style="color:var(--ev)">EV</b> = <span class="num">$${modelQL().CV.toFixed(2)}</span>. This is the one case where Marshallian surplus is an exact welfare measure.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const dd=document.createElement('div'); dd.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(dd); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+
+  const M = (step===5)?modelQL():modelCD();
+  document.getElementById('results').style.display=(step>=2)?'grid':'none';
+  document.getElementById('r-cv').textContent='$'+M.CV.toFixed(2);
+  document.getElementById('r-ev').textContent='$'+M.EV.toFixed(2);
+  document.getElementById('v-t').textContent='+$'+tax.toFixed(2);
+  document.getElementById('setup-note').innerHTML = (step===5)
+    ? 'Quasilinear consumer U = x₂ + '+a_ql+'·ln x₁ (no income effect on good 1), m = $100, p₂ = 1, pre-tax p₁ = $1. Constant vertical gap between indifference curves ⇒ CV = EV.'
+    : 'Cobb–Douglas consumer (α = 0.5), income m = $100, p₂ = 1 (numeraire), pre-tax p₁ = $1. Both goods normal, so income effects make CV ≠ EV.';
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-t').addEventListener('input',e=>{ tax=parseFloat(e.target.value); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
