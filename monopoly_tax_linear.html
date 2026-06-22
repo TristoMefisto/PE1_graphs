@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monopoly Tax — Linear Demand</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --demand:#6A1B9A; --mr:#00897B; --mc:#1565C0; --shifted:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000; --buyers:#C62828; --sellers:#E07B00; --dwl:#9E1B32; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --demand:#B57BE0; --mr:#4DB6AC; --mc:#5B9BE8; --shifted:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --buyers:#EF6C6C; --sellers:#FFB74D; --dwl:#E5738A; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14.5px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; }
+  .pt-card { text-align:center; }
+  .pt-val { font-size:26px; font-weight:bold; font-family:'Courier New',monospace; }
+  .pt-tag { font-size:12px; font-style:italic; margin-top:2px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.b { background:color-mix(in srgb,var(--buyers) 13%,transparent); border-left:3px solid var(--buyers); }
+  .res-box.s { background:color-mix(in srgb,var(--sellers) 13%,transparent); border-left:3px solid var(--sellers); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.b .lbl { color:var(--buyers); }
+  .res-box.s .lbl { color:var(--sellers); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--shifted) 0 5px,transparent 5px 9px); height:3px; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Excise Tax under Monopoly — Linear Demand</h1>
+  <div class="relation">max π = p(q)·q − c(q) − t·q &nbsp;⟹&nbsp; optimum at <b>MR = MC + t</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="card pt-card" id="pt-card" style="display:none">
+      <div class="card-title">Pass-through &nbsp;Δp / t</div>
+      <div class="pt-val" id="pt-val" style="color:var(--buyers)">0.50</div>
+      <div class="pt-tag" id="pt-tag" style="color:var(--buyers)">under-shifted (price rises by less than the tax)</div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box b"><div class="lbl">Consumer price Δ</div><div class="big" id="inc-b">+$3.75</div></div>
+      <div class="res-box s"><div class="lbl">Monopolist net/unit Δ</div><div class="big" id="inc-s">−$3.75</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the tax</div>
+      <div class="slider-label"><span>Tax per unit (t)</span><span class="val" id="v-t">$7.50</span></div>
+      <input type="range" id="s-t" min="0" max="18" step="0.5" value="7.5">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--demand)"></span> Demand = average revenue p(q)</div>
+        <div class="item"><span class="sw" style="background:var(--mr)"></span> MR — marginal revenue</div>
+        <div class="item"><span class="sw" style="background:var(--mc)"></span> MC — marginal cost</div>
+        <div class="item"><span class="sw dash"></span> MC + t — after tax</div>
+        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> monopoly price points</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  demand:cssvar('--demand'),mr:cssvar('--mr'),mc:cssvar('--mc'),shifted:cssvar('--shifted'),eq:cssvar('--eq'),
+  eqStroke:cssvar('--eq-stroke'),buyers:cssvar('--buyers'),sellers:cssvar('--sellers'),dwl:cssvar('--dwl') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=56,padR=22,padT=20,padB=46;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX=2600, P_MAX=50, DASH_PROJ=[2,3];
+const qx=q=>padL+(q/Q_MAX)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: p=a-bq, MC=c constant
+const a=45,b=0.015,c=9;
+let tax=7.5;
+const demandP=q=>a-b*q, mrP=q=>a-2*b*q;
+function model(){
+  const qm0=(a-c)/(2*b), pm0=demandP(qm0);
+  const qt=(a-c-tax)/(2*b), pt=demandP(qt);
+  const qeff=(a-c)/b; // competitive/efficient q where p=MC
+  return { qm0,pm0,qt,pt,qeff, consumerD:pt-pm0, netD:(pt-tax)-pm0, rho:tax>0?(pt-pm0)/tax:0.5 };
+}
+
+function line(q1,p1,q2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(q1),py(p1)); ctx.lineTo(qx(q2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(q,p,r,f){ ctx.beginPath(); ctx.arc(qx(q),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,q,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const x=qx(q)+dx,y=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=x; if(al==='right')lx=x-w; else if(al==='center')lx=x-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,y-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,x,y); ctx.restore();
+}
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+function qTick(q,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(q),padT+plotH+16); ctx.restore(); }
+function projX(q,pTop,txt,col){ line(q,0,q,pTop,col||T.muted,1,DASH_PROJ); if(txt) qTick(q,txt,col); }
+function projY(p,qR,txt,col){ line(0,p,qR,p,col||T.muted,1,DASH_PROJ); if(txt) priceTick(p,txt,col); }
+function bracket(x,yA,yB,col,txt){
+  const top=Math.min(yA,yB),bot=Math.max(yA,yB);
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x+6,top); ctx.lineTo(x,top); ctx.lineTo(x,bot); ctx.lineTo(x+6,bot); ctx.stroke();
+  ctx.font='bold 10.5px Georgia'; ctx.fillStyle=col; ctx.textAlign='right'; ctx.fillText(txt,x-4,(top+bot)/2+3); ctx.restore();
+}
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let p=10;p<P_MAX;p+=10){ ctx.beginPath(); ctx.moveTo(padL,py(p)); ctx.lineTo(padL+plotW,py(p)); ctx.stroke(); }
+  for(let q=500;q<Q_MAX;q+=500){ ctx.beginPath(); ctx.moveTo(qx(q),padT); ctx.lineTo(qx(q),padT+plotH); ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  label('Price',0,P_MAX,-padL+4,-4,T.text,12,'bold','left');
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Quantity',padL+plotW,padT+plotH+34); ctx.restore();
+
+  const m=model();
+
+  // Curves
+  line(0,demandP(0),Q_MAX,demandP(Q_MAX),T.demand,3);
+  label("Demand",Q_MAX,demandP(Q_MAX),-6,-7,T.demand,12.5,'bold','right',true);
+  const mrZeroQ=a/(2*b);
+  line(0,mrP(0),mrZeroQ,0,T.mr,2.4);
+  label("MR",mrZeroQ,0,8,-6,T.mr,12.5,'bold','left',true);
+  line(0,c,Q_MAX,c,T.mc,2.6);
+  label("MC",Q_MAX,c,-6,16,T.mc,12.5,'bold','right',true);
+
+  // Step 5 DWL shading first (under everything)
+  if(step>=5){
+    ctx.save(); ctx.fillStyle=T.dwl; ctx.globalAlpha=0.16;
+    ctx.beginPath();
+    ctx.moveTo(qx(m.qt),py(c)); ctx.lineTo(qx(m.qt),py(m.pt));
+    ctx.lineTo(qx(m.qm0),py(m.pm0)); ctx.lineTo(qx(m.qm0),py(c)); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    label("added",( m.qt+m.qm0)/2,(c+m.pm0)/2,0,-2,T.dwl,10.5,'bold','center',true);
+    label("DWL",( m.qt+m.qm0)/2,(c+m.pm0)/2,0,11,T.dwl,10.5,'bold','center',true);
+    projX(m.qeff,c,Math.round(m.qeff).toString(),T.muted);
+    dot(m.qeff,c,4.5,T.mc);
+    label("efficient q (p=MC)",m.qeff,c,-8,-8,T.muted,10,'italic','right',true);
+  }
+
+  // MC+t (step>=1)
+  if(step>=1){
+    line(0,c+tax,Q_MAX,c+tax,T.shifted,2.4,[7,5]);
+    label("MC + t",Q_MAX,c+tax,-6,-7,T.shifted,12,'bold','right',true);
+  }
+
+  // Pre-tax monopoly point M
+  // MR=MC at qm0 (height c); price up on demand at pm0
+  line(m.qm0,c,m.qm0,m.pm0,T.eqStroke,1,DASH_PROJ);
+  projX(m.qm0,m.pm0,Math.round(m.qm0).toString());
+  projY(m.pm0,m.qm0,'$'+m.pm0.toFixed(1),T.demand);
+  dot(m.qm0,c,4.5,T.mr);                 // MR=MC point
+  dot(m.qm0,m.pm0,6.5,T.eq);             // monopoly price M
+  label("M",m.qm0,m.pm0,11,-7,T.text,13,'bold','left',true);
+  if(step===0){
+    // markup bracket
+    bracket(qx(m.qm0)+44,py(c),py(m.pm0),T.muted,"markup");
+  }
+
+  // Step >=2 : post-tax optimum
+  if(step>=2){
+    line(m.qt,c+tax,m.qt,m.pt,T.eqStroke,1,DASH_PROJ);
+    projX(m.qt,m.pt,Math.round(m.qt).toString());
+    projY(m.pt,m.qt,'$'+m.pt.toFixed(1),T.buyers);
+    dot(m.qt,c+tax,4.5,T.shifted);       // MR=MC+t point
+    dot(m.qt,m.pt,6.5,T.eq);             // new monopoly price M'
+    label("M′",m.qt,m.pt,-11,-7,T.buyers,13,'bold','right',true);
+    // quantity-fall arrow along x
+    ctx.save(); ctx.strokeStyle=T.muted; ctx.lineWidth=1.5;
+    const yq=padT+plotH+30;
+    ctx.beginPath(); ctx.moveTo(qx(m.qm0),yq); ctx.lineTo(qx(m.qt)+6,yq); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(qx(m.qt),yq); ctx.lineTo(qx(m.qt)+8,yq-4); ctx.lineTo(qx(m.qt)+8,yq+4); ctx.fillStyle=T.muted; ctx.fill();
+    ctx.restore();
+  }
+
+  // Step >=3 : price change bracket (Δp vs t)
+  if(step>=3){
+    const bx=qx(Math.max(m.qt,200))-70;
+    bracket(qx(150), py(m.pm0), py(m.pt), T.buyers, "Δp = $"+m.consumerD.toFixed(2));
+    // tax size reference bracket on MC axis area
+    bracket(qx(150)+0, py(c), py(c+tax), T.shifted, "t = $"+tax.toFixed(2));
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Pre-tax monopoly",
+      b:`The monopolist sets <b>MR = MC</b> at <span class="num">${Math.round(m.qm0)}</span> units, then charges what demand will bear: <b>$${m.pm0.toFixed(2)}</b> (point <b>M</b>). Price sits <b>above</b> MC — the monopoly markup — so output is already below the efficient level.` },
+    { t:"Step 1 · Tax raises marginal cost",
+      b:`A <span class="num">$${tax.toFixed(2)}</span> specific tax adds to every unit's cost, lifting effective marginal cost from <b>MC</b> to <b>MC + t</b>. The new optimality condition is <b>MR = MC + t</b>.` },
+    { t:"Step 2 · New optimum",
+      b:`MR now meets MC + t at <span class="num">${Math.round(m.qt)}</span> units — output <b>falls</b>. Reading up to demand gives the new price <b>$${m.pt.toFixed(2)}</b> (point <b>M′</b>).` },
+    { t:"Step 3 · Pass-through is one-half",
+      b:`Price rose from $${m.pm0.toFixed(2)} to $${m.pt.toFixed(2)} — just <b>$${m.consumerD.toFixed(2)}</b>, exactly <b>half</b> the $${tax.toFixed(2)} tax. With linear demand the monopolist <b>under-shifts</b>: Δp/t = ½, and this holds for <i>any</i> slopes or MC.` },
+    { t:"Step 4 · Incidence",
+      b:`The consumer price rises by <b style="color:var(--buyers)">$${m.consumerD.toFixed(2)}</b>; the monopolist's net-of-tax price falls by <b style="color:var(--sellers)">$${Math.abs(m.netD).toFixed(2)}</b>. The two differ by exactly the tax — a clean 50/50 split here.` },
+    { t:"Step 5 · Welfare",
+      b:`Output falls further below the efficient level (where p = MC, at <span class="num">${Math.round(m.qeff)}</span>). The shaded trapezoid is the <b style="color:var(--dwl)">added deadweight loss</b> from the tax — surplus on units no longer produced. Revenue = t × Q = <span class="num">$${(tax*m.qt).toLocaleString(undefined,{maximumFractionDigits:0})}</span>.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('pt-card').style.display=step>=3?'block':'none';
+  document.getElementById('results').style.display=step>=4?'grid':'none';
+  document.getElementById('pt-val').textContent=m.rho.toFixed(2);
+  document.getElementById('inc-b').textContent='+$'+m.consumerD.toFixed(2);
+  document.getElementById('inc-s').textContent=(m.netD>=0?'+$':'−$')+Math.abs(m.netD).toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-t').addEventListener('input',e=>{ tax=parseFloat(e.target.value); document.getElementById('v-t').textContent='$'+tax.toFixed(2); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
