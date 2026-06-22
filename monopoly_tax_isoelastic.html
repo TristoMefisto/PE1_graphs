@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monopoly Tax — Isoelastic Demand</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --demand:#6A1B9A; --mr:#00897B; --mc:#1565C0; --shifted:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000; --buyers:#C62828; --sellers:#E07B00; --dwl:#9E1B32; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --demand:#B57BE0; --mr:#4DB6AC; --mc:#5B9BE8; --shifted:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --buyers:#EF6C6C; --sellers:#FFB74D; --dwl:#E5738A; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14.5px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:13px; }
+  input[type=range]:last-child { margin-bottom:0; }
+  .pt-card { text-align:center; }
+  .pt-val { font-size:26px; font-weight:bold; font-family:'Courier New',monospace; }
+  .pt-tag { font-size:12px; font-style:italic; margin-top:2px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.b { background:color-mix(in srgb,var(--buyers) 13%,transparent); border-left:3px solid var(--buyers); }
+  .res-box.s { background:color-mix(in srgb,var(--sellers) 13%,transparent); border-left:3px solid var(--sellers); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.b .lbl { color:var(--buyers); }
+  .res-box.s .lbl { color:var(--sellers); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .caveat { background:color-mix(in srgb,var(--sellers) 11%,transparent); border:1px solid color-mix(in srgb,var(--sellers) 35%,transparent); border-radius:5px; padding:10px 12px; font-size:11.5px; line-height:1.5; font-style:italic; }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--shifted) 0 5px,transparent 5px 9px); height:3px; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Excise Tax under Monopoly — Isoelastic Demand</h1>
+  <div class="relation">Constant elasticity ε &nbsp;⟹&nbsp; pass-through <b>Δp/t = ε/(ε − 1) &gt; 1</b> (over-shifting)</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="card pt-card" id="pt-card" style="display:none">
+      <div class="card-title">Pass-through &nbsp;Δp / t</div>
+      <div class="pt-val" id="pt-val" style="color:var(--buyers)">2.00</div>
+      <div class="pt-tag" id="pt-tag" style="color:var(--buyers)">over-shifted (price rises by more than the tax)</div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box b"><div class="lbl">Consumer price Δ</div><div class="big" id="inc-b">+$10.00</div></div>
+      <div class="res-box s"><div class="lbl">Monopolist net/unit Δ</div><div class="big" id="inc-s">+$5.00</div></div>
+    </div>
+
+    <div class="caveat" id="caveat" style="display:none">
+      The monopolist's <b>per-unit</b> net price rises, yet total <b>profit still falls</b> — output contracts sharply, so volume more than offsets the higher margin.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Tax per unit (t)</span><span class="val" id="v-t">$5.00</span></div>
+      <input type="range" id="s-t" min="0" max="8" step="0.5" value="5">
+      <div class="slider-label"><span>Elasticity (ε)</span><span class="val" id="v-e" style="color:var(--demand)">2.0</span></div>
+      <input type="range" id="s-e" min="1.5" max="4" step="0.1" value="2" style="accent-color:var(--demand)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--demand)"></span> Demand = average revenue p(q)</div>
+        <div class="item"><span class="sw" style="background:var(--mr)"></span> MR = p·(1 − 1/ε)</div>
+        <div class="item"><span class="sw" style="background:var(--mc)"></span> MC — marginal cost</div>
+        <div class="item"><span class="sw dash"></span> MC + t — after tax</div>
+        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> monopoly price points</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),text:cssvar('--text'),muted:cssvar('--muted'),
+  demand:cssvar('--demand'),mr:cssvar('--mr'),mc:cssvar('--mc'),shifted:cssvar('--shifted'),eq:cssvar('--eq'),
+  eqStroke:cssvar('--eq-stroke'),buyers:cssvar('--buyers'),sellers:cssvar('--sellers'),dwl:cssvar('--dwl') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=56,padR=22,padT=20,padB=46;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX=1800, P_MAX=60, DASH_PROJ=[2,3];
+const qx=q=>padL+(q/Q_MAX)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: q = A p^-e, MC=c constant. Anchor pre-tax quantity qm0=1200.
+const c=10, QM0=1200;
+let tax=5, eps=2;
+function A(){ const pm0=c*eps/(eps-1); return QM0*Math.pow(pm0,eps); }
+const demandP=q=>Math.pow(A()/q,1/eps);
+const mrP=q=>demandP(q)*(1-1/eps);
+function model(){
+  const pm0=c*eps/(eps-1), qm0=QM0;
+  const pt=(c+tax)*eps/(eps-1), qt=A()*Math.pow(pt,-eps);
+  return { qm0,pm0,qt,pt, consumerD:pt-pm0, netD:(pt-tax)-pm0, rho:eps/(eps-1) };
+}
+
+function line(q1,p1,q2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(q1),py(p1)); ctx.lineTo(qx(q2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function curve(fn,col,w,qFrom,qTo){
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.setLineDash([]);
+  let started=false;
+  const N=240;
+  for(let i=0;i<=N;i++){
+    const q=qFrom+(qTo-qFrom)*i/N; const p=fn(q);
+    if(!isFinite(p)||p>P_MAX*1.05||p<0){ started=false; continue; }
+    const X=qx(q),Y=py(p);
+    if(!started){ ctx.moveTo(X,Y); started=true; } else ctx.lineTo(X,Y);
+  }
+  ctx.stroke();
+}
+function dot(q,p,r,f){ ctx.beginPath(); ctx.arc(qx(q),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,q,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const x=qx(q)+dx,y=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=x; if(al==='right')lx=x-w; else if(al==='center')lx=x-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,y-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,x,y); ctx.restore();
+}
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+function qTick(q,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(q),padT+plotH+16); ctx.restore(); }
+function projX(q,pTop,txt,col){ line(q,0,q,pTop,col||T.muted,1,DASH_PROJ); if(txt) qTick(q,txt,col); }
+function projY(p,qR,txt,col){ line(0,p,qR,p,col||T.muted,1,DASH_PROJ); if(txt) priceTick(p,txt,col); }
+function bracket(x,yA,yB,col,txt){
+  const top=Math.min(yA,yB),bot=Math.max(yA,yB);
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x+6,top); ctx.lineTo(x,top); ctx.lineTo(x,bot); ctx.lineTo(x+6,bot); ctx.stroke();
+  ctx.font='bold 10.5px Georgia'; ctx.fillStyle=col; ctx.textAlign='right'; ctx.fillText(txt,x-4,(top+bot)/2+3); ctx.restore();
+}
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let p=10;p<P_MAX;p+=10){ ctx.beginPath(); ctx.moveTo(padL,py(p)); ctx.lineTo(padL+plotW,py(p)); ctx.stroke(); }
+  for(let q=300;q<Q_MAX;q+=300){ ctx.beginPath(); ctx.moveTo(qx(q),padT); ctx.lineTo(qx(q),padT+plotH); ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  label('Price',0,P_MAX,-padL+4,-4,T.text,12,'bold','left');
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Quantity',padL+plotW,padT+plotH+34); ctx.restore();
+
+  const m=model();
+  const qStart=Math.max(30, A()*Math.pow(P_MAX,-eps));
+
+  // DWL shading (step>=5) under curves
+  if(step>=5){
+    ctx.save(); ctx.fillStyle=T.dwl; ctx.globalAlpha=0.16; ctx.beginPath();
+    ctx.moveTo(qx(m.qt),py(c));
+    const N=60;
+    for(let i=0;i<=N;i++){ const q=m.qt+(m.qm0-m.qt)*i/N; ctx.lineTo(qx(q),py(demandP(q))); }
+    ctx.lineTo(qx(m.qm0),py(c)); ctx.closePath(); ctx.fill(); ctx.restore();
+    label("added DWL",(m.qt+m.qm0)/2,(c+m.pm0)/2,0,4,T.dwl,10.5,'bold','center',true);
+  }
+
+  // Curves
+  curve(demandP,T.demand,3,qStart,Q_MAX);
+  label("Demand",Q_MAX*0.86,demandP(Q_MAX*0.86),6,-6,T.demand,12.5,'bold','left',true);
+  curve(mrP,T.mr,2.4,qStart,Q_MAX);
+  label("MR",Q_MAX*0.62,mrP(Q_MAX*0.62),6,12,T.mr,12.5,'bold','left',true);
+  line(0,c,Q_MAX,c,T.mc,2.6);
+  label("MC",Q_MAX,c,-6,16,T.mc,12.5,'bold','right',true);
+
+  if(step>=1){
+    line(0,c+tax,Q_MAX,c+tax,T.shifted,2.4,[7,5]);
+    label("MC + t",Q_MAX,c+tax,-6,-7,T.shifted,12,'bold','right',true);
+  }
+
+  // Pre-tax monopoly M
+  line(m.qm0,c,m.qm0,m.pm0,T.eqStroke,1,DASH_PROJ);
+  projX(m.qm0,m.pm0,Math.round(m.qm0).toString());
+  projY(m.pm0,m.qm0,'$'+m.pm0.toFixed(1),T.demand);
+  dot(m.qm0,mrP(m.qm0),4.5,T.mr);
+  dot(m.qm0,m.pm0,6.5,T.eq);
+  label("M",m.qm0,m.pm0,11,-7,T.text,13,'bold','left',true);
+
+  // Post-tax M'
+  if(step>=2){
+    line(m.qt,c+tax,m.qt,m.pt,T.eqStroke,1,DASH_PROJ);
+    projX(m.qt,m.pt,Math.round(m.qt).toString());
+    projY(m.pt,m.qt,'$'+m.pt.toFixed(1),T.buyers);
+    dot(m.qt,mrP(m.qt),4.5,T.shifted);
+    dot(m.qt,m.pt,6.5,T.eq);
+    label("M′",m.qt,m.pt,11,-7,T.buyers,13,'bold','left',true);
+  }
+
+  // Δp vs t brackets
+  if(step>=3){
+    bracket(qx(120), py(m.pm0), py(m.pt), T.buyers, "Δp = $"+m.consumerD.toFixed(2));
+    bracket(qx(120), py(c), py(c+tax), T.shifted, "t = $"+tax.toFixed(2));
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Pre-tax monopoly",
+      b:`With constant elasticity ε = ${eps.toFixed(1)}, marginal revenue is a fixed fraction of price: <b>MR = p·(1 − 1/ε)</b>. Setting MR = MC gives price <b>$${m.pm0.toFixed(2)}</b> at <span class="num">${Math.round(m.qm0)}</span> units (point <b>M</b>). The markup is <b>ε/(ε−1)</b> times MC.` },
+    { t:"Step 1 · Tax raises marginal cost",
+      b:`The <span class="num">$${tax.toFixed(2)}</span> tax lifts effective marginal cost to <b>MC + t</b>; the monopolist re-optimises at <b>MR = MC + t</b>.` },
+    { t:"Step 2 · New optimum",
+      b:`Output falls to <span class="num">${Math.round(m.qt)}</span> units and price rises to <b>$${m.pt.toFixed(2)}</b> (point <b>M′</b>). Because demand is convex, the contraction lets the firm lift price aggressively.` },
+    { t:"Step 3 · Over-shifting",
+      b:`Price jumped by <b>$${m.consumerD.toFixed(2)}</b> against a <b>$${tax.toFixed(2)}</b> tax — <b>more</b> than the tax itself. Pass-through is <b>ε/(ε−1) = ${m.rho.toFixed(2)}</b>. Convex (isoelastic) demand makes the monopolist <b>over-shift</b>.` },
+    { t:"Step 4 · Incidence",
+      b:`Consumers' price rises by <b style="color:var(--buyers)">$${m.consumerD.toFixed(2)}</b> — beyond 100% of the tax. The monopolist's net-of-tax price even <b>rises</b> by <b style="color:var(--sellers)">$${m.netD.toFixed(2)}</b> per unit. (Consumer Δ minus net Δ still equals exactly t.)` },
+    { t:"Step 5 · Welfare",
+      b:`The shaded region is the <b style="color:var(--dwl)">added deadweight loss</b> from the tax. Note: per-unit margin rises, but total profit falls as output shrinks. Try the ε slider — as ε → 1 the over-shifting explodes; as ε grows large, pass-through approaches 1 (the competitive case). Revenue = t × Q = <span class="num">$${(tax*m.qt).toLocaleString(undefined,{maximumFractionDigits:0})}</span>.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('pt-card').style.display=step>=3?'block':'none';
+  document.getElementById('results').style.display=step>=4?'grid':'none';
+  document.getElementById('caveat').style.display=step>=4?'block':'none';
+  document.getElementById('pt-val').textContent=m.rho.toFixed(2);
+  const over=m.rho>1;
+  document.getElementById('pt-tag').textContent=over?'over-shifted (price rises by more than the tax)':'under-shifted';
+  document.getElementById('inc-b').textContent='+$'+m.consumerD.toFixed(2);
+  document.getElementById('inc-s').textContent=(m.netD>=0?'+$':'−$')+Math.abs(m.netD).toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-t').addEventListener('input',e=>{ tax=parseFloat(e.target.value); document.getElementById('v-t').textContent='$'+tax.toFixed(2); render(); });
+document.getElementById('s-e').addEventListener('input',e=>{ eps=parseFloat(e.target.value); document.getElementById('v-e').textContent=eps.toFixed(1); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
