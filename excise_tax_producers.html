@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excise Tax on Producers — Step by Step</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --supply:#1565C0; --demand:#6A1B9A; --shifted:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000; --buyers:#C62828; --sellers:#E07B00; --shortage:#2E7D32; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --supply:#5B9BE8; --demand:#B57BE0; --shifted:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --buyers:#EF6C6C; --sellers:#FFB74D; --shortage:#66BB6A; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:15px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.5; }
+  .res-box.b { background:color-mix(in srgb,var(--buyers) 13%,transparent); border-left:3px solid var(--buyers); }
+  .res-box.s { background:color-mix(in srgb,var(--sellers) 13%,transparent); border-left:3px solid var(--sellers); }
+  .res-box .lbl { font-size:10.5px; font-weight:bold; margin-bottom:2px; }
+  .res-box.b .lbl { color:var(--buyers); }
+  .res-box.s .lbl { color:var(--sellers); }
+  .res-box .big { font-size:16px; font-weight:bold; font-family:'Courier New',monospace; }
+  .equiv { background:color-mix(in srgb,var(--accent) 10%,transparent); border:1px solid color-mix(in srgb,var(--accent) 35%,transparent); border-radius:5px; padding:11px 13px; font-size:12px; line-height:1.55; font-style:italic; }
+  .legend { font-size:11.5px; line-height:1.9; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--shifted) 0 5px,transparent 5px 9px); height:3px; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Excise Tax on Producers — Adjustment to the New Equilibrium</h1>
+  <div class="relation">Market clears where <b>Q = D(p) = S(p − t)</b> &nbsp;·&nbsp; tax shifts supply up by <b>t</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box b"><div class="lbl">Incidence on buyers</div><div class="big" id="inc-b">+$4.50</div></div>
+      <div class="res-box s"><div class="lbl">Incidence on sellers</div><div class="big" id="inc-s">−$3.00</div></div>
+    </div>
+
+    <div class="equiv" id="equiv" style="display:none">
+      Same outcome as the tax on buyers — Q, prices and the $4.50 / $3.00 split are identical. In partial equilibrium, <b>statutory incidence does not affect economic incidence</b>.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the tax</div>
+      <div class="slider-label"><span>Tax per unit (t)</span><span class="val" id="v-t">$7.50</span></div>
+      <input type="range" id="s-t" min="0" max="15" step="0.5" value="7.5">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--supply)"></span> c′(S) — supply (marginal cost)</div>
+        <div class="item"><span class="sw" style="background:var(--demand)"></span> u′ₓ — demand (marginal utility)</div>
+        <div class="item"><span class="sw dash"></span> c′(S) + t — supply after tax</div>
+        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> equilibrium / key points</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T = {};
+function loadTheme(){
+  T = { plotBg:cssvar('--plot-bg'), grid:cssvar('--grid'), border:cssvar('--border'),
+    text:cssvar('--text'), muted:cssvar('--muted'), supply:cssvar('--supply'), demand:cssvar('--demand'),
+    shifted:cssvar('--shifted'), eq:cssvar('--eq'), eqStroke:cssvar('--eq-stroke'),
+    buyers:cssvar('--buyers'), sellers:cssvar('--sellers'), shortage:cssvar('--shortage') };
+}
+loadTheme();
+if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{ loadTheme(); draw(); });
+
+// ── Logical coordinate system + retina canvas ───────────────────────────────
+const LW=580, LH=470;
+const padL=58, padR=22, padT=20, padB=46;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX=2200, P_MAX=50;
+const DASH_PROJ=[2,3];
+const qx = q => padL + (q/Q_MAX)*plotW;
+const py = p => padT + plotH - (p/P_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const avail = Math.max(300, cv.parentElement.clientWidth - 16);
+  const cssW = Math.min(avail, 760);
+  const cssH = cssW * LH / LW;
+  cv.style.width = cssW+'px';
+  cv.style.height = cssH+'px';
+  cv.width = Math.round(cssW*dpr);
+  cv.height = Math.round(cssH*dpr);
+  const s = (cssW/LW)*dpr;
+  ctx.setTransform(s,0,0,s,0,0);
+}
+let resizeTO;
+window.addEventListener('resize',()=>{ clearTimeout(resizeTO); resizeTO=setTimeout(()=>{ setupCanvas(); draw(); },120); });
+
+// ── Model ────────────────────────────────────────────────────────────────────
+const Q0=1500, P0=22.5;
+const ms=0.012, md=0.018;
+let tax=7.5;
+const supplyP  = q => P0 + ms*(q-Q0);
+const demandP  = q => P0 - md*(q-Q0);
+const shiftedSupplyP = q => P0 + ms*(q-Q0) + tax;
+
+function model(){
+  const Qe = Q0 - tax/(ms+md);
+  const Pb = P0 + md*tax/(ms+md);
+  const Ps = Pb - tax;
+  const Aq = Q0 - tax/ms;
+  return { Qe, Ps, Pb, Aq, incB:Pb-P0, incS:P0-Ps };
+}
+
+// ── Primitives ───────────────────────────────────────────────────────────────
+function line(q1,p1,q2,p2,color,width,dash){
+  ctx.beginPath(); ctx.setLineDash(dash||[]);
+  ctx.strokeStyle=color; ctx.lineWidth=width;
+  ctx.moveTo(qx(q1),py(p1)); ctx.lineTo(qx(q2),py(p2));
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function dot(q,p,r,fill){
+  ctx.beginPath(); ctx.arc(qx(q),py(p),r,0,Math.PI*2);
+  ctx.fillStyle=fill; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke();
+}
+function label(txt,q,p,dx,dy,color,size,weight,align,halo){
+  ctx.save();
+  size=size||12; ctx.font=(weight||'bold')+' '+size+'px Georgia'; ctx.textAlign=align||'left';
+  const x=qx(q)+dx, y=py(p)+dy;
+  if(halo){
+    const w=ctx.measureText(txt).width;
+    let lx=x; if(align==='right') lx=x-w; else if(align==='center') lx=x-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82;
+    ctx.fillRect(lx-3, y-size+2, w+6, size+4); ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=color; ctx.fillText(txt,x,y); ctx.restore();
+}
+// hand-drawn "u′ₓ"
+function labelUx(q,p,dx,dy,color,halo){
+  ctx.save(); ctx.textAlign='left';
+  const x=qx(q)+dx, y=py(p)+dy;
+  ctx.font='bold 13px Georgia'; const w=ctx.measureText('u′').width;
+  if(halo){ ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(x-3,y-13,w+11,18); ctx.globalAlpha=1; }
+  ctx.fillStyle=color; ctx.font='bold 13px Georgia'; ctx.fillText('u′',x,y);
+  ctx.font='bold 9px Georgia'; ctx.fillText('x',x+w+0.5,y+4);
+  ctx.restore();
+}
+// "Qᵈ > Qˢ" centred at quantity cx
+function labelIneq(cx,p,dy,supA,supB,color){
+  ctx.save(); ctx.fillStyle=color; ctx.textAlign='left';
+  const parts=[['Q',11,0],[supA,8,-4],['  >  ',11,0],['Q',11,0],[supB,8,-4]];
+  let total=0; parts.forEach(s=>{ ctx.font='normal '+s[1]+'px Georgia'; total+=ctx.measureText(s[0]).width; });
+  let x=qx(cx)-total/2; const y=py(p)+dy;
+  parts.forEach(s=>{ ctx.font='normal '+s[1]+'px Georgia'; ctx.fillText(s[0],x,y+s[2]); x+=ctx.measureText(s[0]).width; });
+  ctx.restore();
+}
+function priceTick(p,txt,color){
+  ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=color||T.muted; ctx.textAlign='right';
+  ctx.fillText(txt,padL-7,py(p)+4); ctx.restore();
+}
+function qTick(q,txt,color){
+  ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=color||T.muted; ctx.textAlign='center';
+  ctx.fillText(txt,qx(q),padT+plotH+16); ctx.restore();
+}
+function projX(q,pTop,txt,color){ line(q,0,q,pTop,color||T.muted,1,DASH_PROJ); if(txt) qTick(q,txt,color); }
+function projY(p,qRight,txt,color){ line(0,p,qRight,p,color||T.muted,1,DASH_PROJ); if(txt) priceTick(p,txt,color); }
+
+let step=0, adjustProgress=1, animId=null;
+
+// ── Draw ─────────────────────────────────────────────────────────────────────
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let p=10;p<P_MAX;p+=10){ ctx.beginPath(); ctx.moveTo(padL,py(p)); ctx.lineTo(padL+plotW,py(p)); ctx.stroke(); }
+  for(let q=500;q<Q_MAX;q+=500){ ctx.beginPath(); ctx.moveTo(qx(q),padT); ctx.lineTo(qx(q),padT+plotH); ctx.stroke(); }
+
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  label('Price',0,P_MAX,-padL+4,-4,T.text,12,'bold','left');
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right';
+  ctx.fillText('Quantity',padL+plotW,padT+plotH+34); ctx.restore();
+
+  const m=model();
+
+  // Curves
+  line(0,supplyP(0),Q_MAX,supplyP(Q_MAX),T.supply,3);
+  label("c′(S)",Q_MAX,supplyP(Q_MAX),-6,17,T.supply,13,'bold','right',true);
+
+  line(0,demandP(0),Q_MAX*0.985,demandP(Q_MAX*0.985),T.demand,3);
+  labelUx(1960,demandP(1960),4,-5,T.demand,true);
+
+  if(step>=1){
+    const qCap=Q_MAX*0.985;
+    line(0,shiftedSupplyP(0),qCap,shiftedSupplyP(qCap),T.shifted,2.6,[7,5]);
+    label("c′(S) + t",qCap,shiftedSupplyP(qCap),-4,-8,T.shifted,12.5,'bold','right',true);
+  }
+
+  // Original equilibrium A + projections
+  projX(Q0,P0,'1500'); projY(P0,Q0,'$22.5');
+  dot(Q0,P0,6.5,T.eq);
+  label("A",Q0,P0,11,18,T.text,13,'bold','left',true);
+
+  // Step 1: shift arrow + B
+  if(step>=1){
+    const bx=qx(Q0), ayBot=py(P0), byTop=py(P0+tax);
+    ctx.save(); ctx.strokeStyle=T.shifted; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bx-26,ayBot); ctx.lineTo(bx-26,byTop+6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-26,byTop); ctx.lineTo(bx-31,byTop+8); ctx.lineTo(bx-21,byTop+8); ctx.fillStyle=T.shifted; ctx.fill();
+    ctx.restore();
+    label("t",Q0,(P0+P0+tax)/2,-44,4,T.shifted,12.5,'bold','left',true);
+    projY(P0+tax,Q0,'$'+(P0+tax).toFixed(1),T.shifted);
+    dot(Q0,P0+tax,5.5,T.shifted);
+    label("B",Q0,P0+tax,11,-6,T.shifted,12,'bold','left',true);
+  }
+
+  // Step 2: shortage at old price
+  if(step===2){
+    projX(m.Aq,P0,Math.round(m.Aq).toString(),T.shifted);
+    ctx.save(); ctx.fillStyle=T.shortage; ctx.globalAlpha=0.16;
+    ctx.fillRect(qx(m.Aq),py(P0)-9,qx(Q0)-qx(m.Aq),18); ctx.restore();
+    line(m.Aq,P0,Q0,P0,T.shortage,2.5);
+    dot(m.Aq,P0,5.5,T.shifted);
+    label("A′",m.Aq,P0,-11,-9,T.shifted,12,'bold','right',true);
+    label("SHORTAGE",(m.Aq+Q0)/2,P0,0,-13,T.shortage,12,'bold','center',true);
+    labelIneq((m.Aq+Q0)/2,P0,24,'d','s',T.muted);
+  }
+
+  // Step 3: price adjusting upward
+  if(step===3){
+    const pCur=P0+adjustProgress*(m.Pb-P0);
+    const qDem=Q0+(P0-pCur)/md;
+    const qSup=Q0+(pCur-P0-tax)/ms;
+    if(qDem>qSup){
+      ctx.save(); ctx.fillStyle=T.shortage; ctx.globalAlpha=0.16;
+      ctx.fillRect(qx(qSup),py(pCur)-8,qx(qDem)-qx(qSup),16); ctx.restore();
+      line(qSup,pCur,qDem,pCur,T.shortage,2.2);
+    }
+    projX(qDem,pCur,Math.round(qDem).toString());
+    projY(pCur,qDem,'$'+pCur.toFixed(1),T.buyers);
+    dot(qDem,pCur,6,T.eq);
+    ctx.save(); ctx.strokeStyle=T.buyers; ctx.lineWidth=2;
+    const axx=qx(130);
+    ctx.beginPath(); ctx.moveTo(axx,py(P0)+2); ctx.lineTo(axx,py(pCur)-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(axx,py(pCur)-8); ctx.lineTo(axx-5,py(pCur)); ctx.lineTo(axx+5,py(pCur)); ctx.fillStyle=T.buyers; ctx.fill();
+    ctx.restore();
+    label("price ↑",130,(P0+pCur)/2,10,4,T.buyers,11,'bold','left',true);
+  }
+
+  // Step 4 & 5: new equilibrium
+  if(step>=4){
+    projX(m.Qe,m.Pb,Math.round(m.Qe).toString());
+    projY(m.Pb,m.Qe,'$'+m.Pb.toFixed(1),T.buyers);
+    projY(m.Ps,m.Qe,'$'+m.Ps.toFixed(1),T.sellers);
+
+    ctx.save(); ctx.strokeStyle=T.eqStroke; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(qx(m.Qe),py(m.Pb)); ctx.lineTo(qx(m.Qe),py(m.Ps)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(qx(m.Qe)-4,py(m.Pb)); ctx.lineTo(qx(m.Qe)+4,py(m.Pb)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(qx(m.Qe)-4,py(m.Ps)); ctx.lineTo(qx(m.Qe)+4,py(m.Ps)); ctx.stroke();
+    ctx.restore();
+    label("tax = $"+tax.toFixed(2),m.Qe,(m.Pb+m.Ps)/2,11,4,T.eqStroke,11.5,'bold','left',true);
+
+    dot(m.Qe,m.Pb,6.5,T.eq);
+    label("C",m.Qe,m.Pb,-11,-8,T.buyers,13,'bold','right',true);
+    dot(m.Qe,m.Ps,6.5,T.eq);
+    label("D",m.Qe,m.Ps,-11,17,T.sellers,13,'bold','right',true);
+  }
+
+  // Step 5: incidence brackets
+  if(step>=5){
+    const bx=qx(330);
+    drawBracket(bx,py(P0),py(m.Pb),T.buyers,"buyers +$"+m.incB.toFixed(2));
+    drawBracket(bx,py(m.Ps),py(P0),T.sellers,"sellers −$"+m.incS.toFixed(2));
+  }
+}
+
+function drawBracket(x,yA,yB,color,txt){
+  const top=Math.min(yA,yB),bot=Math.max(yA,yB);
+  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x+6,top); ctx.lineTo(x,top); ctx.lineTo(x,bot); ctx.lineTo(x+6,bot); ctx.stroke();
+  ctx.font='bold 10.5px Georgia'; ctx.fillStyle=color; ctx.textAlign='right';
+  ctx.fillText(txt,x-4,(top+bot)/2+3); ctx.restore();
+}
+
+function runAdjust(){
+  if(animId) cancelAnimationFrame(animId);
+  adjustProgress=0; const t0=performance.now(), dur=1400;
+  function frame(now){
+    const e=Math.min(1,(now-t0)/dur);
+    adjustProgress=e<0.5?2*e*e:-1+(4-2*e)*e; draw();
+    if(e<1) animId=requestAnimationFrame(frame); else { adjustProgress=1; draw(); }
+  }
+  animId=requestAnimationFrame(frame);
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Pre-tax equilibrium",
+      b:`The market clears where marginal cost meets marginal utility: <b>c′(S) = u′ₓ = <span class="num">$22.50</span></b>, with <span class="num">1,500</span> units traded at point <b>A</b>. No wedge between price paid and price received.` },
+    { t:"Step 1 · Tax on producers imposed",
+      b:`A <span class="num">$${tax.toFixed(2)}</span> tax is levied on sellers. To cover it they require <b>t more</b> per unit, so the supply curve shifts <b>up by the full tax</b> — from <b>c′(S)</b> to <b>c′(S) + t</b>. Point A rises to <b>B</b>.` },
+    { t:"Step 2 · Disequilibrium → shortage",
+      b:`At the old price <span class="num">$22.50</span> buyers still demand <span class="num">1,500</span> units, but sellers now supply only <span class="num">${Math.round(m.Aq)}</span> (point <b>A′</b>). Quantity demanded exceeds quantity supplied: a <b style="color:var(--shortage)">shortage</b>. Excess demand forces the price <b>up</b>.` },
+    { t:"Step 3 · Price adjusts upward",
+      b:`As the market price rises, quantity demanded contracts while quantity supplied expands, shrinking the shortage until the market clears again. Watch the point slide up <b>u′ₓ</b>.` },
+    { t:"Step 4 · New equilibrium",
+      b:`The market re-clears at <span class="num">${Math.round(m.Qe)}</span> units. Buyers pay <b style="color:var(--buyers)">$${m.Pb.toFixed(2)}</b> (point <b>C</b>, on u′ₓ); sellers keep <b style="color:var(--sellers)">$${m.Ps.toFixed(2)}</b> after remitting the tax (point <b>D</b>, on c′(S)). The gap C–D equals the tax, <span class="num">$${tax.toFixed(2)}</span>.` },
+    { t:"Step 5 · Tax incidence",
+      b:`Buyers' price rises by <b style="color:var(--buyers)">$${m.incB.toFixed(2)}</b>; sellers' net price falls by <b style="color:var(--sellers)">$${m.incS.toFixed(2)}</b>. Although the tax is legally on producers, the burden splits exactly as in the buyer-tax case. Tax revenue = t × Q = <span class="num">$${(tax*m.Qe).toLocaleString(undefined,{maximumFractionDigits:0})}</span>.` }
+  ];
+}
+
+function render(){
+  const c=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c.t;
+  document.getElementById('sbody').innerHTML=c.b;
+  document.getElementById('counter').textContent=`Step ${step} / 5`;
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const d=document.createElement('div');
+    d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=step>=5?'grid':'none';
+  document.getElementById('equiv').style.display=step>=5?'block':'none';
+  document.getElementById('inc-b').textContent='+$'+m.incB.toFixed(2);
+  document.getElementById('inc-s').textContent='−$'+m.incS.toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){ step++; if(step===3) runAdjust(); render(); } });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){ step--; adjustProgress=1; render(); } });
+document.getElementById('s-t').addEventListener('input',e=>{
+  tax=parseFloat(e.target.value);
+  document.getElementById('v-t').textContent='$'+tax.toFixed(2);
+  if(step===3) adjustProgress=1; render();
+});
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
