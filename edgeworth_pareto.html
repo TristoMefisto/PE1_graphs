@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pareto Efficiency & Contract Curve</title>
+<style>
+  :root {
+    --bg:       #F7F6F2;
+    --surface:  #FFFFFF;
+    --border:   #DDD9D0;
+    --text:     #1A1A2E;
+    --muted:    #7A7870;
+    --c1:       #2E4A7A;   /* consumer 1 — deep indigo */
+    --c1-light: #C7D5EC;
+    --c2:       #B85C1A;   /* consumer 2 — amber */
+    --c2-light: #F0D9C8;
+    --cc:       #2A6B42;   /* contract curve — forest green */
+    --cc-light: #B8DDC8;
+    --eq:       #8B1A1A;   /* endowment dot */
+    --alloc:    #5B3080;   /* current allocation dot */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    padding: 24px 16px 32px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1020px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+
+  /* ── Canvas panel ── */
+  .canvas-wrap {
+    flex: 0 0 auto;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+  }
+
+  canvas {
+    display: block;
+    cursor: crosshair;
+  }
+
+  /* ── Right panel ── */
+  .panel {
+    flex: 1 1 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+  }
+
+  .slider-label span:first-child { color: var(--text); }
+  .slider-label .val {
+    font-size: 13px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--c1);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-box {
+    border-radius: 4px;
+    padding: 9px 10px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .stat-box.c1 { background: var(--c1-light); border-left: 3px solid var(--c1); }
+  .stat-box.c2 { background: var(--c2-light); border-left: 3px solid var(--c2); }
+
+  .stat-box .agent { font-weight: bold; font-size: 11px; margin-bottom: 3px; }
+  .stat-box.c1 .agent { color: var(--c1); }
+  .stat-box.c2 .agent { color: var(--c2); }
+  .stat-box .row { display: flex; justify-content: space-between; }
+  .stat-box .num { font-family: 'Courier New', monospace; font-weight: bold; }
+
+  .verdict {
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    text-align: center;
+    font-style: italic;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+    border: 1.5px solid transparent;
+  }
+
+  .verdict.pareto { background: #e6f4ec; color: #1b5e20; border-color: var(--cc); }
+  .verdict.not-pareto { background: #fdecea; color: #8B1A1A; border-color: #e57373; }
+
+  .legend-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .leg-swatch {
+    width: 22px; height: 3px; border-radius: 2px; flex-shrink: 0;
+  }
+  .leg-dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
+    flex: 1;
+    padding: 7px 0;
+    font-family: 'Georgia', serif;
+    font-size: 12.5px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  button:hover { background: var(--bg); }
+  button.primary { background: var(--c1); color: #fff; border-color: var(--c1); }
+  button.primary:hover { background: #1e3560; }
+
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  @media(max-width: 700px) {
+    .layout { flex-direction: column; }
+    canvas { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Edgeworth Box: Pareto Efficiency & the Contract Curve</h1>
+  <p>Pure exchange economy · 2 consumers · 2 goods · Cobb-Douglas preferences</p>
+</header>
+
+<div class="layout">
+
+  <div class="canvas-wrap">
+    <canvas id="cv" width="500" height="500"></canvas>
+    <p class="hint">Click or drag inside the box to move the allocation ●</p>
+  </div>
+
+  <div class="panel">
+
+    <div class="card">
+      <div class="card-title">Endowment &amp; Preferences</div>
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>Total good 1 (ω₁)</span>
+          <span class="val" id="v-w1" style="color:var(--text)">10</span>
+        </div>
+        <input type="range" id="s-w1" min="4" max="20" step="1" value="10">
+
+        <div class="slider-label">
+          <span>Total good 2 (ω₂)</span>
+          <span class="val" id="v-w2" style="color:var(--text)">10</span>
+        </div>
+        <input type="range" id="s-w2" min="4" max="20" step="1" value="10">
+
+        <div class="slider-label">
+          <span style="color:var(--c1)">Consumer 1 preference (α)</span>
+          <span class="val" id="v-a1" style="color:var(--c1)">0.50</span>
+        </div>
+        <input type="range" id="s-a1" min="0.1" max="0.9" step="0.05" value="0.5" style="accent-color:var(--c1)">
+
+        <div class="slider-label">
+          <span style="color:var(--c2)">Consumer 2 preference (β)</span>
+          <span class="val" id="v-a2" style="color:var(--c2)">0.50</span>
+        </div>
+        <input type="range" id="s-a2" min="0.1" max="0.9" step="0.05" value="0.5" style="accent-color:var(--c2)">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Allocation at Current Point</div>
+      <div class="stat-grid">
+        <div class="stat-box c1">
+          <div class="agent">Consumer 1</div>
+          <div class="row"><span>Good 1:</span><span class="num" id="d-x11">—</span></div>
+          <div class="row"><span>Good 2:</span><span class="num" id="d-x21">—</span></div>
+          <div class="row"><span>MRS:</span><span class="num" id="d-mrs1">—</span></div>
+          <div class="row"><span>Utility:</span><span class="num" id="d-u1">—</span></div>
+        </div>
+        <div class="stat-box c2">
+          <div class="agent">Consumer 2</div>
+          <div class="row"><span>Good 1:</span><span class="num" id="d-x12">—</span></div>
+          <div class="row"><span>Good 2:</span><span class="num" id="d-x22">—</span></div>
+          <div class="row"><span>MRS:</span><span class="num" id="d-mrs2">—</span></div>
+          <div class="row"><span>Utility:</span><span class="num" id="d-u2">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="verdict-box" class="verdict not-pareto">—</div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="leg-swatch" style="background:var(--c1)"></div><span>Consumer 1's indifference curves</span></div>
+        <div class="legend-item"><div class="leg-swatch" style="background:var(--c2)"></div><span>Consumer 2's indifference curves</span></div>
+        <div class="legend-item"><div class="leg-swatch" style="background:var(--cc); height:3px"></div><span>Contract curve (Pareto-efficient locus)</span></div>
+        <div class="legend-item"><div class="leg-dot" style="background:var(--eq); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--eq)"></div><span>Initial endowment (ω)</span></div>
+        <div class="legend-item"><div class="leg-dot" style="background:var(--alloc); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--alloc)"></div><span>Current allocation (drag me)</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" id="btn-eq">Jump to Pareto Optimum</button>
+      <button id="btn-reset">Reset Endowment</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Parameters ──────────────────────────────────────────────────────────────
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+const PAD  = 44;   // axis padding
+const SIZE = cv.width - 2 * PAD;
+
+let W1 = 10, W2 = 10;  // total endowments
+let alpha1 = 0.5;       // cons 1 preference for good 1
+let alpha2 = 0.5;       // cons 2 preference for good 1
+
+// Endowment (fixed starting point) — consumer 1 owns (e11, e21)
+let e11 = 5, e21 = 5;
+
+// Current allocation — consumer 1 gets (x11, x21)
+let x11 = 5, x21 = 5;
+
+// CSS colours
+const C1    = '#2E4A7A';
+const C2    = '#B85C1A';
+const CC    = '#2A6B42';
+const EQ_C  = '#8B1A1A';
+const ALLOC = '#5B3080';
+
+// ── Coordinate helpers ───────────────────────────────────────────────────────
+// Map allocation (x11, x21) → canvas pixel (from consumer 1's origin, bottom-left)
+function toCanvas(x1, x2) {
+  return {
+    px: PAD + (x1 / W1) * SIZE,
+    py: PAD + SIZE - (x2 / W2) * SIZE
+  };
+}
+
+function fromCanvas(px, py) {
+  const x1 = Math.max(0.01, Math.min(W1 - 0.01, ((px - PAD) / SIZE) * W1));
+  const x2 = Math.max(0.01, Math.min(W2 - 0.01, ((PAD + SIZE - py) / SIZE) * W2));
+  return { x1, x2 };
+}
+
+// ── Utility & MRS ────────────────────────────────────────────────────────────
+// U_h = x1^alpha * x2^(1-alpha)
+function u1(x1, x2) { return Math.pow(Math.max(x1, 0.001), alpha1) * Math.pow(Math.max(x2, 0.001), 1 - alpha1); }
+function u2(x1, x2) { return Math.pow(Math.max(x1, 0.001), alpha2) * Math.pow(Math.max(x2, 0.001), 1 - alpha2); }
+
+// MRS_12 = (alpha/(1-alpha)) * (x2/x1)  [units of good 2 per good 1]
+function mrs1(x1, x2) { return (alpha1 / (1 - alpha1)) * (x2 / x1); }
+function mrs2(x1, x2) { return (alpha2 / (1 - alpha2)) * (x2 / x1); }
+
+// ── Contract curve ───────────────────────────────────────────────────────────
+// Pareto optimality: MRS1 = MRS2
+// (alpha1/(1-alpha1)) * (x21/x11) = (alpha2/(1-alpha2)) * (x22/x12)
+// With x12 = W1-x11, x22 = W2-x21:
+// alpha1/(1-alpha1) * x21/x11 = alpha2/(1-alpha2) * (W2-x21)/(W1-x11)
+// Solve for x21 given x11:
+// Let A = alpha1/(1-alpha1), B = alpha2/(1-alpha2)
+// A * x21 * (W1-x11) = B * (W2-x21) * x11
+// A*(W1-x11)*x21 + B*x11*x21 = B*x11*W2
+// x21 = B*x11*W2 / (A*(W1-x11) + B*x11)
+function contractCurveX2(x1) {
+  const A = alpha1 / (1 - alpha1);
+  const B = alpha2 / (1 - alpha2);
+  return (B * x1 * W2) / (A * (W1 - x1) + B * x1);
+}
+
+// Pareto optimum from the endowment (competitive equilibrium allocation on contract curve)
+// For Cobb-Douglas, the Walrasian equilibrium gives:
+// x11* = alpha1 * (e11 + (p1/p2)*e21... 
+// For Cobb-Douglas with unit endowment income approach:
+// Income of 1: I1 = p1*e11 + p2*e21.  x11* = alpha1*I1/p1
+// We normalize p2=1, find p1 such that market clears.
+// x11* + x12* = W1  => alpha1*I1/p1 + alpha2*I2/p1 = W1
+// alpha1*(p1*e11+e21)/p1 + alpha2*(p1*(W1-e11)+(W2-e21))/p1 = W1
+// (alpha1*e11*p1+alpha1*e21+alpha2*(W1-e11)*p1+alpha2*(W2-e21)) / p1 = W1
+// alpha1*e11 + alpha1*e21/p1 + alpha2*(W1-e11) + alpha2*(W2-e21)/p1 = W1
+// (alpha1*e11 + alpha2*(W1-e11)) + (alpha1*e21 + alpha2*(W2-e21))/p1 = W1
+// p1 = (alpha1*e21 + alpha2*(W2-e21)) / (W1 - alpha1*e11 - alpha2*(W1-e11))
+function walrasianAllocation() {
+  const e12 = W1 - e11, e22 = W2 - e21;
+  const num = alpha1 * e21 + alpha2 * e22;
+  const den = W1 - alpha1 * e11 - alpha2 * e12;
+  if (Math.abs(den) < 1e-9) return { cx: x11, cy: x21 };
+  const p1 = num / den;
+  const I1 = p1 * e11 + e21;
+  const cx = alpha1 * I1 / p1;
+  const cy = contractCurveX2(cx);
+  return { cx: Math.max(0.01, Math.min(W1 - 0.01, cx)), cy: Math.max(0.01, Math.min(W2 - 0.01, cy)) };
+}
+
+// ── Indifference curve tracing ────────────────────────────────────────────────
+// For consumer 1 at utility level U: x2 = (U / x1^alpha1)^(1/(1-alpha1))
+function ic1_x2(x1, U) {
+  return Math.pow(U / Math.pow(Math.max(x1, 0.001), alpha1), 1 / (1 - alpha1));
+}
+// For consumer 2: expressed in consumer 1 coords
+// Consumer 2 has x12 = W1-x11, x22 = W2-x21
+// U2 = x12^alpha2 * x22^(1-alpha2)
+// At a point (X1, X2) in cons-1 space: x12=W1-X1, x22=W2-X2
+// x22 = (U2 / (W1-X1)^alpha2)^(1/(1-alpha2))
+// So X2 in cons-1 space: W2 - x22
+function ic2_x2_in1coords(X1, U2) {
+  const x12 = W1 - X1;
+  if (x12 < 0.001) return null;
+  const x22 = Math.pow(U2 / Math.pow(x12, alpha2), 1 / (1 - alpha2));
+  return W2 - x22;
+}
+
+function drawIC(consumer, U, color, alpha, lineWidth) {
+  const N = 300;
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = lineWidth;
+  let first = true;
+
+  for (let i = 0; i <= N; i++) {
+    const x1 = 0.02 * W1 + (i / N) * 0.96 * W1;
+    let x2;
+    if (consumer === 1) {
+      x2 = ic1_x2(x1, U);
+    } else {
+      x2 = ic2_x2_in1coords(x1, U);
+    }
+    if (x2 === null || x2 < 0 || x2 > W2 || !isFinite(x2)) { first = true; continue; }
+    const { px, py } = toCanvas(x1, x2);
+    if (first) { ctx.moveTo(px, py); first = false; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// ── Draw ─────────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  // Background
+  ctx.fillStyle = '#FAFAF8';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  // Box border
+  ctx.strokeStyle = '#BBBBBB';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(PAD, PAD, SIZE, SIZE);
+
+  // Axes labels
+  ctx.save();
+  ctx.font = '12px Georgia';
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'center';
+  // Consumer 1 axes (bottom-left origin)
+  ctx.fillText('Good 1 →', PAD + SIZE / 2, cv.height - 8);
+  ctx.save(); ctx.translate(12, PAD + SIZE / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Good 2 →', 0, 0); ctx.restore();
+
+  // Consumer 1 label
+  ctx.fillStyle = C1;
+  ctx.font = 'bold 11px Georgia';
+  ctx.textAlign = 'left';
+  ctx.fillText('O₁', PAD - 18, PAD + SIZE + 16);
+
+  // Consumer 2 label (inverted corner)
+  ctx.fillStyle = C2;
+  ctx.textAlign = 'right';
+  ctx.fillText('O₂', PAD + SIZE + 18, PAD - 4);
+  ctx.restore();
+
+  // Axis tick marks (good 1)
+  ctx.strokeStyle = '#CCC';
+  ctx.lineWidth = 0.8;
+  for (let v = 0; v <= W1; v += Math.max(1, Math.floor(W1 / 10))) {
+    const px = PAD + (v / W1) * SIZE;
+    ctx.beginPath(); ctx.moveTo(px, PAD + SIZE); ctx.lineTo(px, PAD + SIZE + 4); ctx.stroke();
+    if (v > 0 && v < W1) {
+      ctx.save(); ctx.font = '9px Georgia'; ctx.fillStyle = '#AAA'; ctx.textAlign = 'center';
+      ctx.fillText(v, px, PAD + SIZE + 13); ctx.restore();
+    }
+  }
+  for (let v = 0; v <= W2; v += Math.max(1, Math.floor(W2 / 10))) {
+    const py = PAD + SIZE - (v / W2) * SIZE;
+    ctx.beginPath(); ctx.moveTo(PAD, py); ctx.lineTo(PAD - 4, py); ctx.stroke();
+    if (v > 0 && v < W2) {
+      ctx.save(); ctx.font = '9px Georgia'; ctx.fillStyle = '#AAA'; ctx.textAlign = 'right';
+      ctx.fillText(v, PAD - 6, py + 3); ctx.restore();
+    }
+  }
+
+  // ── Contract curve ────────────────────────────────────────────────────────
+  ctx.beginPath();
+  ctx.strokeStyle = CC;
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([]);
+  const N = 400;
+  for (let i = 0; i <= N; i++) {
+    const x1 = 0.005 * W1 + (i / N) * 0.99 * W1;
+    const x2 = contractCurveX2(x1);
+    if (x2 < 0 || x2 > W2) continue;
+    const { px, py } = toCanvas(x1, x2);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Contract curve label
+  ctx.save();
+  ctx.font = 'bold 11px Georgia';
+  ctx.fillStyle = CC;
+  const ccMidX2 = contractCurveX2(W1 * 0.7);
+  const { px: ccLx, py: ccLy } = toCanvas(W1 * 0.7, ccMidX2);
+  ctx.fillText('Contract curve', ccLx + 6, ccLy - 5);
+  ctx.restore();
+
+  // ── Indifference curves ───────────────────────────────────────────────────
+  const U1c = u1(x11, x21);
+  const U2c = u2(W1 - x11, W2 - x21);
+
+  // Draw a family of curves around current level
+  const levels1 = [0.4, 0.6, 0.8, 1.0, 1.25, 1.6].map(f => U1c * f);
+  const levels2 = [0.4, 0.6, 0.8, 1.0, 1.25, 1.6].map(f => U2c * f);
+
+  levels1.forEach((U, i) => {
+    const isActive = i === 3;
+    drawIC(1, U, C1, isActive ? 0.9 : 0.18, isActive ? 2.2 : 1.2);
+  });
+  levels2.forEach((U, i) => {
+    const isActive = i === 3;
+    drawIC(2, U, C2, isActive ? 0.9 : 0.18, isActive ? 2.2 : 1.2);
+  });
+
+  // ── Endowment point ───────────────────────────────────────────────────────
+  const ep = toCanvas(e11, e21);
+  ctx.beginPath();
+  ctx.arc(ep.px, ep.py, 7, 0, Math.PI * 2);
+  ctx.fillStyle = EQ_C;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.save();
+  ctx.font = 'bold 12px Georgia';
+  ctx.fillStyle = EQ_C;
+  ctx.fillText('ω', ep.px + 9, ep.py - 6);
+  ctx.restore();
+
+  // ── Current allocation point ──────────────────────────────────────────────
+  const ap = toCanvas(x11, x21);
+
+  // Dashed lines from axes to allocation
+  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = '#9999BB';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ap.px, PAD + SIZE); ctx.lineTo(ap.px, ap.py); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD, ap.py); ctx.lineTo(ap.px, ap.py); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.arc(ap.px, ap.py, 7, 0, Math.PI * 2);
+  ctx.fillStyle = ALLOC;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.save();
+  ctx.font = 'bold 12px Georgia';
+  ctx.fillStyle = ALLOC;
+  ctx.fillText('A', ap.px + 9, ap.py - 6);
+  ctx.restore();
+
+  // ── Pareto improvement region (lens) ─────────────────────────────────────
+  // (optional subtle highlight — fill region where both ICs together form a lens)
+  // We clip and shade the intersection of {U1 >= U1c} ∩ {U2 >= U2c}
+  // Computed by: for each x1, find x2 where IC1 >= current AND IC2 >= current
+  // Fill in light purple to indicate Pareto improvement zone
+  // Only draw if not on contract curve
+  const mrs1c = mrs1(x11, x21);
+  const mrs2c = mrs2(W1 - x11, W2 - x21);
+  const onCC = Math.abs(mrs1c - mrs2c) < 0.05;
+
+  if (!onCC) {
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = '#7B4FD4';
+    ctx.beginPath();
+    let started = false;
+    const step = W1 / 300;
+    // Trace upper bound of lens: min of IC1 (from above) and IC2 from below
+    // IC1: x2 = ic1_x2(x1, U1c) — points above this have U1 >= U1c
+    // IC2 in cons1 coords: ic2_x2_in1coords(x1, U2c) — points below this have U2 >= U2c
+    // Lens: ic1_x2 <= x2 <= ic2_x2 (or vice versa, depending on geometry)
+    const pts = [];
+    for (let x1 = 0.02 * W1; x1 <= 0.98 * W1; x1 += step) {
+      const lo = ic1_x2(x1, U1c);
+      const hi = ic2_x2_in1coords(x1, U2c);
+      if (hi === null || !isFinite(lo) || !isFinite(hi)) continue;
+      const lensLo = Math.min(lo, hi);
+      const lensHi = Math.max(lo, hi);
+      if (lensLo >= 0 && lensHi <= W2 && lensLo <= lensHi) {
+        pts.push({ x1, lensLo, lensHi });
+      }
+    }
+    // Trace forward along top edge, backward along bottom
+    if (pts.length > 2) {
+      const { px: px0, py: py0 } = toCanvas(pts[0].x1, pts[0].lensLo);
+      ctx.moveTo(px0, py0);
+      pts.forEach(p => { const {px, py} = toCanvas(p.x1, p.lensLo); ctx.lineTo(px, py); });
+      for (let i = pts.length - 1; i >= 0; i--) {
+        const p = pts[i];
+        const {px, py} = toCanvas(p.x1, p.lensHi);
+        ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // "Pareto improvement zone" label inside lens
+    if (pts.length > 10) {
+      const mid = pts[Math.floor(pts.length / 2)];
+      const midX2 = (mid.lensLo + mid.lensHi) / 2;
+      const { px: lx, py: ly } = toCanvas(mid.x1, midX2);
+      ctx.save();
+      ctx.font = 'italic 10.5px Georgia';
+      ctx.fillStyle = '#5B3080';
+      ctx.globalAlpha = 0.85;
+      ctx.textAlign = 'center';
+      ctx.fillText('Pareto', lx, ly - 5);
+      ctx.fillText('improvements', lx, ly + 7);
+      ctx.restore();
+    }
+  }
+
+  updateStats();
+}
+
+// ── Stats panel ──────────────────────────────────────────────────────────────
+function updateStats() {
+  const x12 = W1 - x11, x22 = W2 - x21;
+  const m1 = mrs1(x11, x21);
+  const m2 = mrs2(x12, x22);
+  const U1 = u1(x11, x21);
+  const U2 = u2(x12, x22);
+
+  document.getElementById('d-x11').textContent = x11.toFixed(2);
+  document.getElementById('d-x21').textContent = x21.toFixed(2);
+  document.getElementById('d-mrs1').textContent = m1.toFixed(3);
+  document.getElementById('d-u1').textContent = U1.toFixed(3);
+
+  document.getElementById('d-x12').textContent = x12.toFixed(2);
+  document.getElementById('d-x22').textContent = x22.toFixed(2);
+  document.getElementById('d-mrs2').textContent = m2.toFixed(3);
+  document.getElementById('d-u2').textContent = U2.toFixed(3);
+
+  const diff = Math.abs(m1 - m2);
+  const vbox = document.getElementById('verdict-box');
+  if (diff < 0.05) {
+    vbox.className = 'verdict pareto';
+    vbox.textContent = `✓ Pareto efficient — MRS₁ ≈ MRS₂ ≈ ${((m1 + m2) / 2).toFixed(3)}`;
+  } else if (m1 > m2) {
+    vbox.className = 'verdict not-pareto';
+    vbox.textContent = `✗ Not Pareto efficient — MRS₁ (${m1.toFixed(3)}) > MRS₂ (${m2.toFixed(3)}): Consumer 1 values good 1 more. Gains from trade exist.`;
+  } else {
+    vbox.className = 'verdict not-pareto';
+    vbox.textContent = `✗ Not Pareto efficient — MRS₂ (${m2.toFixed(3)}) > MRS₁ (${m1.toFixed(3)}): Consumer 2 values good 1 more. Gains from trade exist.`;
+  }
+}
+
+// ── Interaction ───────────────────────────────────────────────────────────────
+let dragging = false;
+
+function handlePointer(e) {
+  const rect = cv.getBoundingClientRect();
+  const scaleX = cv.width / rect.width;
+  const scaleY = cv.height / rect.height;
+  const px = (e.clientX - rect.left) * scaleX;
+  const py = (e.clientY - rect.top) * scaleY;
+  if (px < PAD || px > PAD + SIZE || py < PAD || py > PAD + SIZE) return;
+  const { x1, x2 } = fromCanvas(px, py);
+  x11 = x1; x21 = x2;
+  draw();
+}
+
+cv.addEventListener('mousedown', e => { dragging = true; handlePointer(e); });
+cv.addEventListener('mousemove', e => { if (dragging) handlePointer(e); });
+document.addEventListener('mouseup', () => { dragging = false; });
+cv.addEventListener('touchstart', e => { dragging = true; handlePointer(e.touches[0]); e.preventDefault(); }, { passive: false });
+cv.addEventListener('touchmove', e => { if (dragging) handlePointer(e.touches[0]); e.preventDefault(); }, { passive: false });
+document.addEventListener('touchend', () => { dragging = false; });
+
+// ── Sliders ───────────────────────────────────────────────────────────────────
+function bindSlider(id, valId, decimals, callback) {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  sl.addEventListener('input', () => {
+    const v = parseFloat(sl.value);
+    vl.textContent = v.toFixed(decimals);
+    callback(v);
+    // Keep allocation inside box
+    x11 = Math.min(x11, W1 - 0.01);
+    x21 = Math.min(x21, W2 - 0.01);
+    e11 = Math.min(e11, W1 - 0.01);
+    e21 = Math.min(e21, W2 - 0.01);
+    draw();
+  });
+}
+
+bindSlider('s-w1', 'v-w1', 0, v => { W1 = v; e11 = W1 / 2; x11 = W1 / 2; });
+bindSlider('s-w2', 'v-w2', 0, v => { W2 = v; e21 = W2 / 2; x21 = W2 / 2; });
+bindSlider('s-a1', 'v-a1', 2, v => { alpha1 = v; });
+bindSlider('s-a2', 'v-a2', 2, v => { alpha2 = v; });
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-eq').addEventListener('click', () => {
+  const { cx, cy } = walrasianAllocation();
+  // Animate
+  const startX = x11, startY = x21;
+  const steps = 40;
+  let t = 0;
+  const interval = setInterval(() => {
+    t++;
+    const f = t / steps;
+    const ease = f < 0.5 ? 2 * f * f : -1 + (4 - 2 * f) * f;
+    x11 = startX + (cx - startX) * ease;
+    x21 = startY + (cy - startY) * ease;
+    draw();
+    if (t >= steps) { x11 = cx; x21 = cy; draw(); clearInterval(interval); }
+  }, 16);
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  e11 = W1 / 2; e21 = W2 / 2;
+  x11 = e11; x21 = e21;
+  draw();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+draw();
+</script>
+</body>
+</html>
