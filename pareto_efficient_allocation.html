@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tâtonnement simulator — Edgeworth box</title>
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f4f3ee; --text:#2b2b29; --muted:#6b6a64; --border:#e2e0d8;
+    --coral:#C0392B; --blue:#185FA5; --gray:#888780; --purp:#7F77DD;
+    --red:#A32D2D; --green:#3B6D11; --line:#777777; --tertiary:#b4b2a9;
+    --okbg:#e1f5ee; --okfg:#0F6E56;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#1e1e1c; --surface:#2a2a27; --text:#e8e6dd; --muted:#a4a39b; --border:#3a3a36;
+           --tertiary:#5f5e5a; --line:#9c9a92; --okbg:#0F6E56; --okfg:#9FE1CB; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; padding:18px; background:var(--bg); color:var(--text);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .wrap{ max-width:700px; margin:0 auto; }
+  svg{ width:100%; height:auto; display:block; }
+  .t{ font-size:14px; fill:var(--text); }
+  .ts{ font-size:12px; fill:var(--muted); }
+  .th{ font-size:14px; font-weight:500; fill:var(--text); }
+  h1{ font-size:17px; font-weight:600; margin:0 0 4px; }
+  p.sub{ font-size:13px; color:var(--muted); margin:0 0 14px; }
+  .ctrlbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0 4px; }
+  button{ padding:6px 14px; font-size:13px; border:1px solid var(--border); background:var(--bg);
+          color:var(--text); border-radius:8px; cursor:pointer; }
+  button:hover{ background:var(--surface); }
+  button:active{ transform:scale(0.98); }
+  .sl{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); flex:1; min-width:200px; }
+  input[type=range]{ flex:1; accent-color:var(--purp); }
+  .readout{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin:10px 0 0; }
+  .stat{ background:var(--surface); border-radius:8px; padding:8px 12px; }
+  .stat .k{ font-size:11px; color:var(--muted); }
+  .stat .v{ font-size:17px; font-weight:500; margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tâtonnement in the Edgeworth box</h1>
+  <p class="sub">Step the price adjustment: the auctioneer raises p&#8321; when good 1 is in shortage, the budget line rotates around &#969;, and the two agents' chosen points converge onto the contract curve.</p>
+
+  <div id="stage"></div>
+
+  <div class="ctrlbar">
+    <button onclick="doStep()">Step &#8599;</button>
+    <button onclick="runAuto()">Run to equilibrium</button>
+    <button onclick="reset()">Reset</button>
+    <div class="sl">
+      <span>p&#8321;/p&#8322;</span>
+      <input type="range" id="psl" min="0.35" max="2.2" step="0.01" value="0.7" oninput="manual(this.value)">
+      <span id="pval" style="min-width:34px;font-weight:500;color:var(--text)">0.70</span>
+    </div>
+  </div>
+
+  <div class="readout">
+    <div class="stat"><div class="k">price ratio p&#8321;/p&#8322;</div><div class="v" id="r-p">0.70</div></div>
+    <div class="stat"><div class="k">excess demand good 1</div><div class="v" id="r-z1">&mdash;</div></div>
+    <div class="stat"><div class="k">excess demand good 2</div><div class="v" id="r-z2">&mdash;</div></div>
+    <div class="stat"><div class="k">status</div><div class="v" id="r-s" style="font-size:14px">&mdash;</div></div>
+  </div>
+</div>
+
+<script>
+const W1=10,W2=10,a1=0.4,a2=0.6;
+const w1=[8,2],w2=[2,8],p2=1;
+let p1=0.7,autoTimer=null,animRAF=null;
+const L=70,R=430,T=40,B=400,U=36;
+const PX=u=>L+U*u,PY=u=>B-U*u;
+const A=a1/(1-a1),Bc=a2/(1-a2);
+const cs=getComputedStyle(document.documentElement);
+const CORAL=cs.getPropertyValue('--coral').trim();
+const BLUE=cs.getPropertyValue('--blue').trim();
+const GRAY=cs.getPropertyValue('--gray').trim();
+const PURP=cs.getPropertyValue('--purp').trim();
+const RED=cs.getPropertyValue('--red').trim();
+const GREEN=cs.getPropertyValue('--green').trim();
+const LINE=cs.getPropertyValue('--line').trim();
+const TERT=cs.getPropertyValue('--tertiary').trim();
+const SURF=cs.getPropertyValue('--surface').trim();
+const OKFG=cs.getPropertyValue('--okfg').trim();
+
+function demands(p){
+  const I1=p*w1[0]+p2*w1[1],I2=p*w2[0]+p2*w2[1];
+  return {x11:a1*I1/p,x21:(1-a1)*I1/p2,x12:a2*I2/p,x22:(1-a2)*I2/p2,I1};
+}
+function poly(pts,stroke,wd,op,dash){
+  return '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+stroke+'" stroke-width="'+wd+'" opacity="'+op+'" '+(dash?'stroke-dasharray="'+dash+'"':'')+' clip-path="url(#cb)"/>';
+}
+function icA1(d){
+  const Uv=Math.pow(d.x11,a1)*Math.pow(d.x21,1-a1),pts=[];
+  for(let x=0.25;x<=15;x+=0.1){ const y=Math.pow(Uv/Math.pow(x,a1),1/(1-a1)); if(y>45)continue; pts.push(PX(x).toFixed(1)+','+PY(y).toFixed(1)); }
+  return pts;
+}
+function icA2(d){
+  const Uv=Math.pow(d.x12,a2)*Math.pow(d.x22,1-a2),pts=[];
+  for(let x=0.25;x<=15;x+=0.1){ const y=Math.pow(Uv/Math.pow(x,a2),1/(1-a2)); if(y>45)continue; pts.push(PX(W1-x).toFixed(1)+','+PY(W2-y).toFixed(1)); }
+  return pts;
+}
+function draw(p){
+  const d=demands(p);
+  const Z1=d.x11+d.x12-W1,Z2=d.x21+d.x22-W2;
+  const a1px=[PX(d.x11),PY(d.x21)],a2px=[PX(W1-d.x12),PY(W2-d.x22)],wpx=[PX(w1[0]),PY(w1[1])];
+  let bpts=[]; for(let x=0;x<=W1;x+=0.2){ bpts.push(PX(x).toFixed(1)+','+PY((d.I1-p*x)/p2).toFixed(1)); }
+  let cpts=[]; for(let x=0.1;x<=9.9;x+=0.1){ const y=Bc*W2*x/(A*W1+(Bc-A)*x); cpts.push(PX(x).toFixed(1)+','+PY(y).toFixed(1)); }
+  const sc=Z1>0?RED:GREEN, sc2=Z2>0?RED:GREEN;
+
+  const svg='<svg viewBox="0 0 680 432" role="img" xmlns="http://www.w3.org/2000/svg">'
+  +'<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>'
+  +'<clipPath id="cb"><rect x="'+L+'" y="'+T+'" width="'+(R-L)+'" height="'+(B-T)+'"/></clipPath></defs>'
+  +'<rect x="'+L+'" y="'+T+'" width="'+(R-L)+'" height="'+(B-T)+'" fill="none" stroke="'+GRAY+'" stroke-opacity="0.4" stroke-width="1"/>'
+  +'<text class="th" x="'+(L-6)+'" y="'+(B+4)+'" text-anchor="end" opacity="0.7">O&#185;</text>'
+  +'<text class="th" x="'+(R+6)+'" y="'+(T-2)+'" text-anchor="start" opacity="0.7">O&#178;</text>'
+  +'<text class="ts" x="'+((L+R)/2)+'" y="'+(B+22)+'" text-anchor="middle">good 1 &#8594;</text>'
+  +'<text class="ts" x="'+(L-40)+'" y="'+((T+B)/2)+'" text-anchor="middle" transform="rotate(-90 '+(L-40)+' '+((T+B)/2)+')">good 2 &#8593;</text>'
+  +poly(cpts,PURP,1,0.5,'5 4')
+  +poly(icA1(d),CORAL,1.8,1,null)
+  +poly(icA2(d),BLUE,1.8,1,null)
+  +poly(bpts,LINE,1.2,0.85,'6 4')
+  +'<line x1="'+a1px[0]+'" y1="'+T+'" x2="'+a1px[0]+'" y2="'+a1px[1]+'" stroke="'+CORAL+'" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
+  +'<line x1="'+a2px[0]+'" y1="'+T+'" x2="'+a2px[0]+'" y2="'+a2px[1]+'" stroke="'+BLUE+'" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
+  +'<line x1="'+L+'" y1="'+a1px[1]+'" x2="'+a1px[0]+'" y2="'+a1px[1]+'" stroke="'+CORAL+'" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
+  +'<line x1="'+L+'" y1="'+a2px[1]+'" x2="'+a2px[0]+'" y2="'+a2px[1]+'" stroke="'+BLUE+'" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
+  +'<line x1="'+a1px[0]+'" y1="'+(T-12)+'" x2="'+a2px[0]+'" y2="'+(T-12)+'" stroke="'+sc+'" stroke-width="2.5" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+  +(Math.abs(Z1)>0.05?'<text class="ts" x="'+((a1px[0]+a2px[0])/2)+'" y="'+(T-18)+'" text-anchor="middle" fill="'+sc+'">'+(Z1>0?'shortage':'surplus')+' good 1</text>':'')
+  +'<line x1="'+(L-14)+'" y1="'+a1px[1]+'" x2="'+(L-14)+'" y2="'+a2px[1]+'" stroke="'+sc2+'" stroke-width="2.5" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+  +'<circle cx="'+wpx[0]+'" cy="'+wpx[1]+'" r="5" fill="'+GRAY+'"/>'
+  +'<text class="th" x="'+(wpx[0]+9)+'" y="'+(wpx[1]+15)+'" text-anchor="start">&#969;</text>'
+  +'<circle cx="'+a1px[0]+'" cy="'+a1px[1]+'" r="6" fill="'+CORAL+'"/>'
+  +'<text class="th" x="'+(a1px[0]+9)+'" y="'+(a1px[1]-7)+'" text-anchor="start" fill="'+CORAL+'">x&#185;</text>'
+  +'<circle cx="'+a2px[0]+'" cy="'+a2px[1]+'" r="6" fill="'+BLUE+'"/>'
+  +'<text class="th" x="'+(a2px[0]-9)+'" y="'+(a2px[1]+16)+'" text-anchor="end" fill="'+BLUE+'">x&#178;</text>'
+  +'<rect x="455" y="'+T+'" width="210" height="148" rx="8" fill="'+SURF+'" stroke="'+GRAY+'" stroke-opacity="0.3" stroke-width="0.5"/>'
+  +'<text class="th" x="560" y="'+(T+22)+'" text-anchor="middle">legend</text>'
+  +'<circle cx="473" cy="'+(T+44)+'" r="5" fill="'+CORAL+'"/><text class="ts" x="485" y="'+(T+48)+'" text-anchor="start">agent 1 chooses x&#185;</text>'
+  +'<circle cx="473" cy="'+(T+70)+'" r="5" fill="'+BLUE+'"/><text class="ts" x="485" y="'+(T+74)+'" text-anchor="start">agent 2 chooses x&#178;</text>'
+  +'<circle cx="473" cy="'+(T+96)+'" r="5" fill="'+GRAY+'"/><text class="ts" x="485" y="'+(T+100)+'" text-anchor="start">endowment &#969; (fixed)</text>'
+  +'<line x1="466" y1="'+(T+122)+'" x2="482" y2="'+(T+122)+'" stroke="'+PURP+'" stroke-width="1.5" stroke-dasharray="5 4"/><text class="ts" x="488" y="'+(T+126)+'" text-anchor="start">contract curve</text>'
+  +'</svg>';
+
+  document.getElementById('stage').innerHTML=svg;
+  document.getElementById('r-p').textContent=p.toFixed(2);
+  document.getElementById('pval').textContent=p.toFixed(2);
+  document.getElementById('r-z1').textContent=(Z1>=0?'+':'')+Z1.toFixed(2);
+  document.getElementById('r-z1').style.color=Math.abs(Z1)<0.05?OKFG:(Z1>0?RED:GREEN);
+  document.getElementById('r-z2').textContent=(Z2>=0?'+':'')+Z2.toFixed(2);
+  document.getElementById('r-z2').style.color=Math.abs(Z2)<0.05?OKFG:(Z2>0?RED:GREEN);
+  const sEl=document.getElementById('r-s');
+  if(Math.abs(Z1)<0.05){ sEl.textContent='equilibrium \u2713'; sEl.style.color=OKFG; }
+  else if(Z1>0){ sEl.textContent='good 1 shortage \u2192 raise p\u2081'; sEl.style.color=RED; }
+  else { sEl.textContent='good 1 surplus \u2192 lower p\u2081'; sEl.style.color=GREEN; }
+}
+function animateTo(target){
+  if(animRAF)cancelAnimationFrame(animRAF);
+  const start=p1,dur=500,t0=performance.now();
+  function frame(now){
+    const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3);
+    p1=start+(target-start)*e; draw(p1); document.getElementById('psl').value=p1;
+    if(k<1)animRAF=requestAnimationFrame(frame); else { p1=target; draw(p1); document.getElementById('psl').value=p1; }
+  }
+  animRAF=requestAnimationFrame(frame);
+}
+function doStep(){
+  const d=demands(p1),Z1=d.x11+d.x12-W1;
+  let target=Math.max(0.35,Math.min(2.2,p1+0.08*Z1));
+  animateTo(target);
+}
+function runAuto(){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; return; }
+  autoTimer=setInterval(()=>{
+    const d=demands(p1),Z1=d.x11+d.x12-W1;
+    if(Math.abs(Z1)<0.04){ clearInterval(autoTimer); autoTimer=null; return; }
+    doStep();
+  },650);
+}
+function manual(v){ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(animRAF)cancelAnimationFrame(animRAF); p1=parseFloat(v); draw(p1); }
+function reset(){ if(autoTimer){clearInterval(autoTimer);autoTimer=null;} if(animRAF)cancelAnimationFrame(animRAF); p1=0.7; draw(p1); document.getElementById('psl').value=0.7; }
+draw(p1);
+</script>
+</body>
+</html>
