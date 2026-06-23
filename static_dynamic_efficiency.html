@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxes vs Standards — Static & Dynamic Efficiency</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --dirty:#C62828; --clean:#2E7D32; --eq:#F9A825; --eq-stroke:#4A3000;
+    --savings:#F4C20D; --taxbill:#D98C5F;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --dirty:#EF6C6C; --clean:#66BB6A; --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --savings:#FFD54F; --taxbill:#E0A77F;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:14px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  .tabs { display:flex; gap:8px; justify-content:center; margin-top:12px; }
+  .tab { font-family:'Georgia',serif; font-size:13.5px; padding:8px 18px; border-radius:6px; cursor:pointer;
+         border:1.5px solid var(--border); background:var(--surface); color:var(--muted); transition:all .15s; }
+  .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:0 auto; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .toggle-row { display:flex; gap:8px; margin-bottom:4px; }
+  .toggle-row button { flex:1; font-family:'Georgia',serif; font-size:12.5px; padding:7px 0; border-radius:5px; cursor:pointer;
+                       border:1.5px solid var(--border); background:var(--surface); color:var(--muted); transition:all .15s; }
+  .toggle-row button.on { font-weight:bold; }
+  .toggle-row button.on.dirty { background:color-mix(in srgb,var(--dirty) 16%,var(--surface)); border-color:var(--dirty); color:var(--dirty); }
+  .toggle-row button.on.clean { background:color-mix(in srgb,var(--clean) 16%,var(--surface)); border-color:var(--clean); color:var(--clean); }
+  .toggle-row button.on.neutral { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.6; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  .nav-row button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  .nav-row button:hover:not(:disabled) { background:var(--bg); }
+  .nav-row button:disabled { opacity:.4; cursor:not-allowed; }
+  .nav-row button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .box { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taxes vs Standards — Efficiency Comparisons</h1>
+  <div class="tabs">
+    <button class="tab active" id="tab-static" onclick="switchTab('static')">2 · Static efficiency</button>
+    <button class="tab" id="tab-dynamic" onclick="switchTab('dynamic')">3 · Dynamic efficiency</button>
+  </div>
+</header>
+
+<!-- ===================== STATIC SECTION ===================== -->
+<div class="layout section" id="sec-static">
+  <div class="canvas-wrap"><canvas id="cvS"></canvas></div>
+  <div class="panel">
+    <div class="card">
+      <div class="card-title">Which firm</div>
+      <div class="toggle-row">
+        <button id="f-dirty" class="on dirty" onclick="setFirm('dirty')">DIRTY (high cost)</button>
+        <button id="f-clean" class="neutral" onclick="setFirm('clean')">CLEAN (low cost)</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dotsS"></div>
+        <div class="step-counter" id="counterS">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitleS">—</div>
+      <div class="step-body" id="sbodyS">—</div>
+      <div class="nav-row">
+        <button id="backS" disabled>◀ Back</button>
+        <button id="nextS" class="primary">Next ▶</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--dirty)"></span> C′<sub>DIRTY</sub> — high marginal abatement cost</div>
+        <div class="item"><span class="sw" style="background:var(--clean)"></span> C′<sub>CLEAN</sub> — low marginal abatement cost</div>
+        <div class="item"><span class="sw" style="background:var(--eq);height:0;border-top:2px dashed var(--eq)"></span> tax p* (equal marginal cost)</div>
+        <div class="item"><span class="box" style="background:var(--dirty);opacity:.3"></span> abatement cost under the policy</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DYNAMIC SECTION ===================== -->
+<div class="layout section hidden" id="sec-dynamic">
+  <div class="canvas-wrap"><canvas id="cvD"></canvas></div>
+  <div class="panel">
+    <div class="card">
+      <div class="card-title">Policy regime</div>
+      <div class="toggle-row">
+        <button id="r-standard" class="on neutral" onclick="setRegime('standard')">STANDARD (q̄ fixed)</button>
+        <button id="r-tax" class="neutral" onclick="setRegime('tax')">TAX (p* fixed)</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dotsD"></div>
+        <div class="step-counter" id="counterD">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitleD">—</div>
+      <div class="step-body" id="sbodyD">—</div>
+      <div class="nav-row">
+        <button id="backD" disabled>◀ Back</button>
+        <button id="nextD" class="primary">Next ▶</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--dirty)"></span> C′<sub>OLD</sub> — old technology</div>
+        <div class="item"><span class="sw" style="background:var(--clean)"></span> C′<sub>NEW</sub> — new (cheaper) technology</div>
+        <div class="item"><span class="box" style="background:var(--savings);opacity:.55"></span> savings from adopting new tech</div>
+        <div class="item"><span class="box" style="background:var(--taxbill);opacity:.45"></span> residual tax bill</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
+  dirty:cssvar('--dirty'),clean:cssvar('--clean'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),
+  savings:cssvar('--savings'),taxbill:cssvar('--taxbill') }; }
+loadTheme();
+
+// ---- shared plot geometry ----
+const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+let curQMAX=14, curPMAX=14, ctx=null;
+const qx=x=>padL+(x/curQMAX)*plotW, py=p=>padT+plotH-(p/curPMAX)*plotH;
+
+function setupCanvas(cv){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const c=cv.getContext('2d');
+  c.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+  return c;
+}
+
+// ---- draw helpers (operate on global ctx) ----
+function line(x1,p1,x2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(p1)); ctx.lineTo(qx(x2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,p,r,f){ ctx.beginPath(); ctx.arc(qx(x),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(x)+dx,py_=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+function fillPoly(pts,col,alpha){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(qx(pts[0][0]),py(pts[0][1])); for(let i=1;i<pts.length;i++) ctx.lineTo(qx(pts[i][0]),py(pts[i][1]));
+  ctx.closePath(); ctx.fill(); ctx.restore(); }
+const DASH_PROJ=[2,3];
+function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+function axes(xlab){
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('$',padL-30,padT+8); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText(xlab,padL+plotW,padT+plotH+34); ctx.restore();
+}
+
+/* =========================================================
+   STATIC EFFICIENCY
+   Two firms, slopes d (dirty) > c (clean).
+   Uniform standard qS each. Tax p set so q0+qN = 2*qS
+   (same total abatement). q0 = p over d, qN = p over c.
+   ========================================================= */
+const SD=1.2, SC=0.5, SqS=8;            // dirty slope, clean slope, standard
+const Sp=2*SqS/(1/SD+1/SC);             // tax that preserves total abatement
+const Sq0=Sp/SD, SqN=Sp/SC;
+function staticModel(){
+  const slope=firmSel==='dirty'?SD:SC;
+  const qTax=firmSel==='dirty'?Sq0:SqN;     // this firm's abatement under tax
+  const costStd=0.5*slope*SqS*SqS;          // abatement cost under standard
+  const costTax=0.5*slope*qTax*qTax;        // abatement cost under tax
+  const mcStd=slope*SqS;                    // marginal cost at the standard
+  // social totals (both firms)
+  const socStd=0.5*SD*SqS*SqS+0.5*SC*SqS*SqS;
+  const socTax=0.5*SD*Sq0*Sq0+0.5*SC*SqN*SqN;
+  return {slope,qTax,costStd,costTax,mcStd,socStd,socTax,saving:socStd-socTax};
+}
+
+let firmSel='dirty', stepS=0;
+const SSTEPS=4;
+
+function drawStatic(){
+  ctx=ctxS; curQMAX=14; curPMAX=14;
+  axes('q (abatement)');
+  const m=staticModel();
+  const col=firmSel==='dirty'?T.dirty:T.clean;
+  const slope=m.slope, drawTo=firmSel==='dirty'?10:13;
+
+  // shaded abatement cost (step >=1)
+  if(stepS>=1 && stepS<2){ // standard only
+    fillPoly([[0,0],[SqS,0],[SqS,slope*SqS]], col, 0.28);
+    label('abatement cost',SqS*0.5,slope*SqS*0.30,0,0,col,11,'bold','center',true);
+  }
+  if(stepS>=2){ // tax: shade cost up to qTax, plus mark the change
+    fillPoly([[0,0],[m.qTax,0],[m.qTax,slope*m.qTax]], col, 0.28);
+    if(firmSel==='dirty'){
+      // dirty abates LESS: region q0..qS no longer abated (paid as tax instead)
+      fillPoly([[Sq0,0],[SqS,0],[SqS,slope*SqS],[Sq0,slope*Sq0]], T.taxbill, 0.35);
+      label('now paid as tax',(Sq0+SqS)/2,slope*Sq0*0.55,0,0,T.eqStroke,10.5,'bold','center',true);
+    } else {
+      // clean abates MORE: region qS..qN extra abatement
+      fillPoly([[SqS,0],[SqN,0],[SqN,slope*SqN],[SqS,slope*SqS]], T.clean, 0.40);
+      label('extra abatement',(SqS+SqN)/2,slope*SqS*0.5,0,0,T.clean,10.5,'bold','center',true);
+    }
+  }
+
+  // the firm's own cost curve
+  line(0,0,drawTo,slope*drawTo,col,2.8);
+  label(firmSel==='dirty'?"C′DIRTY":"C′CLEAN",drawTo,slope*drawTo,-6,firmSel==='dirty'?-9:-9,col,12,'bold','right',true);
+
+  // synthesis (step 4): show BOTH curves faint + equalized marginal cost
+  if(stepS>=4){
+    const other=firmSel==='dirty'?T.clean:T.dirty, oslope=firmSel==='dirty'?SC:SD, odrawTo=firmSel==='dirty'?13:10;
+    line(0,0,odrawTo,oslope*odrawTo,other,1.8,[5,4]);
+    line(0,Sp,Math.max(SqN,Sq0),Sp,T.eq,2,[7,5]);
+    priceTick(Sp,'p*='+Sp.toFixed(2),T.eqStroke);
+    dot(Sq0,Sp,5.5,T.dirty); dot(SqN,Sp,5.5,T.clean);
+    xTick(Sq0,'q0'); xTick(SqN,'qN');
+  }
+
+  // standard line qS (steps 1..3)
+  if(stepS>=1 && stepS<4){
+    line(SqS,0,SqS,slope*SqS,T.eqStroke,1,DASH_PROJ);
+    xTick(SqS,'qS='+SqS);
+    dot(SqS,slope*SqS,5,col);
+  }
+  // tax markers (steps 2..3)
+  if(stepS>=2 && stepS<4){
+    line(0,Sp,Math.max(m.qTax,SqS),Sp,T.eq,2,[7,5]);
+    priceTick(Sp,'p*='+Sp.toFixed(2),T.eqStroke);
+    line(m.qTax,0,m.qTax,Sp,T.eqStroke,1,DASH_PROJ);
+    xTick(m.qTax,(firmSel==='dirty'?'q0=':'qN=')+m.qTax.toFixed(1));
+    dot(m.qTax,Sp,5.5,col);
+  }
+}
+
+function staticContent(){
+  const m=staticModel();
+  const fname=firmSel==='dirty'?'DIRTY':'CLEAN';
+  return [
+    { t:"Step 0 · Two firm types",
+      b:`Firms differ in how cheaply they abate. The <b style="color:var(--dirty)">DIRTY</b> firm has a steep marginal cost C′<sub>DIRTY</sub>; the <b style="color:var(--clean)">CLEAN</b> firm a shallow C′<sub>CLEAN</sub>. Toggle above to follow one firm. <b>Static efficiency</b> asks: which instrument reaches a given total abatement at least cost?` },
+    { t:"Step 1 · Uniform standard",
+      b:`A standard forces <b>every</b> firm to abate the same q̄ = ${SqS}. The ${fname} firm's abatement cost is the shaded triangle = <b>$${m.costStd.toFixed(1)}</b>. Its marginal cost here is <b>$${m.mcStd.toFixed(2)}</b> — note the two firms end up with <i>different</i> marginal costs, which is the inefficiency.` },
+    { t:"Step 2 · Switch to a tax p*",
+      b:firmSel==='dirty'
+        ? `Under tax <b>p* = $${Sp.toFixed(2)}</b>, the DIRTY firm abates only until C′ = p*, i.e. <b>q0 = ${Sq0.toFixed(2)} &lt; q̄</b>. It abates <b>less</b>, paying tax on the units between q0 and q̄ instead (orange). Its abatement cost falls to $${m.costTax.toFixed(1)}.`
+        : `Under tax <b>p* = $${Sp.toFixed(2)}</b>, the CLEAN firm finds abating cheaper than paying tax, so it abates <b>more</b>: <b>qN = ${SqN.toFixed(2)} &gt; q̄</b>. The extra abatement (green) costs it more privately, but it's cheap abatement society wants.` },
+    { t:"Step 3 · Equal marginal principle",
+      b:`Facing the same p*, every firm abates until <b>C′ = p*</b> — so all firms end with the <b>same marginal abatement cost</b>. The dirty firm (q0=${Sq0.toFixed(1)}) does less, the clean firm (qN=${SqN.toFixed(1)}) does more, but total stays at ${(Sq0+SqN).toFixed(0)} = 2×q̄.` },
+    { t:"Step 4 · Why the tax is cheaper",
+      b:`Same total abatement, reallocated from the high-cost to the low-cost abater. Total social abatement cost falls from <b>$${m.socStd.toFixed(1)}</b> (standard) to <b>$${m.socTax.toFixed(1)}</b> (tax) — a saving of <b style="color:var(--clean)">$${m.saving.toFixed(1)}</b>. The dashed line shows both curves meeting the single p*.` }
+  ];
+}
+
+/* =========================================================
+   DYNAMIC EFFICIENCY
+   One firm, old slope o > new slope n.
+   Standard: abate qS regardless of tech.
+   Tax p: old abates qO = p over o, new abates qN = p over n.
+   Savings(standard) = wedge between curves up to qS.
+   Savings(tax)      = triangle (0,0),(qO,p),(qN,p) = half p (qN-qO).
+   ========================================================= */
+const DO=1.2, DN=0.5, Dp=7.2, DqS=8, DQMAX=16;
+const DqO=Dp/DO, DqN=Dp/DN;
+function dynamicModel(){
+  const savStd=0.5*(DO-DN)*DqS*DqS;
+  const savTax=0.5*Dp*(DqN-DqO);
+  return {savStd,savTax};
+}
+
+let regimeSel='standard', stepD=0;
+const DSTEPS=4;
+
+function drawDynamic(){
+  ctx=ctxD; curQMAX=17; curPMAX=12;
+  axes('q (abatement)');
+  const m=dynamicModel();
+
+  // residual tax bill (tax regime, step>=2): rectangle from current abatement to QMAX at height p*
+  if(regimeSel==='tax' && stepD>=1){
+    const qNow = stepD>=2 ? DqN : DqO;
+    fillPoly([[qNow,0],[DQMAX,0],[DQMAX,Dp],[qNow,Dp]], T.taxbill, 0.38);
+    label('tax bill',(qNow+DQMAX)/2,Dp*0.45,0,0,T.eqStroke,11,'bold','center',true);
+  }
+
+  // savings region (step >=2: after adopting new tech)
+  if(stepD>=2){
+    if(regimeSel==='standard'){
+      fillPoly([[0,0],[DqS,DN*DqS],[DqS,DO*DqS]], T.savings, 0.6);
+      label('savings',DqS*0.55,(DN*DqS+DO*DqS)/2*0.62,0,0,T.eqStroke,11,'bold','center',true);
+      label('$'+m.savStd.toFixed(1),DqS*0.55,(DN*DqS+DO*DqS)/2*0.62,0,13,T.eqStroke,11,'bold','center',true);
+    } else {
+      fillPoly([[0,0],[DqO,Dp],[DqN,Dp]], T.savings, 0.6);
+      label('savings',DqO*0.62,Dp*0.5,0,0,T.eqStroke,11,'bold','center',true);
+      label('$'+m.savTax.toFixed(1),DqO*0.62,Dp*0.5,0,13,T.eqStroke,11,'bold','center',true);
+    }
+  }
+
+  // cost curves
+  line(0,0,9,DO*9,T.dirty,2.8); label("C′OLD",9,DO*9,-6,-9,T.dirty,12,'bold','right',true);
+  if(stepD>=1){ line(0,0,DqN+1.6,DN*(DqN+1.6),T.clean,2.8); label("C′NEW",DqN+1.6,DN*(DqN+1.6),6,4,T.clean,12,'bold','left',true); }
+
+  if(regimeSel==='standard'){
+    line(DqS,0,DqS,DO*DqS,T.eqStroke,1,DASH_PROJ);
+    xTick(DqS,'q̄='+DqS);
+    dot(DqS,DO*DqS,5,T.dirty);
+    if(stepD>=1) dot(DqS,DN*DqS,5,T.clean);
+  } else {
+    line(0,Dp,DQMAX,Dp,T.eq,2,[7,5]);
+    priceTick(Dp,'p*='+Dp.toFixed(1),T.eqStroke);
+    line(DqO,0,DqO,Dp,T.eqStroke,1,DASH_PROJ);
+    xTick(DqO,'qO='+DqO.toFixed(0));
+    dot(DqO,Dp,5.5,T.dirty);
+    if(stepD>=2){
+      line(DqN,0,DqN,Dp,T.eqStroke,1,DASH_PROJ);
+      xTick(DqN,'qN='+DqN.toFixed(1));
+      dot(DqN,Dp,5.5,T.clean);
+    }
+    line(DQMAX,0,DQMAX,Dp,T.muted,1,DASH_PROJ);
+    xTick(DQMAX,'Qmax');
+  }
+}
+
+function dynamicContent(){
+  const m=dynamicModel();
+  const reg=regimeSel==='standard'?'STANDARD':'TAX';
+  return [
+    { t:"Step 0 · A new technology arrives",
+      b:`A cheaper abatement technology lowers marginal cost from <b style="color:var(--dirty)">C′<sub>OLD</sub></b> to <b style="color:var(--clean)">C′<sub>NEW</sub></b>. <b>Dynamic efficiency</b> asks: which policy gives firms a stronger incentive to <i>adopt</i> it? Toggle the regime above. Currently: <b>${reg}</b>.` },
+    { t:"Step 1 · Cost under the old technology",
+      b:regimeSel==='standard'
+        ? `The standard fixes abatement at q̄ = ${DqS} no matter the technology. With the old tech the firm sits on C′<sub>OLD</sub> at q̄.`
+        : `The tax fixes the price p* = $${Dp.toFixed(1)}. With old tech the firm abates qO = ${DqO.toFixed(0)} (where C′<sub>OLD</sub> = p*) and pays the orange <b>tax bill</b> on everything it doesn't abate.` },
+    { t:"Step 2 · Adopt the new technology",
+      b:regimeSel==='standard'
+        ? `Still required to hit q̄ = ${DqS}, but now along the cheaper C′<sub>NEW</sub>. The firm saves the <b style="color:var(--eq-stroke)">yellow wedge</b> between the two curves: <b>$${m.savStd.toFixed(1)}</b>. That's the <i>only</i> incentive a standard gives.`
+        : `The firm now abates qN = ${DqN.toFixed(1)} (where C′<sub>NEW</sub> = p*) — <b>more</b> than before. It saves on abatement <b>and</b> shrinks its tax bill. Total adoption savings = the full triangle = <b>$${m.savTax.toFixed(1)}</b>.` },
+    { t:"Step 3 · " + (regimeSel==='standard'?"Limited incentive":"Larger incentive"),
+      b:regimeSel==='standard'
+        ? `Under a standard the adoption payoff is just the abatement-cost saving ($${m.savStd.toFixed(1)}). The firm gains nothing from abating <i>beyond</i> q̄, so its incentive to innovate is capped. Switch the toggle to TAX to compare.`
+        : `Under a tax the payoff is abatement savings <b>plus</b> tax-bill savings ($${m.savTax.toFixed(1)} total) — and since p* = o·qO = n·qN, this equals exactly ½·p*·(qN−qO). Switch to STANDARD to see it's smaller there.` },
+    { t:"Step 4 · Tax wins on dynamic efficiency",
+      b:`Same wedge between the curves, cut two ways: the <b>standard</b> captures only the part left of q̄ ($${m.savStd.toFixed(1)}); the <b>tax</b> captures the whole triangle up to p*, reaching out to qN ($${m.savTax.toFixed(1)}). The extra is saved tax bill — so <b>taxes give a stronger incentive to innovate</b>.` }
+  ];
+}
+
+/* ===================== stepper plumbing ===================== */
+function renderStepper(prefix, step, nSteps, content){
+  const c=content[step];
+  document.getElementById('stitle'+prefix).innerHTML=c.t;
+  document.getElementById('sbody'+prefix).innerHTML=c.b;
+  document.getElementById('counter'+prefix).textContent='Step '+step+' / '+nSteps;
+  const dots=document.getElementById('dots'+prefix); dots.innerHTML='';
+  for(let i=0;i<=nSteps;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back'+prefix).disabled=(step===0);
+  document.getElementById('next'+prefix).disabled=(step===nSteps);
+  document.getElementById('next'+prefix).textContent=step===nSteps?'Done':'Next ▶';
+}
+function renderStatic(){ renderStepper('S',stepS,SSTEPS,staticContent()); drawStatic(); }
+function renderDynamic(){ renderStepper('D',stepD,DSTEPS,dynamicContent()); drawDynamic(); }
+
+function setFirm(f){
+  firmSel=f;
+  document.getElementById('f-dirty').className = f==='dirty'?'on dirty':'neutral';
+  document.getElementById('f-clean').className = f==='clean'?'on clean':'neutral';
+  renderStatic();
+}
+function setRegime(r){
+  regimeSel=r;
+  document.getElementById('r-standard').className = r==='standard'?'on neutral':'neutral';
+  document.getElementById('r-tax').className = r==='tax'?'on neutral':'neutral';
+  renderDynamic();
+}
+
+document.getElementById('nextS').addEventListener('click',()=>{ if(stepS<SSTEPS){stepS++;renderStatic();} });
+document.getElementById('backS').addEventListener('click',()=>{ if(stepS>0){stepS--;renderStatic();} });
+document.getElementById('nextD').addEventListener('click',()=>{ if(stepD<DSTEPS){stepD++;renderDynamic();} });
+document.getElementById('backD').addEventListener('click',()=>{ if(stepD>0){stepD--;renderDynamic();} });
+
+let activeTab='static', ctxS=null, ctxD=null;
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('tab-static').className = tab==='static'?'tab active':'tab';
+  document.getElementById('tab-dynamic').className = tab==='dynamic'?'tab active':'tab';
+  document.getElementById('sec-static').className = 'layout section'+(tab==='static'?'':' hidden');
+  document.getElementById('sec-dynamic').className = 'layout section'+(tab==='dynamic'?'':' hidden');
+  if(tab==='static'){ ctxS=setupCanvas(document.getElementById('cvS')); renderStatic(); }
+  else { ctxD=setupCanvas(document.getElementById('cvD')); renderDynamic(); }
+}
+
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{
+  if(activeTab==='static'){ ctxS=setupCanvas(document.getElementById('cvS')); renderStatic(); }
+  else { ctxD=setupCanvas(document.getElementById('cvD')); renderDynamic(); }
+},120);});
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();
+  if(activeTab==='static') renderStatic(); else renderDynamic();});
+
+// init
+ctxS=setupCanvas(document.getElementById('cvS'));
+renderStatic();
+</script>
+</body>
+</html>
