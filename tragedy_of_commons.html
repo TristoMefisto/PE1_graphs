@@ -48,10 +48,6 @@
   button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   button.primary:hover:not(:disabled) { filter:brightness(.9); }
   .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
-  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
-  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
-  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:14px; }
-  input[type=range]:last-of-type { margin-bottom:0; }
   .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
   .res-box.u { background:color-mix(in srgb,var(--unreg) 13%,transparent); border-left:3px solid var(--unreg); }
@@ -97,16 +93,6 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Adjust the fishery</div>
-      <div class="slider-label"><span>Max catch value (a)</span><span class="val" id="v-a">10.0</span></div>
-      <input type="range" id="s-a" min="8" max="16" step="0.5" value="10">
-      <div class="slider-label" style="margin-top:14px"><span>Congestion effect (b)</span><span class="val" id="v-b">0.60</span></div>
-      <input type="range" id="s-b" min="0.4" max="1.2" step="0.05" value="0.6">
-      <div class="slider-label" style="margin-top:14px"><span>Opportunity cost (c + w)</span><span class="val" id="v-cw">4.00</span></div>
-      <input type="range" id="s-cw" min="2" max="6" step="0.25" value="4">
-    </div>
-
-    <div class="card">
       <div class="card-title">Legend</div>
       <div class="legend">
         <div class="item"><span class="sw" style="background:var(--ar)"></span> F(B) — catch (revenue) per boat</div>
@@ -144,7 +130,7 @@ function setupCanvas(){
 let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
 
 // Model: F(B) = a - b*B  (average catch/revenue per boat, p=1)
-let a=10,b=0.6,cw=4;
+let a=10,b=0.6,cw=4; // fixed parameters (sliders removed)
 const Fb=x=>a-b*x, MR=x=>a-2*b*x;
 function model(){
   const bStar=(a-cw)/b;          // F(B*) = c+w  -> individual profit = 0
@@ -267,9 +253,6 @@ function render(){
 
 document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
 document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
-document.getElementById('s-a').addEventListener('input',e=>{ a=parseFloat(e.target.value); document.getElementById('v-a').textContent=a.toFixed(1); render(); });
-document.getElementById('s-b').addEventListener('input',e=>{ b=parseFloat(e.target.value); document.getElementById('v-b').textContent=b.toFixed(2); render(); });
-document.getElementById('s-cw').addEventListener('input',e=>{ cw=parseFloat(e.target.value); document.getElementById('v-cw').textContent=cw.toFixed(2); render(); });
 
 setupCanvas();
 render();
