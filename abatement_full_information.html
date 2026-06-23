@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxes vs Standards — General Abatement Framework</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --mb:#2E7D32; --mc:#1565C0; --eq:#F9A825; --eq-stroke:#4A3000;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --mb:#66BB6A; --mc:#5B9BE8; --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.t { background:color-mix(in srgb,var(--mc) 13%,transparent); border-left:3px solid var(--mc); }
+  .res-box.s { background:color-mix(in srgb,var(--mb) 13%,transparent); border-left:3px solid var(--mb); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.t .lbl { color:var(--mc); }
+  .res-box.s .lbl { color:var(--mb); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--eq) 0 5px,transparent 5px 9px); height:3px; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taxes vs Standards — General Abatement Framework</h1>
+  <div class="relation">max<sub>Q</sub> [B(Q) − C(Q)] &nbsp;⟹&nbsp; optimum at <b>B′(Q) = C′(Q)</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 6</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box t"><div class="lbl">Tax instrument</div><div class="big" id="r-tax">p*=$0.00</div></div>
+      <div class="res-box s"><div class="lbl">Standard instrument</div><div class="big" id="r-std">Q*=0.0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--mb)"></span> B′(Q) — social marginal benefit</div>
+        <div class="item"><span class="sw" style="background:var(--mc)"></span> C′(Q) — social marginal cost</div>
+        <div class="item"><span class="sw dash"></span> tax level / mandated quantity</div>
+        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> optimum Q*</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
+  mb:cssvar('--mb'),mc:cssvar('--mc'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX=16, P_MAX=14;
+const qx=x=>padL+(x/Q_MAX)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: B'(Q) = B0 - beta*Q (declining SMB),  C'(Q) = gamma*Q (increasing SMC)
+const B0=12, beta=0.4, gamma=0.8;
+const Bp=Q=>B0-beta*Q, Cp=Q=>gamma*Q;
+function model(){
+  const Qstar=B0/(beta+gamma);
+  const tstar=Cp(Qstar);
+  return {Qstar,tstar};
+}
+
+function line(x1,p1,x2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(p1)); ctx.lineTo(qx(x2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,p,r,f){ ctx.beginPath(); ctx.arc(qx(x),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(x)+dx,py_=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+const DASH_PROJ=[2,3];
+function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+
+  const m=model();
+
+  // Axes
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('$',padL-30,padT+8); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('Q (pollution reduction)',padL+plotW,padT+plotH+34); ctx.restore();
+
+  // Origin reference: unregulated equilibrium Q=0 (step 0 only, faint marker)
+  if(step===0){
+    dot(0,0,5,T.muted);
+    label('Q=0 (no abatement)',0,0,10,16,T.muted,11,'italic','left',true);
+  }
+
+  // C'(Q) — marginal cost of abatement (step >= 1)
+  if(step>=1){
+    line(0,Cp(0),Q_MAX,Cp(Q_MAX),T.mc,2.6);
+    label("C′(Q)",Q_MAX,Cp(Q_MAX),-6,-9,T.mc,12.5,'bold','right',true);
+  }
+
+  // B'(Q) — marginal benefit of abatement (step >= 2)
+  if(step>=2){
+    line(0,Bp(0),Q_MAX,Bp(Q_MAX),T.mb,2.6);
+    label("B′(Q)",Q_MAX,Bp(Q_MAX),-6,16,T.mb,12.5,'bold','right',true);
+  }
+
+  // Q* optimum (step >= 3)
+  if(step>=3){
+    line(m.Qstar,0,m.Qstar,m.tstar,T.eqStroke,1,DASH_PROJ);
+    xTick(m.Qstar,m.Qstar.toFixed(1));
+    dot(m.Qstar,m.tstar,6.5,T.eq);
+    label('Q*',m.Qstar,m.tstar,9,-9,T.text,13,'bold','left',true);
+  }
+
+  // Tax instrument: horizontal price line at t* (step >= 4)
+  if(step>=4){
+    line(0,m.tstar,m.Qstar,m.tstar,T.eq,2.2,[7,5]);
+    priceTick(m.tstar,'p*=$'+m.tstar.toFixed(2),T.eq);
+  }
+
+  // Standard instrument: vertical quantity line at Q* (step >= 5)
+  if(step>=5){
+    line(m.Qstar,0,m.Qstar,m.tstar,T.eq,2.2,[7,5]);
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Unregulated market",
+      b:`Pollution reduction is measured by <b>Q</b>, starting at the private market equilibrium where <b>Q = 0</b> — the private marginal benefit of abating is zero, so firms abate nothing and pollution sits at its maximum.` },
+    { t:"Step 1 · Cost of abatement",
+      b:`<b style="color:var(--mc)">C′(Q)</b> is the social marginal cost of reducing pollution by one more unit — through cutting output or installing cleaner technology. It's <b>increasing</b>: the first units are cheap, the last units (near full shutdown) are extremely costly.` },
+    { t:"Step 2 · Benefit of abatement",
+      b:`<b style="color:var(--mb)">B′(Q)</b> is the social marginal benefit of abating — the counterpart of marginal damage. It's <b>declining</b>: removing the dirtiest, most damaging pollution first yields the biggest gains; later units matter less.` },
+    { t:"Step 3 · Social optimum Q*",
+      b:`Maximizing B(Q) − C(Q) gives the condition <b>B′(Q*) = C′(Q*)</b>, here at <b>Q* = ${m.Qstar.toFixed(2)}</b>, with shadow value <b>$${m.tstar.toFixed(2)}</b> per unit reduced.` },
+    { t:"Step 4 · Achieving it with a tax",
+      b:`Set a price on pollution reduction of <b>p* = C′(Q*) = $${m.tstar.toFixed(2)}</b>. Each firm abates until its own marginal cost equals p* — and since C′(Q*) = p* by construction, every firm's privately optimal choice aggregates exactly to <b>Q*</b>.` },
+    { t:"Step 5 · Achieving it with a standard",
+      b:`Alternatively, simply <b>mandate Q = ${m.Qstar.toFixed(2)}</b> directly — a quantity restriction. No price signal is needed; the regulator just sets the required abatement level.` },
+    { t:"Step 6 · Equivalence under full information",
+      b:`Both lines meet at the <b>same point</b>. With no uncertainty about B′(Q) or C′(Q), a tax of $${m.tstar.toFixed(2)} and a standard of ${m.Qstar.toFixed(2)} are <b>equivalent</b> — same abatement, same welfare. This equivalence breaks down once either curve is uncertain.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 6';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=6;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===6);
+  document.getElementById('next').textContent=step===6?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=step>=5?'grid':'none';
+  document.getElementById('r-tax').textContent='p*=$'+m.tstar.toFixed(2);
+  document.getElementById('r-std').textContent='Q*='+m.Qstar.toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<6){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
