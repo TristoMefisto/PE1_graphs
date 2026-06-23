@@ -8,14 +8,14 @@
   :root {
     --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
     --text:#1A1A2E; --muted:#75736B;
-    --mb:#2E7D32; --mc:#1565C0; --eq:#F9A825; --eq-stroke:#4A3000;
+    --mb:#2E7D32; --mc:#1565C0; --eq:#F9A825; --eq-stroke:#4A3000; --savings:#00897B;
     --accent:#1565C0;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
       --text:#ECECEC; --muted:#9A9A9A;
-      --mb:#66BB6A; --mc:#5B9BE8; --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --mb:#66BB6A; --mc:#5B9BE8; --eq:#FFD54F; --eq-stroke:#1A1A1E; --savings:#4DB6AC;
       --accent:#5B9BE8;
     }
   }
@@ -59,6 +59,7 @@
   .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
   .legend .sw.dash { background:repeating-linear-gradient(90deg,var(--eq) 0 5px,transparent 5px 9px); height:3px; }
   .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .legend .box { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -86,8 +87,8 @@
     </div>
 
     <div class="results" id="results" style="display:none">
-      <div class="res-box t"><div class="lbl">Tax instrument</div><div class="big" id="r-tax">p*=$0.00</div></div>
-      <div class="res-box s"><div class="lbl">Standard instrument</div><div class="big" id="r-std">Q*=0.0</div></div>
+      <div class="res-box t"><div class="lbl">Firm cost under tax</div><div class="big" id="r-tax">$0</div></div>
+      <div class="res-box s"><div class="lbl">Firm cost under standard</div><div class="big" id="r-std">$0</div></div>
     </div>
 
     <div class="card">
@@ -95,8 +96,10 @@
       <div class="legend">
         <div class="item"><span class="sw" style="background:var(--mb)"></span> B′(Q) — social marginal benefit</div>
         <div class="item"><span class="sw" style="background:var(--mc)"></span> C′(Q) — social marginal cost</div>
-        <div class="item"><span class="sw dash"></span> tax level / mandated quantity</div>
         <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> optimum Q*</div>
+        <div class="item"><span class="box" style="background:var(--mc);opacity:.35"></span> abatement costs C(Q*)</div>
+        <div class="item"><span class="box" style="background:var(--savings);opacity:.35"></span> tax savings (vs. paying on all units)</div>
+        <div class="item"><span class="box" style="background:var(--eq);opacity:.35"></span> residual tax bill on remaining pollution</div>
       </div>
     </div>
   </div>
@@ -107,13 +110,13 @@ const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 let T={};
 function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
-  mb:cssvar('--mb'),mc:cssvar('--mc'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke') }; }
+  mb:cssvar('--mb'),mc:cssvar('--mc'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),savings:cssvar('--savings') }; }
 loadTheme();
 if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
 
 const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
 const plotW=LW-padL-padR, plotH=LH-padT-padB;
-const Q_MAX=16, P_MAX=14;
+const Q_MAX=30, P_MAX=28;
 const qx=x=>padL+(x/Q_MAX)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
 
 function setupCanvas(){
@@ -131,7 +134,10 @@ const Bp=Q=>B0-beta*Q, Cp=Q=>gamma*Q;
 function model(){
   const Qstar=B0/(beta+gamma);
   const tstar=Cp(Qstar);
-  return {Qstar,tstar};
+  const abateCost=0.5*Qstar*tstar;        // area under C'(Q) from 0 to Q*
+  const taxSavings=Qstar*tstar-abateCost; // complement: p*Q* minus abatement cost
+  const taxBill=tstar*(Q_MAX-Qstar);      // tax paid on remaining, un-abated pollution
+  return {Qstar,tstar,abateCost,taxSavings,taxBill};
 }
 
 function line(x1,p1,x2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
@@ -147,6 +153,9 @@ function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
 const DASH_PROJ=[2,3];
 function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
 function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+function fillPoly(pts,col,alpha){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(qx(pts[0][0]),py(pts[0][1])); for(let i=1;i<pts.length;i++) ctx.lineTo(qx(pts[i][0]),py(pts[i][1]));
+  ctx.closePath(); ctx.fill(); ctx.restore(); }
 
 let step=0;
 
@@ -169,6 +178,24 @@ function draw(){
   if(step===0){
     dot(0,0,5,T.muted);
     label('Q=0 (no abatement)',0,0,10,16,T.muted,11,'italic','left',true);
+  }
+
+  // Shaded regions — drawn under the curves
+  // Abatement cost: triangle under C'(Q) from 0 to Q* (step >= 3)
+  if(step>=3){
+    fillPoly([[0,0],[m.Qstar,0],[m.Qstar,m.tstar]], T.mc, 0.22);
+    label('Abatement',m.Qstar*0.62,m.tstar*0.22,0,-3,T.mc,11,'bold','center',true);
+    label('costs $'+m.abateCost.toFixed(0),m.Qstar*0.62,m.tstar*0.22,0,11,T.mc,11,'bold','center',true);
+  }
+  // Tax savings + tax bill: only while the tax mechanism is on screen (step === 4)
+  if(step===4){
+    fillPoly([[0,0],[0,m.tstar],[m.Qstar,m.tstar]], T.savings, 0.25);
+    label('Tax',m.Qstar*0.32,m.tstar*0.62,0,-3,T.savings,11,'bold','center',true);
+    label('savings $'+m.taxSavings.toFixed(0),m.Qstar*0.32,m.tstar*0.62,0,11,T.savings,11,'bold','center',true);
+
+    fillPoly([[m.Qstar,0],[Q_MAX,0],[Q_MAX,m.tstar],[m.Qstar,m.tstar]], T.eq, 0.22);
+    label('Tax bill on remaining pollution',(m.Qstar+Q_MAX)/2,m.tstar*0.55,0,-3,T.eqStroke,11,'bold','center',true);
+    label('$'+m.taxBill.toFixed(0),(m.Qstar+Q_MAX)/2,m.tstar*0.55,0,11,T.eqStroke,11,'bold','center',true);
   }
 
   // C'(Q) — marginal cost of abatement (step >= 1)
@@ -213,13 +240,13 @@ function stepContent(){
     { t:"Step 2 · Benefit of abatement",
       b:`<b style="color:var(--mb)">B′(Q)</b> is the social marginal benefit of abating — the counterpart of marginal damage. It's <b>declining</b>: removing the dirtiest, most damaging pollution first yields the biggest gains; later units matter less.` },
     { t:"Step 3 · Social optimum Q*",
-      b:`Maximizing B(Q) − C(Q) gives the condition <b>B′(Q*) = C′(Q*)</b>, here at <b>Q* = ${m.Qstar.toFixed(2)}</b>, with shadow value <b>$${m.tstar.toFixed(2)}</b> per unit reduced.` },
+      b:`Maximizing B(Q) − C(Q) gives the condition <b>B′(Q*) = C′(Q*)</b>, here at <b>Q* = ${m.Qstar.toFixed(2)}</b>, with shadow value <b>$${m.tstar.toFixed(2)}</b> per unit reduced. The <b style="color:var(--mc)">blue triangle</b> is the total abatement cost of reaching Q*: <b>$${m.abateCost.toFixed(0)}</b>.` },
     { t:"Step 4 · Achieving it with a tax",
-      b:`Set a price on pollution reduction of <b>p* = C′(Q*) = $${m.tstar.toFixed(2)}</b>. Each firm abates until its own marginal cost equals p* — and since C′(Q*) = p* by construction, every firm's privately optimal choice aggregates exactly to <b>Q*</b>.` },
+      b:`Set a price on pollution reduction of <b>p* = C′(Q*) = $${m.tstar.toFixed(2)}</b>, charged on whatever pollution remains. Abating up to Q* instead of paying tax on those units saves the firm <b style="color:var(--savings)">$${m.taxSavings.toFixed(0)}</b> — but it still owes a <b>residual tax bill of $${m.taxBill.toFixed(0)}</b> on the pollution it didn't eliminate. Total firm outlay: $${(m.abateCost+m.taxBill).toFixed(0)}.` },
     { t:"Step 5 · Achieving it with a standard",
-      b:`Alternatively, simply <b>mandate Q = ${m.Qstar.toFixed(2)}</b> directly — a quantity restriction. No price signal is needed; the regulator just sets the required abatement level.` },
+      b:`Alternatively, simply <b>mandate Q = ${m.Qstar.toFixed(2)}</b> directly. The firm still incurs the <b style="color:var(--mc)">same $${m.abateCost.toFixed(0)} abatement cost</b> — but pays <b>no tax bill</b> at all, since there's no price on the remaining pollution. Total firm outlay: just $${m.abateCost.toFixed(0)}.` },
     { t:"Step 6 · Equivalence under full information",
-      b:`Both lines meet at the <b>same point</b>. With no uncertainty about B′(Q) or C′(Q), a tax of $${m.tstar.toFixed(2)} and a standard of ${m.Qstar.toFixed(2)} are <b>equivalent</b> — same abatement, same welfare. This equivalence breaks down once either curve is uncertain.` }
+      b:`Both instruments induce the identical abatement level Q*, so social welfare is the same either way — the tax bill isn't a social cost, it's a <b>transfer</b> to the government, not abatement effort. The firm's private outlay differs; the efficient outcome doesn't. This equivalence breaks down once either curve is uncertain.` }
   ];
 }
 
@@ -235,8 +262,8 @@ function render(){
   document.getElementById('next').textContent=step===6?'Done':'Next ▶';
   const m=model();
   document.getElementById('results').style.display=step>=5?'grid':'none';
-  document.getElementById('r-tax').textContent='p*=$'+m.tstar.toFixed(2);
-  document.getElementById('r-std').textContent='Q*='+m.Qstar.toFixed(2);
+  document.getElementById('r-tax').textContent='$'+(m.abateCost+m.taxBill).toFixed(0);
+  document.getElementById('r-std').textContent='$'+m.abateCost.toFixed(0);
   draw();
 }
 
