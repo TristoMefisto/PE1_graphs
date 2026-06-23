@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tragedy of the Commons — Lake Fishery</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --ar:#6A1B9A; --mr:#00897B; --mc:#1565C0;
+    --unreg:#C62828; --opt:#2E7D32;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --ar:#B57BE0; --mr:#4DB6AC; --mc:#5B9BE8;
+      --unreg:#EF6C6C; --opt:#66BB6A;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:7px; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; margin-bottom:14px; }
+  input[type=range]:last-of-type { margin-bottom:0; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.u { background:color-mix(in srgb,var(--unreg) 13%,transparent); border-left:3px solid var(--unreg); }
+  .res-box.o { background:color-mix(in srgb,var(--opt) 13%,transparent); border-left:3px solid var(--opt); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.u .lbl { color:var(--unreg); }
+  .res-box.o .lbl { color:var(--opt); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .legend .box { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tragedy of the Commons — Lake Fishery</h1>
+  <div class="relation">max<sub>B</sub> B·[F(B) − c − w] &nbsp;⟹&nbsp; optimum at <b>F(B) + B·F′(B) = c + w</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box u"><div class="lbl">Profit at B* (unregulated)</div><div class="big" id="pr-u">$0.00</div></div>
+      <div class="res-box o"><div class="lbl">Profit at B&#7506; (optimal)</div><div class="big" id="pr-o">$0.00</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the fishery</div>
+      <div class="slider-label"><span>Max catch value (a)</span><span class="val" id="v-a">10.0</span></div>
+      <input type="range" id="s-a" min="8" max="16" step="0.5" value="10">
+      <div class="slider-label" style="margin-top:14px"><span>Congestion effect (b)</span><span class="val" id="v-b">0.60</span></div>
+      <input type="range" id="s-b" min="0.4" max="1.2" step="0.05" value="0.6">
+      <div class="slider-label" style="margin-top:14px"><span>Opportunity cost (c + w)</span><span class="val" id="v-cw">4.00</span></div>
+      <input type="range" id="s-cw" min="2" max="6" step="0.25" value="4">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--ar)"></span> F(B) — catch (revenue) per boat</div>
+        <div class="item"><span class="sw" style="background:var(--mr)"></span> F(B) + B·F′(B) — social marginal revenue</div>
+        <div class="item"><span class="sw" style="background:var(--mc)"></span> c + w — opportunity cost per boat</div>
+        <div class="item"><span class="dt" style="background:var(--unreg)"></span> B* — free-entry equilibrium</div>
+        <div class="item"><span class="dt" style="background:var(--opt)"></span> B&#7506; — socially optimal fleet</div>
+        <div class="item"><span class="box" style="background:var(--opt);opacity:.35"></span> aggregate profit at B&#7506;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
+  ar:cssvar('--ar'),mr:cssvar('--mr'),mc:cssvar('--mc'),unreg:cssvar('--unreg'),opt:cssvar('--opt') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+let BMAXv=20,PMAXv=15;
+const qx=x=>padL+(x/BMAXv)*plotW, py=p=>padT+plotH-(p/PMAXv)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: F(B) = a - b*B  (average catch/revenue per boat, p=1)
+let a=10,b=0.6,cw=4;
+const Fb=x=>a-b*x, MR=x=>a-2*b*x;
+function model(){
+  const bStar=(a-cw)/b;          // F(B*) = c+w  -> individual profit = 0
+  const bOpt=(a-cw)/(2*b);       // MR(B^O) = c+w -> aggregate profit max
+  const fBOpt=Fb(bOpt);
+  const profit=bOpt*(fBOpt-cw);
+  const mrZero=a/(2*b);
+  const arZero=a/b;
+  return {bStar,bOpt,fBOpt,profit,mrZero,arZero};
+}
+
+function line(x1,p1,x2,p2,col,w,d){ ctx.beginPath(); ctx.setLineDash(d||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(p1)); ctx.lineTo(qx(x2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,p,r,f){ ctx.beginPath(); ctx.arc(qx(x),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(x)+dx,py_=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+const DASH_PROJ=[2,3];
+function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
+function projX(x,pTop,txt,col){ line(x,0,x,pTop,col||T.muted,1,DASH_PROJ); if(txt) xTick(x,txt,col); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+
+  const m=model();
+  BMAXv=Math.max(m.bStar,m.mrZero)*1.25;
+  PMAXv=a*1.15;
+
+  // Axes
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('$',padL-30,padT+8); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('B (boats)',padL+plotW,padT+plotH+34); ctx.restore();
+
+  // Step >=4: aggregate profit rectangle at B^O (drawn first, under curves)
+  if(step>=4){
+    ctx.save(); ctx.fillStyle=T.opt; ctx.globalAlpha=0.20;
+    ctx.fillRect(qx(0),py(m.fBOpt),qx(m.bOpt)-qx(0),py(cw)-py(m.fBOpt));
+    ctx.restore();
+    label('B'+'\u1d3c'+'·[F(B'+'\u1d3c'+')−c−w]',m.bOpt/2,(m.fBOpt+cw)/2,0,4,T.opt,11,'bold','center',true);
+  }
+
+  // c+w line
+  const fEnd=Math.min(BMAXv,m.arZero);
+  const mrEnd=Math.min(BMAXv,m.mrZero);
+  line(0,cw,BMAXv,cw,T.mc,2.4);
+  label('c + w',BMAXv,cw,-6,-8,T.mc,12.5,'bold','right',true);
+
+  // F(B) curve
+  line(0,Fb(0),fEnd,Fb(fEnd),T.ar,3);
+  label('F(B)',fEnd,Fb(fEnd),-6,-9,T.ar,12.5,'bold','right',true);
+
+  // MR curve (step >= 2)
+  if(step>=2){
+    line(0,MR(0),mrEnd,MR(mrEnd),T.mr,2.4);
+    label('F(B)+B·F′(B)',mrEnd,MR(mrEnd),6,4,T.mr,11.5,'bold','left',true);
+  }
+
+  // B* — free-entry equilibrium (step >= 1)
+  if(step>=1){
+    projX(m.bStar,cw,m.bStar.toFixed(1),T.unreg);
+    dot(m.bStar,cw,6.5,T.unreg);
+    label('B*',m.bStar,cw,9,18,T.unreg,13,'bold','left',true);
+  }
+
+  // B^O — social optimum (step >= 3)
+  if(step>=3){
+    projX(m.bOpt,m.fBOpt,m.bOpt.toFixed(1),T.opt);
+    line(m.bOpt,cw,m.bOpt,m.fBOpt,T.opt,1,DASH_PROJ);
+    dot(m.bOpt,cw,5.5,T.opt);
+    dot(m.bOpt,m.fBOpt,6.5,T.opt);
+    label('B'+'\u1d3c',m.bOpt,m.fBOpt,9,-9,T.opt,13,'bold','left',true);
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · The lake",
+      b:`Fishermen rent a boat at cost <b>c</b>, with outside wage <b>w</b>; fish price is normalized to <b>p = 1</b>. Each boat catches <b>F(B)</b> fish, where <b>B</b> is the total number of boats and <b>F′(B) &lt; 0</b> — more boats crowd the lake and each boat catches less. There is free entry: anyone can rent a boat.` },
+    { t:"Step 1 · Free-entry equilibrium B*",
+      b:`With free entry, fishermen keep entering as long as profit is positive. Entry stops where individual profit hits zero: <b>F(B*) = c + w</b>, giving <b>B* = ${m.bStar.toFixed(2)}</b> boats. Aggregate profit here is <b>B* × 0 = $0</b> — nobody gains, despite all the effort.` },
+    { t:"Step 2 · The hidden externality",
+      b:`Each fisherman ignores that one more boat lowers <i>everyone else's</i> catch too. The true social marginal revenue of an extra boat is <b>F(B) + B·F′(B)</b> — strictly below F(B), since F′(B) &lt; 0. With linear F(B), this marginal-revenue line is exactly <b>twice as steep</b> as F(B).` },
+    { t:"Step 3 · Social optimum B&#7506;",
+      b:`A coordinator maximizing aggregate profit B·[F(B) − c − w] sets <b>F(B) + B·F′(B) = c + w</b>, giving <b>B&#7506; = ${m.bOpt.toFixed(2)}</b> boats. Since F′(B) &lt; 0, <b>B&#7506; &lt; B*</b> — the unregulated lake is over-exploited.` },
+    { t:"Step 4 · The gain from coordination",
+      b:`At B&#7506;, each boat still catches F(B&#7506;) = ${m.fBOpt.toFixed(2)}, well above cost c+w = ${cw.toFixed(2)}. The shaded rectangle is the <b style="color:var(--opt)">aggregate profit</b> the village can capture: B&#7506;·[F(B&#7506;) − c − w] = <b>$${m.profit.toFixed(2)}</b> — versus exactly $0 under free entry.` },
+    { t:"Step 5 · Internalizing the externality",
+      b:`This gain is only realized if fishermen <b>coordinate</b> — forming an association that limits the fleet to B&#7506; and divides the catch. This is internalization: solving the problem "before the market" by making the externality's cost fall on the decision-maker, rather than relying on (absent) property rights over the lake.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(d); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=step>=4?'grid':'none';
+  document.getElementById('pr-u').textContent='$0.00';
+  document.getElementById('pr-o').textContent='$'+m.profit.toFixed(2);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+document.getElementById('s-a').addEventListener('input',e=>{ a=parseFloat(e.target.value); document.getElementById('v-a').textContent=a.toFixed(1); render(); });
+document.getElementById('s-b').addEventListener('input',e=>{ b=parseFloat(e.target.value); document.getElementById('v-b').textContent=b.toFixed(2); render(); });
+document.getElementById('s-cw').addEventListener('input',e=>{ cw=parseFloat(e.target.value); document.getElementById('v-cw').textContent=cw.toFixed(2); render(); });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
