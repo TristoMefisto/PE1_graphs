@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxes vs Standards — Dynamic Efficiency</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --old:#C62828; --new:#2E7D32; --eq:#F9A825; --eq-stroke:#4A3000;
+    --savings:#F4C20D;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --old:#EF6C6C; --new:#66BB6A; --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --savings:#FFD54F;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.std { background:color-mix(in srgb,var(--old) 13%,transparent); border-left:3px solid var(--old); }
+  .res-box.tax { background:color-mix(in srgb,var(--new) 13%,transparent); border-left:3px solid var(--new); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.std .lbl { color:var(--old); }
+  .res-box.tax .lbl { color:var(--new); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .box { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taxes vs Standards 3 — Dynamic Efficiency</h1>
+  <div class="relation">innovation incentive ⟹ a tax offers bigger payoff for adopting new tech: <b>savings<sub>TAX</sub> &gt; savings<sub>STANDARD</sub></b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box std"><div class="lbl">Savings under standard</div><div class="big" id="r-std">$0</div></div>
+      <div class="res-box tax"><div class="lbl">Savings under tax</div><div class="big" id="r-tax">$0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--old)"></span> C′<sub>OLD</sub> — current technology</div>
+        <div class="item"><span class="sw" style="background:var(--new)"></span> C′<sub>NEW</sub> — cheaper innovation</div>
+        <div class="item"><span class="box" style="background:var(--savings);opacity:.55"></span> savings from adopting new tech</div>
+        <div class="item"><span class="dt" style="background:var(--muted)"></span> Q<sup>MAX</sup> — full abatement (P<sup>MIN</sup>)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctxMain=cv.getContext('2d');
+let ctx=ctxMain;
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
+  old:cssvar('--old'),new:cssvar('--new'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),
+  savings:cssvar('--savings') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX_AX=17, P_MAX_AX=13;
+const qx=x=>padL+(x/Q_MAX_AX)*plotW, py=p=>padT+plotH-(p/P_MAX_AX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: C'_OLD = o*q (steep), C'_NEW = n*q (shallow)
+// Under standard: firm abates q̄ (fixed). Under tax: abates qO (old), qN (new).
+const o=1.2, n=0.5, qBar=8, p=7.2, QMAX=16;
+const qO=p/o, qN=p/n;
+function model(){
+  const savStd=0.5*(o-n)*qBar*qBar;
+  const savTax=0.5*p*(qN-qO);
+  return {savStd,savTax,
+          costOldStd:0.5*o*qBar*qBar, costNewStd:0.5*n*qBar*qBar,
+          costOldTax:0.5*o*qO*qO, costNewTax:0.5*n*qN*qN,
+          billOldTax:p*(QMAX-qO), billNewTax:p*(QMAX-qN)};
+}
+
+function line(x1,p1,x2,p2,col,w,dash){ ctx.beginPath(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(p1)); ctx.lineTo(qx(x2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,p,r,f){ ctx.beginPath(); ctx.arc(qx(x),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(x)+dx,py_=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+function fillPoly(pts,col,alpha){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(qx(pts[0][0]),py(pts[0][1])); for(let i=1;i<pts.length;i++) ctx.lineTo(qx(pts[i][0]),py(pts[i][1]));
+  ctx.closePath(); ctx.fill(); ctx.restore(); }
+const DASH_PROJ=[2,3];
+function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  const m=model();
+
+  // Axes
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('$',padL-34,padT+8); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('q (abatement)',padL+plotW,padT+plotH+34); ctx.restore();
+
+  // ---- STANDARD regime (steps 1-2) ----
+  if(step>=1 && step<=2){
+    // fixed q̄ under both techs
+    line(qBar,0,qBar,o*qBar,T.eqStroke,1,DASH_PROJ);
+    xTick(qBar,'q̄='+qBar);
+    dot(qBar,o*qBar,5,T.old);
+    dot(qBar,n*qBar,5,T.new);
+    // shaded: wedge between curves (savings on adopting)
+    if(step===2){
+      fillPoly([[0,0],[qBar,n*qBar],[qBar,o*qBar]], T.savings, 0.6);
+      label('savings',qBar*0.52,(n*qBar+o*qBar)/2*0.62,0,0,T.eqStroke,11,'bold','center',true);
+      label('$'+m.savStd.toFixed(1),qBar*0.52,(n*qBar+o*qBar)/2*0.62,0,13,T.eqStroke,11,'bold','center',true);
+    }
+  }
+
+  // ---- TAX regime (steps 3-5) ----
+  if(step>=3){
+    // tax line at p
+    line(0,p,QMAX,p,T.eq,2.2,[7,5]);
+    priceTick(p,'p='+p.toFixed(1),T.eqStroke);
+    // old tech: abate qO, pay tax bill
+    line(qO,0,qO,p,T.eqStroke,1,DASH_PROJ);
+    xTick(qO,'qO='+qO.toFixed(1),T.old);
+    dot(qO,p,5.5,T.old);
+  }
+
+  if(step>=4){
+    // new tech: abate qN (more), pay less tax bill
+    line(qN,0,qN,p,T.eqStroke,1,DASH_PROJ);
+    xTick(qN,'qN='+qN.toFixed(1),T.new);
+    dot(qN,p,5.5,T.new);
+    // shaded savings: the triangle from qO to qN at height p
+    fillPoly([[qO,0],[qN,0],[qN,p]], T.savings, 0.6);
+    label('savings',(qO+qN)/2*0.7,p*0.42,0,0,T.eqStroke,11,'bold','center',true);
+    label('$'+m.savTax.toFixed(1),(qO+qN)/2*0.7,p*0.42,0,13,T.eqStroke,11,'bold','center',true);
+  }
+
+  // ---- Q^MAX line (always) ----
+  line(QMAX,0,QMAX,P_MAX_AX*0.96,T.muted,1.4,[6,4]);
+  xTick(QMAX,'Q\u1d39\u1d2c\u02e3',T.muted);
+  label('P\u1d39\u1d35\u1d3a',QMAX,0,4,32,T.muted,10.5,'italic','left',false);
+
+  // ---- cost curves (always shown) ----
+  line(0,0,9.5,o*9.5,T.old,2.8);
+  label("C′OLD",9.5,o*9.5,-6,-9,T.old,12,'bold','right',true);
+  line(0,0,qN+2,n*(qN+2),T.new,2.8);
+  label("C′NEW",qN+2,n*(qN+2),6,4,T.new,12,'bold','left',true);
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · A new technology arrives",
+      b:`A cheaper abatement innovation lowers marginal cost from <b style="color:var(--old)">C′<sub>OLD</sub></b> to <b style="color:var(--new)">C′<sub>NEW</sub></b>. <b>Dynamic efficiency</b> asks: which policy gives the firm a stronger incentive to adopt it? The dashed line at <b>Q<sup>MAX</sup></b> marks full abatement, where pollution hits its minimum P<sup>MIN</sup>.` },
+    { t:"Step 1 · Under a uniform standard",
+      b:`The standard mandates a fixed abatement level q̄ = ${qBar} regardless of technology. With the old tech, the firm sits on C′<sub>OLD</sub> at q̄.` },
+    { t:"Step 2 · Adoption under a standard",
+      b:`Once the new tech is available, the firm still must hit q̄ = ${qBar}. Adopting the new tech lowers cost along C′<sub>NEW</sub>. The <b style="color:var(--eq-stroke)">yellow savings</b> is just the abatement cost reduction: <b>$${m.savStd.toFixed(1)}</b>. That's the <b>only</b> payoff a standard offers — the firm gains nothing from abating beyond q̄.` },
+    { t:"Step 3 · Under a tax price p",
+      b:`With tax p = $${p.toFixed(1)}, the firm abates until its old tech reaches that cost: qO = ${qO.toFixed(1)} (where C′<sub>OLD</sub> = p). It pays tax on all remaining pollution out to Q<sup>MAX</sup>.` },
+    { t:"Step 4 · Adoption under a tax",
+      b:`After adopting the new tech, the firm can abate more cheaply. It pushes abatement to qN = ${qN.toFixed(1)} (where C′<sub>NEW</sub> = p) and saves on <b>both</b>: abatement costs <b>and</b> tax bill. The <b style="color:var(--eq-stroke)">yellow triangle</b> shows the total savings: <b>$${m.savTax.toFixed(1)}</b>.` },
+    { t:"Step 5 · Tax gives stronger incentive",
+      b:`Comparing adoption payoffs: a standard offers $${m.savStd.toFixed(1)}; a tax offers $${m.savTax.toFixed(1)} — a difference of <b>$${(m.savTax-m.savStd).toFixed(1)}</b>. The extra comes from reduced tax bill (qO → qN saves $${(m.billOldTax-m.billNewTax).toFixed(1)} in taxes). <b>Taxes provide stronger dynamic efficiency.</b>` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 5';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=5;i++){ const dd=document.createElement('div'); dd.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(dd); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=step>=4?'grid':'none';
+  document.getElementById('r-std').textContent='$'+m.savStd.toFixed(1);
+  document.getElementById('r-tax').textContent='$'+m.savTax.toFixed(1);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<5){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
