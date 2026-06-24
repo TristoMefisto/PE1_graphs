@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxes vs Standards — Static Efficiency</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --dirty:#C62828; --clean:#2E7D32; --eq:#F9A825; --eq-stroke:#4A3000;
+    --taxbill:#D98C5F;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --dirty:#EF6C6C; --clean:#66BB6A; --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --taxbill:#E0A77F;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.std { background:color-mix(in srgb,var(--dirty) 13%,transparent); border-left:3px solid var(--dirty); }
+  .res-box.tax { background:color-mix(in srgb,var(--clean) 13%,transparent); border-left:3px solid var(--clean); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; }
+  .res-box.std .lbl { color:var(--dirty); }
+  .res-box.tax .lbl { color:var(--clean); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .box { width:14px; height:10px; border-radius:2px; flex-shrink:0; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taxes vs Standards 2 — Static Efficiency</h1>
+  <div class="relation">heterogeneous firms ⟹ a tax equalizes marginal cost: <b>C′<sub>DIRTY</sub>(q₀) = C′<sub>CLEAN</sub>(q_N) = p*</b></div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display:none">
+      <div class="res-box std"><div class="lbl">Social cost — standard</div><div class="big" id="r-std">$0</div></div>
+      <div class="res-box tax"><div class="lbl">Social cost — tax</div><div class="big" id="r-tax">$0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--dirty)"></span> C′<sub>DIRTY</sub> — high marginal abatement cost</div>
+        <div class="item"><span class="sw" style="background:var(--clean)"></span> C′<sub>CLEAN</sub> — low marginal abatement cost</div>
+        <div class="item"><span class="sw" style="background:var(--eq);height:0;border-top:2px dashed var(--eq)"></span> tax p* (equal marginal cost)</div>
+        <div class="item"><span class="box" style="background:var(--dirty);opacity:.3"></span> extra cost imposed on DIRTY</div>
+        <div class="item"><span class="box" style="background:var(--clean);opacity:.3"></span> CLEAN firm's abatement cost</div>
+        <div class="item"><span class="dt" style="background:var(--muted)"></span> Q<sup>MAX</sup> — full abatement (P<sup>MIN</sup>)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctxMain=cv.getContext('2d');
+let ctx=ctxMain;
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'),text:cssvar('--text'),muted:cssvar('--muted'),
+  dirty:cssvar('--dirty'),clean:cssvar('--clean'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),
+  taxbill:cssvar('--taxbill') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=58,padR=22,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const Q_MAX_AX=15.5, P_MAX_AX=13;
+const qx=x=>padL+(x/Q_MAX_AX)*plotW, py=p=>padT+plotH-(p/P_MAX_AX)*plotH;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: C'_DIRTY = d*q (steep), C'_CLEAN = c*q (shallow)
+// Standard qS each. Tax p* set so q0+qN = 2*qS (same total abatement).
+const d=1.2, c=0.5, qS=8, QMAX=14;
+const pStar=2*qS/(1/d+1/c);
+const q0=pStar/d, qN=pStar/c;
+function model(){
+  const socStd=0.5*d*qS*qS+0.5*c*qS*qS;
+  const socTax=0.5*d*q0*q0+0.5*c*qN*qN;
+  return {socStd,socTax,saving:socStd-socTax,
+          mcDirtyStd:d*qS, mcCleanStd:c*qS};
+}
+
+function line(x1,p1,x2,p2,col,w,dash){ ctx.beginPath(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(p1)); ctx.lineTo(qx(x2),py(p2)); ctx.stroke(); ctx.setLineDash([]); }
+function dot(x,p,r,f){ ctx.beginPath(); ctx.arc(qx(x),py(p),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,x,p,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(x)+dx,py_=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+function fillPoly(pts,col,alpha){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(qx(pts[0][0]),py(pts[0][1])); for(let i=1;i<pts.length;i++) ctx.lineTo(qx(pts[i][0]),py(pts[i][1]));
+  ctx.closePath(); ctx.fill(); ctx.restore(); }
+const DASH_PROJ=[2,3];
+function xTick(x,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(x),padT+plotH+16); ctx.restore(); }
+function priceTick(p,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(p)+4); ctx.restore(); }
+
+let step=0;
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  const m=model();
+
+  // Axes
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW+2,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='left'; ctx.fillText('$',padL-34,padT+8); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=T.text; ctx.textAlign='right'; ctx.fillText('q (abatement)',padL+plotW,padT+plotH+34); ctx.restore();
+
+  // ---- shaded regions (under curves) ----
+  // Standard (steps 1-2): clean cost (green) + extra dirty cost (red wedge) up to qS
+  if(step>=1 && step<=2){
+    fillPoly([[0,0],[qS,0],[qS,c*qS]], T.clean, 0.30);
+    fillPoly([[0,0],[qS,c*qS],[qS,d*qS]], T.dirty, 0.30);
+    label('clean cost',qS*0.52,c*qS*0.34,0,0,T.clean,10.5,'bold','center',true);
+    label('extra on dirty',qS*0.46,(c*qS+d*qS)/2,0,2,T.dirty,10.5,'bold','center',true);
+  }
+  // Tax (steps 3-4): reallocation — dirty does less (red saved), clean does more (green added)
+  if(step>=3){
+    // dirty saved: area under C'_DIRTY from q0 to qS
+    fillPoly([[q0,0],[qS,0],[qS,d*qS],[q0,d*q0]], T.dirty, 0.26);
+    label('dirty abates less',(q0+qS)/2,d*q0*0.5,0,0,T.dirty,10,'bold','center',true);
+    // clean added: area under C'_CLEAN from qS to qN
+    fillPoly([[qS,0],[qN,0],[qN,c*qN],[qS,c*qS]], T.clean, 0.32);
+    label('clean abates more',(qS+qN)/2,c*qS*0.55,0,0,T.clean,10,'bold','center',true);
+  }
+
+  // ---- cost curves (always shown) ----
+  line(0,0,9.5,d*9.5,T.dirty,2.8);
+  label("C′DIRTY",9.5,d*9.5,-6,-9,T.dirty,12,'bold','right',true);
+  line(0,0,QMAX,c*QMAX,T.clean,2.8);
+  label("C′CLEAN",QMAX,c*QMAX,6,4,T.clean,12,'bold','left',true);
+
+  // ---- Q^MAX vertical line (always) ----
+  line(QMAX,0,QMAX,P_MAX_AX*0.96,T.muted,1.4,[6,4]);
+  xTick(QMAX,'Q\u1d39\u1d2c\u02e3',T.muted);
+  label('P\u1d39\u1d35\u1d3a',QMAX,0,4,32,T.muted,10.5,'italic','left',false);
+
+  // ---- standard markers (steps 1-4, qS always a reference) ----
+  if(step>=1){
+    line(qS,0,qS,d*qS,T.eqStroke,1,DASH_PROJ);
+    xTick(qS,'q\u0305='+qS);
+    dot(qS,d*qS,5,T.dirty);
+    dot(qS,c*qS,5,T.clean);
+  }
+  // MC gap callout (step 2)
+  if(step===2){
+    line(qS,c*qS,qS,d*qS,T.text,2.2,null);
+    label('MC gap',qS,(c*qS+d*qS)/2,8,4,T.text,11,'bold','left',true);
+    priceTick(d*qS,'9.6',T.dirty);
+    priceTick(c*qS,'4.0',T.clean);
+  }
+
+  // ---- tax markers (steps 3-4) ----
+  if(step>=3){
+    line(0,pStar,qN,pStar,T.eq,2.2,[7,5]);
+    priceTick(pStar,'p*='+pStar.toFixed(2),T.eqStroke);
+    line(q0,0,q0,pStar,T.eqStroke,1,DASH_PROJ);
+    line(qN,0,qN,pStar,T.eqStroke,1,DASH_PROJ);
+    xTick(q0,'q0='+q0.toFixed(1),T.dirty);
+    xTick(qN,'qN='+qN.toFixed(1),T.clean);
+    dot(q0,pStar,5.5,T.dirty);
+    dot(qN,pStar,5.5,T.clean);
+  }
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    { t:"Step 0 · Two heterogeneous firms",
+      b:`Both curves are marginal abatement cost. The <b style="color:var(--dirty)">DIRTY</b> firm abates expensively (steep C′<sub>DIRTY</sub>); the <b style="color:var(--clean)">CLEAN</b> firm cheaply (shallow C′<sub>CLEAN</sub>). The dashed line at <b>Q<sup>MAX</sup></b> marks full abatement, where pollution hits its minimum P<sup>MIN</sup>.` },
+    { t:"Step 1 · A uniform standard",
+      b:`The standard forces <b>both</b> firms to abate the same q̄ = ${qS}. The <b style="color:var(--clean)">green</b> triangle is the clean firm's cost; the <b style="color:var(--dirty)">red</b> wedge on top is the <b>extra</b> cost the same target imposes on the dirty firm.` },
+    { t:"Step 2 · The inefficiency",
+      b:`At q̄, the two firms sit at <b>different marginal costs</b>: C′<sub>DIRTY</sub> = $${m.mcDirtyStd.toFixed(1)} but C′<sub>CLEAN</sub> = $${m.mcCleanStd.toFixed(1)}. Whenever marginal costs differ, total cost isn't minimized — shifting one unit of abatement from the dirty firm to the clean firm would save money.` },
+    { t:"Step 3 · A tax reallocates",
+      b:`Under tax <b>p* = $${pStar.toFixed(2)}</b>, each firm abates until C′ = p*. The dirty firm pulls back to <b>q₀ = ${q0.toFixed(2)}</b> (abates less, red), the clean firm pushes to <b>q_N = ${qN.toFixed(2)}</b> (abates more, green). Total abatement is unchanged: q₀ + q_N = ${(q0+qN).toFixed(0)} = 2q̄.` },
+    { t:"Step 4 · Equal-marginal principle",
+      b:`Now both firms share the <b>same marginal cost p*</b> — the least-cost way to hit the target. Social abatement cost falls from <b>$${m.socStd.toFixed(1)}</b> to <b>$${m.socTax.toFixed(1)}</b>, a saving of <b style="color:var(--clean)">$${m.saving.toFixed(1)}</b>. This is the <b>static efficiency</b> advantage of taxes.` }
+  ];
+}
+
+function render(){
+  const c0=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c0.t;
+  document.getElementById('sbody').innerHTML=c0.b;
+  document.getElementById('counter').textContent='Step '+step+' / 4';
+  const dots=document.getElementById('dots'); dots.innerHTML='';
+  for(let i=0;i<=4;i++){ const dd=document.createElement('div'); dd.className='step-dot'+(i===step?' active':(i<step?' done':'')); dots.appendChild(dd); }
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===4);
+  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+  const m=model();
+  document.getElementById('results').style.display=step>=4?'grid':'none';
+  document.getElementById('r-std').textContent='$'+m.socStd.toFixed(1);
+  document.getElementById('r-tax').textContent='$'+m.socTax.toFixed(1);
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(step<4){step++;render();} });
+document.getElementById('back').addEventListener('click',()=>{ if(step>0){step--;render();} });
+
+setupCanvas();
+render();
+</script>
+</body>
+</html>
