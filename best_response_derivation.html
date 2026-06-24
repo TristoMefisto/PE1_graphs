@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Provision of Public Goods — Best-Response Derivation</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --ic1:#1565C0; --ic1-light:#5B9BE8;
+    --ic2:#C62828; --ic2-light:#EF6C6C;
+    --eq:#F9A825; --eq-stroke:#4A3000;
+    --budget:#6A1B9A;
+    --xbracket:#00897B;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --ic1:#5B9BE8; --ic1-light:#8FC1F2;
+      --ic2:#EF6C6C; --ic2-light:#F4A0A0;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --budget:#B57BE0;
+      --xbracket:#4DB6AC;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+
+  .mode-row { display:flex; gap:8px; margin-bottom:14px; }
+  .mode-btn { flex:1; font-family:'Georgia',serif; font-size:12.5px; padding:8px 4px; border-radius:5px; cursor:pointer;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:all .15s; }
+  .mode-btn.active.m1 { background:var(--ic1); color:#fff; border-color:var(--ic1); }
+  .mode-btn.active.m2 { background:var(--ic2); color:#fff; border-color:var(--ic2); }
+
+  .slider-card .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:9px; }
+  .slider-label { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .slider-label .name { font-size:13px; font-weight:bold; }
+  .slider-label .val { font-family:'Courier New',monospace; font-size:14px; font-weight:bold; }
+  input[type=range] { width:100%; margin:6px 0 2px; accent-color:var(--accent); }
+  .slider-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
+
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.a { border-left:3px solid var(--ic1); background:color-mix(in srgb,var(--ic1) 11%,transparent); }
+  .res-box.b { border-left:3px solid var(--xbracket); background:color-mix(in srgb,var(--xbracket) 11%,transparent); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--muted); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Private Provision of a Public Good — Deriving the Best Response</h1>
+  <div class="relation" id="relationLine">Move <b>g²</b> and watch individual 1's tangency point <b>ĝ¹</b> trace out the reaction function</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="card-title">Which contribution moves?</div>
+      <div class="mode-row">
+        <button class="mode-btn m1 active" id="modeBtn1">Move g² → reaction of 1</button>
+        <button class="mode-btn m2" id="modeBtn2">Move g¹ → reaction of 2</button>
+      </div>
+      <div class="slider-label">
+        <span class="name" id="sliderName">Individual 2's contribution, ḝg²</span>
+        <span class="val" id="sliderVal">3.0</span>
+      </div>
+      <input type="range" id="slider" min="0" max="4.9" step="0.1" value="3">
+      <div class="slider-ticks"><span>0</span><span id="sliderMaxLbl">corner at g² = 5</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="res-box a"><div class="lbl" id="r-ghat-lbl">ĝ¹ (best response)</div><div class="big" id="r-ghat">0</div></div>
+      <div class="res-box b"><div class="lbl" id="r-x-lbl">x¹ = M¹ − ĝ¹</div><div class="big" id="r-x">0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend" id="legend">
+        <div class="item"><span class="sw" style="background:var(--ic1)"></span> indifference curve through the tangency (U¹ at best response)</div>
+        <div class="item"><span class="sw" style="background:var(--ic1-light)"></span> nearby indifference curves (lower / higher U¹)</div>
+        <div class="item"><span class="sw" style="background:var(--budget)"></span> budget constraint, g¹ = M¹</div>
+        <div class="item"><span class="dt" style="background:var(--eq)"></span> tangency point (slope = 0): best response ĝ¹</div>
+        <div class="item"><span class="sw" style="background:var(--xbracket)"></span> x¹ = M¹ − ĝ¹ (private good left over)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'), text:cssvar('--text'), muted:cssvar('--muted'),
+  ic1:cssvar('--ic1'), ic1Light:cssvar('--ic1-light'), ic2:cssvar('--ic2'), ic2Light:cssvar('--ic2-light'),
+  eq:cssvar('--eq'), eqStroke:cssvar('--eq-stroke'), budget:cssvar('--budget'), xbracket:cssvar('--xbracket') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=80,padR=22,padT=26,padB=66;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+
+// ---- Economic primitives ----
+// U^h(x^h,G) = (x^h)^alpha * G^(1-alpha), G = g1+g2, budget M^h = x^h + g^h
+const ALPHA = 2/3;
+const M1 = 10, M2 = 10;
+// Best response (linear): g1 = (1-a)M1 - a*g2 ; g2 = (1-a)M2 - a*g1, clipped at 0
+function br1(g2){ return Math.max(0, (1-ALPHA)*M1 - ALPHA*g2); }
+function br2(g1){ return Math.max(0, (1-ALPHA)*M2 - ALPHA*g1); }
+// Nash equilibrium (symmetric here): g* = (1-a)M/(1+a)
+const G_NASH_1 = (1-ALPHA)*M1/(1+ALPHA);
+const G_NASH_2 = (1-ALPHA)*M2/(1+ALPHA);
+
+// Indifference curve of individual 1 in (g1,g2) space at utility level Ubar1:
+// g2(g1) = (Ubar1 / (M1-g1)^a)^(1/(1-a)) - g1 , valid for g1 < M1
+function indiffG2ofG1(g1, Ubar1){
+  const base = M1 - g1;
+  if(base<=1e-9) return NaN;
+  const rhs = Math.pow(Ubar1/Math.pow(base,ALPHA), 1/(1-ALPHA));
+  return rhs - g1;
+}
+// Indifference curve of individual 2 in (g1,g2) space at utility level Ubar2:
+// g1(g2) = (Ubar2 / (M2-g2)^a)^(1/(1-a)) - g2 , valid for g2 < M2
+function indiffG1ofG2(g2, Ubar2){
+  const base = M2 - g2;
+  if(base<=1e-9) return NaN;
+  const rhs = Math.pow(Ubar2/Math.pow(base,ALPHA), 1/(1-ALPHA));
+  return rhs - g2;
+}
+
+// ---- View state ----
+let mode = 1; // 1: move g2 (slider), draw individual 1's curves, find ghat1
+              // 2: move g1 (slider), draw individual 2's curves, find ghat2
+let slider = document.getElementById('slider');
+let sliderVal = 3.0; // current value of the "other" contribution
+
+const AXIS_MAX = 10.2; // both axes go 0..M(=10) plus a little margin
+
+function qx(g1){ return padL + (g1/AXIS_MAX)*plotW; }   // horizontal = g1
+function py(g2){ return padT + plotH - (g2/AXIS_MAX)*plotH; } // vertical = g2
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Corner thresholds: br1(g2)=0 when g2 >= (1-a)*M1/a ; br2(g1)=0 when g1 >= (1-a)*M2/a
+const CORNER_G2 = (1-ALPHA)*M1/ALPHA; // = 5 with current parameters
+const CORNER_G1 = (1-ALPHA)*M2/ALPHA; // = 5 with current parameters
+
+function model(){
+  if(mode===1){
+    const g2bar = sliderVal;
+    const ghat1 = br1(g2bar);
+    const corner = ghat1 <= 1e-9;
+    const x1 = M1 - ghat1;
+    const Ubar1 = Math.pow(x1,ALPHA) * Math.pow(ghat1+g2bar, 1-ALPHA);
+    return { g2bar, ghat1, x1, Ubar1, corner };
+  } else {
+    const g1bar = sliderVal;
+    const ghat2 = br2(g1bar);
+    const corner = ghat2 <= 1e-9;
+    const x2 = M2 - ghat2;
+    const Ubar2 = Math.pow(x2,ALPHA) * Math.pow(g1bar+ghat2, 1-ALPHA);
+    return { g1bar, ghat2, x2, Ubar2, corner };
+  }
+}
+
+// ---- Draw helpers ----
+function line(x1,y1,x2,y2,col,w,dash){ ctx.beginPath(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.moveTo(qx(x1),py(y1)); ctx.lineTo(qx(x2),py(y2)); ctx.stroke(); ctx.setLineDash([]); }
+function dotMark(g1,g2,r,f){ ctx.beginPath(); ctx.arc(qx(g1),py(g2),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,g1,g2,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(g1)+dx, py_=py(g2)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+function strokeCurve(pts,col,w,dash){
+  ctx.save(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+  let started=false;
+  for(const [x,y] of pts){
+    if(isNaN(x) || isNaN(y) || y<0 || y>AXIS_MAX*1.4 || x<0 || x>AXIS_MAX*1.4) { started=false; continue; }
+    if(!started){ ctx.moveTo(qx(x),py(y)); started=true; } else { ctx.lineTo(qx(x),py(y)); }
+  }
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+}
+function xTick(g1,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(g1),padT+plotH+16); ctx.restore(); }
+function yTick(g2,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(g2)+4); ctx.restore(); }
+
+function sampleCurveMode1(Ubar1, n){
+  const pts=[];
+  for(let i=0;i<=n;i++){
+    const g1 = (M1-0.02)*i/n + 0.02*(1-i/n);
+    pts.push([g1, indiffG2ofG1(g1, Ubar1)]);
+  }
+  return pts;
+}
+function sampleCurveMode2(Ubar2, n){
+  const pts=[]; // returns (g1,g2) pairs but parametrized by g2
+  for(let i=0;i<=n;i++){
+    const g2 = (M2-0.02)*i/n + 0.02*(1-i/n);
+    pts.push([indiffG1ofG2(g2, Ubar2), g2]);
+  }
+  return pts;
+}
+
+function draw(){
+  const W=LW,H=LH;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(0,0,W,H);
+
+  // axes
+  ctx.strokeStyle=T.muted; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(AXIS_MAX*0.98),py(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(0),py(AXIS_MAX*0.98)); ctx.stroke();
+  label('g¹', AXIS_MAX*0.98, 0, 6, 4, T.text, 14, 'bold','left');
+  label('g²', 0, AXIS_MAX*0.98, -6, -6, T.text, 14, 'bold','right');
+
+  const m = model();
+
+  if(mode===1){
+    // ----- Individual 1's curves; g2bar fixed by slider; budget g1=M1 -----
+    // Budget constraint: vertical line g1 = M1
+    line(M1,0,M1,AXIS_MAX*0.97,T.budget,2,[5,3]);
+    label('Budget', M1, AXIS_MAX*0.92, -68, -4, T.budget, 12,'bold','left',true);
+    label('constraint', M1, AXIS_MAX*0.92, -68, 12, T.budget, 12,'bold','left',true);
+
+    // g2bar horizontal reference line
+    line(0,m.g2bar,M1,m.g2bar,T.muted,1.3,[1,3]);
+    yTick(m.g2bar, 'ḝg²', T.muted);
+
+    // three indifference curves: at Ubar1 (the tangent one) and two neighbors
+    const lowU = m.Ubar1*0.72, highU = m.Ubar1*1.35;
+    strokeCurve(sampleCurveMode1(lowU,160), T.ic1Light, 2);
+    strokeCurve(sampleCurveMode1(highU,160), T.ic1Light, 2);
+    strokeCurve(sampleCurveMode1(m.Ubar1,200), T.ic1, 2.6);
+
+    // dashed vertical from ghat1 down to axis, and horizontal from ghat1 to g2bar dot
+    line(m.ghat1,0,m.ghat1,m.g2bar,T.eqStroke,1.3,[2,3]);
+    xTick(m.ghat1, 'ĝ¹', T.eqStroke);
+
+    // tangency point
+    dotMark(m.ghat1, m.g2bar, 5.5, T.eq);
+    label('tangency: slope = 0', m.ghat1, m.g2bar, 8, -10, T.eqStroke, 11.5,'bold','left',true);
+
+    // x1 bracket along the axis from ghat1 to M1
+    drawBracket(m.ghat1, M1, 'x¹', T.xbracket);
+
+  } else {
+    // ----- Individual 2's curves; g1bar fixed by slider; budget g2=M2 -----
+    line(0,M2,AXIS_MAX*0.97,M2,T.budget,2,[5,3]);
+    label('Budget constraint', AXIS_MAX*0.42, M2, 0, 16, T.budget, 12,'bold','left',true);
+
+    // g1bar vertical reference line
+    line(m.g1bar,0,m.g1bar,M2,T.muted,1.3,[1,3]);
+    xTick(m.g1bar, 'ḝg¹', T.muted);
+
+    const lowU = m.Ubar2*0.72, highU = m.Ubar2*1.35;
+    strokeCurve(sampleCurveMode2(lowU,160), T.ic2Light, 2);
+    strokeCurve(sampleCurveMode2(highU,160), T.ic2Light, 2);
+    strokeCurve(sampleCurveMode2(m.Ubar2,200), T.ic2, 2.6);
+
+    // dashed horizontal from ghat2 across to g1bar, vertical reference
+    line(0,m.ghat2,m.g1bar,m.ghat2,T.eqStroke,1.3,[2,3]);
+    yTick(m.ghat2, 'ĝ²', T.eqStroke);
+
+    dotMark(m.g1bar, m.ghat2, 5.5, T.eq);
+    label('tangency: slope = 0', m.g1bar, m.ghat2, 8, -10, T.eqStroke, 11.5,'bold','left',true);
+
+    drawBracketVertical(m.ghat2, M2, 'x²', T.xbracket);
+  }
+}
+
+function drawBracket(gFrom, gTo, txt, col){
+  // horizontal bracket under the x-axis between gFrom and gTo, placed below the tick-label band
+  const yAxis = py(0);
+  const yTop = yAxis + 28;   // starts below the xTick label band (xTick sits at +16)
+  const yB = yAxis + 38;
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.4;
+  ctx.beginPath();
+  ctx.moveTo(qx(gFrom), yTop); ctx.lineTo(qx(gFrom), yB);
+  ctx.lineTo(qx(gTo), yB); ctx.lineTo(qx(gTo), yTop);
+  ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=col; ctx.textAlign='center';
+  ctx.fillText(txt, (qx(gFrom)+qx(gTo))/2, yB+13);
+  ctx.restore();
+}
+function drawBracketVertical(gFrom, gTo, txt, col){
+  const xAxis = qx(0);
+  const xRight = xAxis - 32; // clear of the yTick label band (yTick ends at padL-7)
+  const xB = xAxis - 44;
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.4;
+  ctx.beginPath();
+  ctx.moveTo(xRight, py(gFrom)); ctx.lineTo(xB, py(gFrom));
+  ctx.lineTo(xB, py(gTo)); ctx.lineTo(xRight, py(gTo));
+  ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.font='bold 12px Georgia'; ctx.fillStyle=col; ctx.textAlign='center'; ctx.translate(xB-12,(py(gFrom)+py(gTo))/2);
+  ctx.rotate(-Math.PI/2); ctx.fillText(txt,0,0);
+  ctx.restore();
+}
+
+// ---- UI wiring ----
+const modeBtn1=document.getElementById('modeBtn1'), modeBtn2=document.getElementById('modeBtn2');
+const sliderName=document.getElementById('sliderName'), sliderVal_=document.getElementById('sliderVal');
+const sliderMaxLbl=document.getElementById('sliderMaxLbl');
+const relationLine=document.getElementById('relationLine');
+const legend=document.getElementById('legend');
+const rGhatLbl=document.getElementById('r-ghat-lbl'), rGhat=document.getElementById('r-ghat');
+const rXLbl=document.getElementById('r-x-lbl'), rX=document.getElementById('r-x');
+
+function refreshUI(){
+  const m = model();
+  if(mode===1){
+    modeBtn1.classList.add('active'); modeBtn2.classList.remove('active');
+    sliderName.textContent = "Individual 2's contribution, ḝg²";
+    sliderMaxLbl.textContent = 'corner at g² = '+CORNER_G2;
+    sliderVal_.textContent = sliderVal.toFixed(1);
+    relationLine.innerHTML = 'Move <b>g²</b> and watch individual 1\'s tangency point <b>ĝ¹</b> trace out the reaction function';
+    rGhatLbl.textContent = 'ĝ¹ (best response of 1)';
+    rGhat.textContent = m.ghat1.toFixed(2);
+    rXLbl.textContent = 'x¹ = M¹ − ĝ¹';
+    rX.textContent = m.x1.toFixed(2);
+    legend.innerHTML = `
+      <div class="item"><span class="sw" style="background:var(--ic1)"></span> indifference curve through the tangency (U¹ at best response)</div>
+      <div class="item"><span class="sw" style="background:var(--ic1-light)"></span> nearby indifference curves (lower / higher U¹)</div>
+      <div class="item"><span class="sw" style="background:var(--budget)"></span> budget constraint, g¹ = M¹</div>
+      <div class="item"><span class="dt" style="background:var(--eq)"></span> tangency point (slope = 0): best response ĝ¹</div>
+      <div class="item"><span class="sw" style="background:var(--xbracket)"></span> x¹ = M¹ − ĝ¹ (private good left over)</div>`;
+  } else {
+    modeBtn2.classList.add('active'); modeBtn1.classList.remove('active');
+    sliderName.textContent = "Individual 1's contribution, ḝg¹";
+    sliderMaxLbl.textContent = 'corner at g¹ = '+CORNER_G1;
+    sliderVal_.textContent = sliderVal.toFixed(1);
+    relationLine.innerHTML = 'Move <b>g¹</b> and watch individual 2\'s tangency point <b>ĝ²</b> trace out the reaction function';
+    rGhatLbl.textContent = 'ĝ² (best response of 2)';
+    rGhat.textContent = m.ghat2.toFixed(2);
+    rXLbl.textContent = 'x² = M² − ĝ²';
+    rX.textContent = m.x2.toFixed(2);
+    legend.innerHTML = `
+      <div class="item"><span class="sw" style="background:var(--ic2)"></span> indifference curve through the tangency (U² at best response)</div>
+      <div class="item"><span class="sw" style="background:var(--ic2-light)"></span> nearby indifference curves (lower / higher U²)</div>
+      <div class="item"><span class="sw" style="background:var(--budget)"></span> budget constraint, g² = M²</div>
+      <div class="item"><span class="dt" style="background:var(--eq)"></span> tangency point (slope = 0): best response ĝ²</div>
+      <div class="item"><span class="sw" style="background:var(--xbracket)"></span> x² = M² − ĝ² (private good left over)</div>`;
+  }
+}
+
+modeBtn1.addEventListener('click', ()=>{ if(mode!==1){ mode=1; sliderVal=Math.min(sliderVal, CORNER_G2-0.1); slider.max="4.9"; slider.value=sliderVal; refreshUI(); draw(); } });
+modeBtn2.addEventListener('click', ()=>{ if(mode!==2){ mode=2; sliderVal=Math.min(sliderVal, CORNER_G1-0.1); slider.max="4.9"; slider.value=sliderVal; refreshUI(); draw(); } });
+slider.addEventListener('input', ()=>{ sliderVal=parseFloat(slider.value); refreshUI(); draw(); });
+
+// ---- Stepper ----
+function stepContent(){
+  const m=model();
+  if(mode===1){
+    return [
+      { title:"Setup: fix individual 2's contribution", body:`Individual 1 chooses g¹ to maximize U¹(x¹,G) given a fixed g² = <b>${m.g2bar.toFixed(1)}</b>. Budget: x¹ = M¹ − g¹ = ${M1} − g¹. Public good: G = g¹ + g².` },
+      { title:"Draw individual 1's indifference curves", body:`In (g¹,g²) space, each indifference curve is U-shaped: as g¹ rises from 0, less of the public good comes from g¹+g² rising and more private good x¹ is given up, so g² must first fall, then — past the optimum — keeping utility constant requires g² to rise sharply as x¹ runs out.` },
+      { title:"Find the flat point — the best response", body:`The curve drawn in <b>dark blue</b> is the one tangent to the line g² = ${m.g2bar.toFixed(1)}: its slope is exactly zero there. That tangency point is ĝ¹ = <b>${m.ghat1.toFixed(2)}</b> — individual 1's best response to g² = ${m.g2bar.toFixed(1)}.` },
+      { title:"Read off the private good left over", body:`At the optimum, individual 1 spends ĝ¹ = ${m.ghat1.toFixed(2)} on the public good and keeps x¹ = M¹ − ĝ¹ = <b>${m.x1.toFixed(2)}</b> for private consumption — shown by the teal bracket on the axis.` },
+      { title:"Move the slider: trace the reaction function", body:`Drag g² and watch ĝ¹ shift. Because dg¹/dg² = ${(-ALPHA).toFixed(2)} < 0, every increase in the other's contribution makes individual 1 free-ride more and contribute less — this is exactly the negative slope of g¹ = f¹(g²) from the slides.` }
+    ];
+  } else {
+    return [
+      { title:"Setup: fix individual 1's contribution", body:`Individual 2 chooses g² to maximize U²(x²,G) given a fixed g¹ = <b>${m.g1bar.toFixed(1)}</b>. Budget: x² = M² − g² = ${M2} − g². Public good: G = g¹ + g².` },
+      { title:"Draw individual 2's indifference curves", body:`Axes are flipped relative to individual 1's problem: now the curve is tangent to a <i>vertical</i> line g¹ = ${m.g1bar.toFixed(1)}, since individual 2 is choosing along the g² (vertical) direction.` },
+      { title:"Find the flat point — the best response", body:`The <b>red</b> curve is tangent to g¹ = ${m.g1bar.toFixed(1)} at ĝ² = <b>${m.ghat2.toFixed(2)}</b> — individual 2's best response to g¹ = ${m.g1bar.toFixed(1)}.` },
+      { title:"Read off the private good left over", body:`x² = M² − ĝ² = <b>${m.x2.toFixed(2)}</b>, shown by the teal bracket on the vertical axis.` },
+      { title:"Move the slider: trace the reaction function", body:`Drag g¹ and watch ĝ² shift. dg²/dg¹ = ${(-ALPHA).toFixed(2)} < 0: as individual 1 contributes more, individual 2 free-rides more — the same negative-slope logic, just from individual 2's side.` }
+    ];
+  }
+}
+
+let step=0;
+const dotsEl=document.getElementById('dots'), counterEl=document.getElementById('counter');
+const stitleEl=document.getElementById('stitle'), sbodyEl=document.getElementById('sbody');
+const backBtn=document.getElementById('back'), nextBtn=document.getElementById('next');
+
+function renderStep(){
+  const steps=stepContent();
+  dotsEl.innerHTML='';
+  for(let i=0;i<steps.length;i++){
+    const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':i<step?' done':'');
+    dotsEl.appendChild(d);
+  }
+  counterEl.textContent=`Step ${step+1} / ${steps.length}`;
+  stitleEl.textContent=steps[step].title;
+  sbodyEl.innerHTML=steps[step].body;
+  backBtn.disabled = step===0;
+  nextBtn.textContent = step===steps.length-1 ? 'Restart ⟲' : 'Next ▶';
+}
+backBtn.addEventListener('click', ()=>{ if(step>0){ step--; renderStep(); } });
+nextBtn.addEventListener('click', ()=>{
+  const steps=stepContent();
+  if(step===steps.length-1){ step=0; } else { step++; }
+  renderStep();
+});
+
+// re-render step text when slider/mode changes (numbers must stay live)
+slider.addEventListener('input', renderStep);
+modeBtn1.addEventListener('click', renderStep);
+modeBtn2.addEventListener('click', renderStep);
+
+// ---- init ----
+setupCanvas();
+refreshUI();
+renderStep();
+draw();
+</script>
+</body>
+</html>
