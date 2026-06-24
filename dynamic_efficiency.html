@@ -205,10 +205,11 @@ function draw(){
     line(qN,0,qN,p,T.eqStroke,1,DASH_PROJ);
     xTick(qN,'qN='+qN.toFixed(1),T.new);
     dot(qN,p,5.5,T.new);
-    // shaded savings: the triangle from qO to qN at height p
-    fillPoly([[qO,0],[qN,0],[qN,p]], T.savings, 0.6);
-    label('savings',(qO+qN)/2*0.7,p*0.42,0,0,T.eqStroke,11,'bold','center',true);
-    label('$'+m.savTax.toFixed(1),(qO+qN)/2*0.7,p*0.42,0,13,T.eqStroke,11,'bold','center',true);
+    // shaded savings: wedge between C'_OLD and C'_NEW, capped by the tax line at p
+    // (anchored at the origin so every vertex sits on a real drawn line: C'_OLD, tax line, C'_NEW)
+    fillPoly([[0,0],[qO,p],[qN,p]], T.savings, 0.6);
+    label('savings',(qO+qN)/2.6,p*0.68,0,0,T.eqStroke,11,'bold','center',true);
+    label('$'+m.savTax.toFixed(1),(qO+qN)/2.6,p*0.68,0,13,T.eqStroke,11,'bold','center',true);
   }
 
   // ---- Q^MAX line (always) ----
