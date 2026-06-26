@@ -210,12 +210,25 @@ function arrow(x1,y1,x2,y2,col,w){
 // curve sample arrays
 function ic1Pts(n){ const p=[]; for(let i=0;i<=n;i++){ const g1=(M1-0.03)*i/n; p.push([g1, ic1_g2(g1)]); } return p; }
 function ic2Pts(n){ const p=[]; for(let i=0;i<=n;i++){ const g2=(M2-0.03)*i/n; p.push([ic2_g1(g2), g2]); } return p; }
-// lens boundary: IC1 right-branch (g1: 2->FAR) then IC2 upper-branch (g2: FAR->2)
-function lensPoly(){
-  const poly=[]; const n=80;
-  for(let i=0;i<=n;i++){ const g1=GN1+(FAR-GN1)*i/n; poly.push([g1, ic1_g2(g1)]); }
-  for(let i=0;i<=n;i++){ const g2=FAR-(FAR-GN2)*i/n; poly.push([ic2_g1(g2), g2]); }
+
+// level-parameterized indifference curves (for the moving point P)
+function ic1_g2_lvl(g1,lvl){ const b=M1-g1; if(b<=1e-9) return NaN; return Math.pow(lvl/Math.pow(b,ALPHA),1/(1-ALPHA)) - g1; }
+function ic2_g1_lvl(g2,lvl){ const b=M2-g2; if(b<=1e-9) return NaN; return Math.pow(lvl/Math.pow(b,ALPHA),1/(1-ALPHA)) - g2; }
+function ic1PtsLvl(n,lvl){ const p=[]; for(let i=0;i<=n;i++){ const g1=(M1-0.03)*i/n; p.push([g1, ic1_g2_lvl(g1,lvl)]); } return p; }
+function ic2PtsLvl(n,lvl){ const p=[]; for(let i=0;i<=n;i++){ const g2=(M2-0.03)*i/n; p.push([ic2_g1_lvl(g2,lvl), g2]); } return p; }
+// upper diagonal crossing q (>EFF_SYM) of the two ICs through P=(g,g): solve U1(q,q)=lvl
+function upperCrossing(lvl){ let lo=EFF_SYM, hi=5.4; if(U1(hi,hi)>lvl) return hi; for(let i=0;i<60;i++){ const mid=(lo+hi)/2; if(U1(mid,mid)>lvl) lo=mid; else hi=mid; } return (lo+hi)/2; }
+// residual lens between the moving ICs, from P=(g,g) up to (q,q)
+function residualLens(g,q,lvl){
+  const poly=[]; const n=70;
+  for(let i=0;i<=n;i++){ const g1=g+(q-g)*i/n; poly.push([g1, ic1_g2_lvl(g1,lvl)]); }
+  for(let i=0;i<=n;i++){ const g2=q-(q-g)*i/n; poly.push([ic2_g1_lvl(g2,lvl), g2]); }
   return poly;
+}
+function fillPoly(poly,col,alpha){
+  ctx.save(); ctx.beginPath(); let st=false;
+  for(const [x,y] of poly){ if(isNaN(x)||isNaN(y)){continue;} if(!st){ctx.moveTo(qx(x),py(y));st=true;} else ctx.lineTo(qx(x),py(y)); }
+  ctx.closePath(); ctx.fillStyle=col; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1; ctx.restore();
 }
 
 function draw(){
@@ -229,20 +242,22 @@ function draw(){
   label('g¹', AXIS_MAX*0.99, 0, 6, 4, T.text,14,'bold','left');
   label('g²', 0, AXIS_MAX*0.99, -6, -6, T.text,14,'bold','right');
 
-  // ---- shaded lens (set of Pareto improvements) ----
-  const poly=lensPoly();
-  ctx.save(); ctx.beginPath();
-  let st=false;
-  for(const [x,y] of poly){ if(isNaN(x)||isNaN(y)){continue;} if(!st){ctx.moveTo(qx(x),py(y));st=true;} else ctx.lineTo(qx(x),py(y)); }
-  ctx.closePath();
-  ctx.fillStyle=T.lens; ctx.globalAlpha=0.16; ctx.fill(); ctx.globalAlpha=1; ctx.restore();
+  const m=model();
+  const Up=m.u1; // = m.u2 by symmetry on the diagonal
+  const q=upperCrossing(Up);
 
-  // ---- indifference curves through Nash ----
-  strokeCurve(ic1Pts(220), T.ic1, 2.3);
-  strokeCurve(ic2Pts(220), T.ic2, 2.3);
+  // ---- ghost: original indifference curves through Nash (faint, dotted) ----
+  strokeCurve(ic1Pts(200), T.ic1, 1.1, [2,4]);
+  strokeCurve(ic2Pts(200), T.ic2, 1.1, [2,4]);
+
+  // ---- residual lens = Pareto improvements still available from P (shrinks to nothing on the locus) ----
+  if(q-m.g>0.012){ fillPoly(residualLens(m.g,q,Up), T.lens, 0.18); }
+
+  // ---- moving indifference curves through P (bold) ----
+  strokeCurve(ic1PtsLvl(220,Up), T.ic1, 2.4);
+  strokeCurve(ic2PtsLvl(220,Up), T.ic2, 2.4);
 
   // ---- locus of Pareto-efficient allocations: g1+g2 = GEFF ----
-  // draw across a range; emphasize the in-lens segment
   line(GEFF-AXIS_MAX*0.85, AXIS_MAX*0.85, AXIS_MAX*0.85, GEFF-AXIS_MAX*0.85, T.locus, 2, [7,4]);
 
   // ---- Nash equilibrium ----
@@ -252,11 +267,11 @@ function draw(){
   xTick(GN1,'ĝ¹',T.eqStroke); yTick(GN2,'ĝ²',T.eqStroke);
 
   // ---- moving allocation P along the diagonal ----
-  const m=model();
   if(tParam>0.001){
     arrow(GN1,GN2, m.g, m.g, T.lens, 2.5);
     dotMark(m.g, m.g, 5.5, T.lens);
-    label('both better off', m.g, m.g, 9, 4, T.lens, 11,'bold','left',true);
+    const tang = tParam>=0.985;
+    label(tang?'tangent → efficient':'both better off', m.g, m.g, 9, 4, T.lens, 11,'bold','left',true);
   }
 
   // ---- labels matching the slide (arrow-anchored, in empty regions) ----
@@ -290,10 +305,10 @@ slider.addEventListener('input',()=>{ tParam=parseFloat(slider.value); refreshUI
 function stepContent(){
   const m=model();
   return [
-    { title:"The two indifference curves at Nash", body:`Through the Nash point (2, 2) run individual 1's indifference curve (blue, <b>horizontal</b> tangent there — 1 is best-responding) and individual 2's (red, <b>vertical</b> tangent — 2 is best-responding).` },
+    { title:"The two indifference curves at Nash", body:`At t = 0 the bold curves sit on the faint dotted ones: individual 1's indifference curve (blue, <b>horizontal</b> tangent at Nash — 1 is best-responding) and individual 2's (red, <b>vertical</b> tangent — 2 is best-responding).` },
     { title:"Why a horizontal and a vertical tangent?", body:`At the Nash equilibrium each is at the bottom of their own best-response problem: dg²/dg¹ = 0 for 1 and dg¹/dg² = 0 for 2. The curves cross transversally, not tangentially — that gap is the whole point.` },
     { title:"The lens = Pareto improvements", body:`Because the curves cross rather than touch, a whole region (shaded) lies above 1's curve <i>and</i> right of 2's: every point there gives both higher utility. The public good benefits both, so both contributing more helps both.` },
-    { title:"Slide into the lens", body:`At t = ${tParam.toFixed(2)}, both contribute g = ${m.g.toFixed(3)}. U¹ is ${m.gain1>=0?'up':'down'} ${Math.abs(m.gain1).toFixed(1)}% and U² ${m.gain2>=0?'up':'down'} ${Math.abs(m.gain2).toFixed(1)}% versus Nash. ${tParam>=0.999?'You have reached the symmetric Pareto-efficient allocation on the locus.':'Keep going — both keep rising until the efficient locus.'}` },
+    { title:"Slide the curves up the lens", body:`At t = ${tParam.toFixed(2)}, both contribute g = ${m.g.toFixed(3)}. The bold curves lift off the dotted originals — U¹ ${m.gain1>=0?'+':''}${m.gain1.toFixed(1)}%, U² ${m.gain2>=0?'+':''}${m.gain2.toFixed(1)}% — and the shaded lens of <i>remaining</i> improvements shrinks. ${tParam>=0.985?'The two curves are now tangent: no further mutual gain — this allocation is Pareto-efficient.':'They still cross, so there is room left to improve.'}` },
     { title:"Locus of Pareto-efficient allocations", body:`The purple line g¹+g² = 20/3 ≈ 6.67 is where the two indifference curves are tangent (Samuelson: ΣMRS = 1). Nash gives G = 4 < 6.67, so the public good is <b>under-provided</b>: privately efficient, but not Pareto-efficient.` }
   ];
 }
