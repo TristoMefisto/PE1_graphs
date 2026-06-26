@@ -251,6 +251,9 @@ function sampleCurveMode1(Ubar1, n){
   }
   return pts;
 }
+// Locus of tangency points = the reaction function being traced out
+function reactionLocusMode1(){ const pts=[]; for(let i=0;i<=60;i++){ const g2=CORNER_G2*i/60; pts.push([br1(g2), g2]); } return pts; }
+function reactionLocusMode2(){ const pts=[]; for(let i=0;i<=60;i++){ const g1=CORNER_G1*i/60; pts.push([g1, br2(g1)]); } return pts; }
 function sampleCurveMode2(Ubar2, n){
   const pts=[]; // returns (g1,g2) pairs but parametrized by g2
   for(let i=0;i<=n;i++){
@@ -291,6 +294,10 @@ function draw(){
     strokeCurve(sampleCurveMode1(highU,160), T.ic1Light, 2);
     strokeCurve(sampleCurveMode1(m.Ubar1,200), T.ic1, 2.6);
 
+    // reaction-function locus: path the tangency point traces as g² varies (the slide's comparative-statics idea, made dynamic)
+    strokeCurve(reactionLocusMode1(), T.eq, 1.5, [5,4]);
+    label('ĝ¹(g²) locus', br1(CORNER_G2*0.55), CORNER_G2*0.55, 6, -4, T.eqStroke, 10.5,'bold','left',true);
+
     // dashed vertical from ghat1 down to axis, and horizontal from ghat1 to g2bar dot
     line(m.ghat1,0,m.ghat1,m.g2bar,T.eqStroke,1.3,[2,3]);
     xTick(m.ghat1, 'ĝ¹', T.eqStroke);
@@ -315,6 +322,10 @@ function draw(){
     strokeCurve(sampleCurveMode2(lowU,160), T.ic2Light, 2);
     strokeCurve(sampleCurveMode2(highU,160), T.ic2Light, 2);
     strokeCurve(sampleCurveMode2(m.Ubar2,200), T.ic2, 2.6);
+
+    // reaction-function locus
+    strokeCurve(reactionLocusMode2(), T.eq, 1.5, [5,4]);
+    label('ĝ²(g¹) locus', CORNER_G1*0.55, br2(CORNER_G1*0.55), 6, -6, T.eqStroke, 10.5,'bold','left',true);
 
     // dashed horizontal from ghat2 across to g1bar, vertical reference
     line(0,m.ghat2,m.g1bar,m.ghat2,T.eqStroke,1.3,[2,3]);
