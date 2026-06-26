@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Provision of Public Goods — Pareto Lens at the Nash Equilibrium</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --text:#1A1A2E; --muted:#75736B;
+    --ic1:#1565C0; --ic2:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000;
+    --lens:#00897B; --locus:#6A1B9A;
+    --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --ic1:#5B9BE8; --ic2:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --lens:#4DB6AC; --locus:#B57BE0;
+      --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
+  header .relation b { color:var(--accent); font-style:normal; }
+  .nav { text-align:center; margin:10px auto 0; font-size:12px; }
+  .nav a { color:var(--accent); text-decoration:none; margin:0 6px; }
+  .nav a:hover { text-decoration:underline; }
+  .nav .cur { color:var(--muted); font-weight:bold; }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:9px; }
+  .slider-label { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .slider-label .name { font-size:13px; font-weight:bold; }
+  .slider-label .val { font-family:'Courier New',monospace; font-size:14px; font-weight:bold; }
+  input[type=range] { width:100%; margin:6px 0 2px; accent-color:var(--lens); }
+  .slider-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.a { border-left:3px solid var(--ic1); background:color-mix(in srgb,var(--ic1) 11%,transparent); }
+  .res-box.b { border-left:3px solid var(--ic2); background:color-mix(in srgb,var(--ic2) 11%,transparent); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--muted); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box .sub { font-size:10px; color:var(--muted); }
+  .legend { font-size:11.5px; line-height:1.8; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .bx { width:16px; height:11px; border-radius:2px; flex-shrink:0; }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Nash Equilibrium: Privately Efficient, Not Pareto-Efficient</h1>
+  <div class="relation" id="relationLine">Both contributing more is a <b>Pareto improvement</b> — slide into the lens and watch both utilities rise</div>
+  <div class="nav">
+    <a href="best_response_derivation.html">1 · Best-response derivation</a> ›
+    <a href="nash_reaction_functions.html">2 · Reaction functions</a> ›
+    <span class="cur">3 · Pareto lens</span>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="card-title">Move into the lens</div>
+      <div class="slider-label">
+        <span class="name">Extra contributed by each, t</span>
+        <span class="val" id="sliderVal">0.0</span>
+      </div>
+      <input type="range" id="slider" min="0" max="1" step="0.02" value="0">
+      <div class="slider-ticks"><span>Nash (2, 2)</span><span>Efficient (10/3, 10/3)</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 1 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="res-box a"><div class="lbl">U¹ vs Nash</div><div class="big" id="r-u1">+0.0%</div><div class="sub" id="r-u1abs"></div></div>
+      <div class="res-box b"><div class="lbl">U² vs Nash</div><div class="big" id="r-u2">+0.0%</div><div class="sub" id="r-u2abs"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--ic1)"></span> indifference curve of 1 through Nash (horizontal there)</div>
+        <div class="item"><span class="sw" style="background:var(--ic2)"></span> indifference curve of 2 through Nash (vertical there)</div>
+        <div class="item"><span class="bx" style="background:color-mix(in srgb,var(--lens) 26%,transparent); border:1px solid var(--lens)"></span> set of Pareto improvements (the lens)</div>
+        <div class="item"><span class="sw" style="background:var(--locus)"></span> locus of Pareto-efficient allocations (g¹+g² = 20/3)</div>
+        <div class="item"><span class="dt" style="background:var(--eq)"></span> Nash equilibrium (ĝ¹, ĝ²) = (2, 2)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){ T={ plotBg:cssvar('--plot-bg'), text:cssvar('--text'), muted:cssvar('--muted'),
+  ic1:cssvar('--ic1'), ic2:cssvar('--ic2'), eq:cssvar('--eq'), eqStroke:cssvar('--eq-stroke'),
+  lens:cssvar('--lens'), locus:cssvar('--locus') }; }
+loadTheme();
+if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=52,padR=24,padT=30,padB=48;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const AXIS_MAX=6.4;
+
+// ---- Economics: same model (Cobb-Douglas alpha=2/3, M=10) ----
+const ALPHA=2/3, M1=10, M2=10;
+function U1(g1,g2){ return Math.pow(M1-g1,ALPHA)*Math.pow(g1+g2,1-ALPHA); }
+function U2(g1,g2){ return Math.pow(M2-g2,ALPHA)*Math.pow(g1+g2,1-ALPHA); }
+const GN1=2, GN2=2;
+const U1n=U1(GN1,GN2), U2n=U2(GN1,GN2);
+const GEFF=20/3;              // Pareto-efficient total provision
+const EFF_SYM=GEFF/2;         // symmetric efficient allocation = 10/3
+// IC of 1: g2(g1) at level U1n ; IC of 2: g1(g2) at level U2n
+function ic1_g2(g1){ const b=M1-g1; if(b<=1e-9) return NaN; return Math.pow(U1n/Math.pow(b,ALPHA),1/(1-ALPHA)) - g1; }
+function ic2_g1(g2){ const b=M2-g2; if(b<=1e-9) return NaN; return Math.pow(U2n/Math.pow(b,ALPHA),1/(1-ALPHA)) - g2; }
+// far lens corner on the diagonal: solve U1(g,g)=U1n for g in (3,5.4) by bisection
+function farCorner(){ let lo=3.0, hi=5.4; for(let i=0;i<60;i++){ const mid=(lo+hi)/2; const f=U1(mid,mid)-U1n; const flo=U1(lo,lo)-U1n; if((f<0)===(flo<0)) lo=mid; else hi=mid; } return (lo+hi)/2; }
+const FAR=farCorner();
+
+function qx(g1){ return padL + (g1/AXIS_MAX)*plotW; }
+function py(g2){ return padT + plotH - (g2/AXIS_MAX)*plotH; }
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1;
+  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+}
+let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+let tParam=0; // 0..1 : Nash -> symmetric efficient
+const slider=document.getElementById('slider');
+function model(){
+  const g=GN1+(EFF_SYM-GN1)*tParam; // symmetric point on the diagonal
+  const u1=U1(g,g), u2=U2(g,g);
+  return { g, u1, u2, gain1:(u1/U1n-1)*100, gain2:(u2/U2n-1)*100, onLocus: Math.abs(2*g-GEFF)<1e-6 || tParam>=0.999 };
+}
+
+// ---- draw helpers ----
+function line(x1,y1,x2,y2,col,w,dash){ ctx.beginPath(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.moveTo(qx(x1),py(y1)); ctx.lineTo(qx(x2),py(y2)); ctx.stroke(); ctx.setLineDash([]); }
+function dotMark(g1,g2,r,f){ ctx.beginPath(); ctx.arc(qx(g1),py(g2),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function label(txt,g1,g2,dx,dy,col,sz,wt,al,halo){
+  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
+  const px_=qx(g1)+dx, py_=py(g2)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+}
+function xTick(g1,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(g1),padT+plotH+16); ctx.restore(); }
+function yTick(g2,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(g2)+4); ctx.restore(); }
+function strokeCurve(pts,col,w,dash){
+  ctx.save(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+  let started=false;
+  for(const [x,y] of pts){ if(isNaN(x)||isNaN(y)||x<0||y<0||x>AXIS_MAX*1.3||y>AXIS_MAX*1.3){started=false;continue;}
+    if(!started){ctx.moveTo(qx(x),py(y));started=true;} else ctx.lineTo(qx(x),py(y)); }
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+}
+function arrow(x1,y1,x2,y2,col,w){
+  const X1=qx(x1),Y1=py(y1),X2=qx(x2),Y2=py(y2);
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(X1,Y1); ctx.lineTo(X2,Y2); ctx.stroke();
+  const ang=Math.atan2(Y2-Y1,X2-X1), hl=9;
+  ctx.beginPath(); ctx.moveTo(X2,Y2);
+  ctx.lineTo(X2-hl*Math.cos(ang-0.4),Y2-hl*Math.sin(ang-0.4));
+  ctx.lineTo(X2-hl*Math.cos(ang+0.4),Y2-hl*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+// curve sample arrays
+function ic1Pts(n){ const p=[]; for(let i=0;i<=n;i++){ const g1=(M1-0.03)*i/n; p.push([g1, ic1_g2(g1)]); } return p; }
+function ic2Pts(n){ const p=[]; for(let i=0;i<=n;i++){ const g2=(M2-0.03)*i/n; p.push([ic2_g1(g2), g2]); } return p; }
+// lens boundary: IC1 right-branch (g1: 2->FAR) then IC2 upper-branch (g2: FAR->2)
+function lensPoly(){
+  const poly=[]; const n=80;
+  for(let i=0;i<=n;i++){ const g1=GN1+(FAR-GN1)*i/n; poly.push([g1, ic1_g2(g1)]); }
+  for(let i=0;i<=n;i++){ const g2=FAR-(FAR-GN2)*i/n; poly.push([ic2_g1(g2), g2]); }
+  return poly;
+}
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(0,0,LW,LH);
+
+  // axes
+  ctx.strokeStyle=T.muted; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(AXIS_MAX*0.99),py(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(0),py(AXIS_MAX*0.99)); ctx.stroke();
+  label('g¹', AXIS_MAX*0.99, 0, 6, 4, T.text,14,'bold','left');
+  label('g²', 0, AXIS_MAX*0.99, -6, -6, T.text,14,'bold','right');
+
+  // ---- shaded lens (set of Pareto improvements) ----
+  const poly=lensPoly();
+  ctx.save(); ctx.beginPath();
+  let st=false;
+  for(const [x,y] of poly){ if(isNaN(x)||isNaN(y)){continue;} if(!st){ctx.moveTo(qx(x),py(y));st=true;} else ctx.lineTo(qx(x),py(y)); }
+  ctx.closePath();
+  ctx.fillStyle=T.lens; ctx.globalAlpha=0.16; ctx.fill(); ctx.globalAlpha=1; ctx.restore();
+
+  // ---- indifference curves through Nash ----
+  strokeCurve(ic1Pts(220), T.ic1, 2.3);
+  strokeCurve(ic2Pts(220), T.ic2, 2.3);
+
+  // ---- locus of Pareto-efficient allocations: g1+g2 = GEFF ----
+  // draw across a range; emphasize the in-lens segment
+  line(GEFF-AXIS_MAX*0.85, AXIS_MAX*0.85, AXIS_MAX*0.85, GEFF-AXIS_MAX*0.85, T.locus, 2, [7,4]);
+
+  // ---- Nash equilibrium ----
+  line(GN1,0,GN1,GN2,T.muted,1,[2,3]);
+  line(0,GN2,GN1,GN2,T.muted,1,[2,3]);
+  dotMark(GN1,GN2,6,T.eq);
+  xTick(GN1,'ĝ¹',T.eqStroke); yTick(GN2,'ĝ²',T.eqStroke);
+
+  // ---- moving allocation P along the diagonal ----
+  const m=model();
+  if(tParam>0.001){
+    arrow(GN1,GN2, m.g, m.g, T.lens, 2.5);
+    dotMark(m.g, m.g, 5.5, T.lens);
+    label('both better off', m.g, m.g, 9, 4, T.lens, 11,'bold','left',true);
+  }
+
+  // ---- labels matching the slide (arrow-anchored, in empty regions) ----
+  // Locus label: upper-right, arrow down-left to the locus line
+  arrow(3.35, 5.30, 2.98, 3.78, T.locus, 1.6);
+  label('Locus of Pareto-', 3.42, 5.78, 0, 0, T.locus, 12,'bold','left',true);
+  label('efficient allocations', 3.42, 5.46, 0, 0, T.locus, 12,'bold','left',true);
+  // Lens label: lower-right, arrow up-left into the lens interior
+  arrow(4.30, 2.20, 3.62, 2.98, T.lens, 1.6);
+  label('Set of Pareto', 4.32, 2.02, 0, 0, T.lens, 12.5,'bold','left',true);
+  label('improvements', 4.32, 1.70, 0, 0, T.lens, 12.5,'bold','left',true);
+  // tangency note at Nash
+  label('IC¹ flat, IC² vertical here', GN1, GN2, -8, 32, T.muted, 10.5,'italic','center',true);
+}
+
+// ---- UI ----
+const sliderValEl=document.getElementById('sliderVal');
+const rU1=document.getElementById('r-u1'), rU2=document.getElementById('r-u2');
+const rU1abs=document.getElementById('r-u1abs'), rU2abs=document.getElementById('r-u2abs');
+function refreshUI(){
+  const m=model();
+  sliderValEl.textContent=tParam.toFixed(2);
+  rU1.textContent=(m.gain1>=0?'+':'')+m.gain1.toFixed(1)+'%';
+  rU2.textContent=(m.gain2>=0?'+':'')+m.gain2.toFixed(1)+'%';
+  rU1abs.textContent='U¹ = '+m.u1.toFixed(3);
+  rU2abs.textContent='U² = '+m.u2.toFixed(3);
+}
+slider.addEventListener('input',()=>{ tParam=parseFloat(slider.value); refreshUI(); renderStep(); draw(); });
+
+// ---- stepper ----
+function stepContent(){
+  const m=model();
+  return [
+    { title:"The two indifference curves at Nash", body:`Through the Nash point (2, 2) run individual 1's indifference curve (blue, <b>horizontal</b> tangent there — 1 is best-responding) and individual 2's (red, <b>vertical</b> tangent — 2 is best-responding).` },
+    { title:"Why a horizontal and a vertical tangent?", body:`At the Nash equilibrium each is at the bottom of their own best-response problem: dg²/dg¹ = 0 for 1 and dg¹/dg² = 0 for 2. The curves cross transversally, not tangentially — that gap is the whole point.` },
+    { title:"The lens = Pareto improvements", body:`Because the curves cross rather than touch, a whole region (shaded) lies above 1's curve <i>and</i> right of 2's: every point there gives both higher utility. The public good benefits both, so both contributing more helps both.` },
+    { title:"Slide into the lens", body:`At t = ${tParam.toFixed(2)}, both contribute g = ${m.g.toFixed(3)}. U¹ is ${m.gain1>=0?'up':'down'} ${Math.abs(m.gain1).toFixed(1)}% and U² ${m.gain2>=0?'up':'down'} ${Math.abs(m.gain2).toFixed(1)}% versus Nash. ${tParam>=0.999?'You have reached the symmetric Pareto-efficient allocation on the locus.':'Keep going — both keep rising until the efficient locus.'}` },
+    { title:"Locus of Pareto-efficient allocations", body:`The purple line g¹+g² = 20/3 ≈ 6.67 is where the two indifference curves are tangent (Samuelson: ΣMRS = 1). Nash gives G = 4 < 6.67, so the public good is <b>under-provided</b>: privately efficient, but not Pareto-efficient.` }
+  ];
+}
+let step=0;
+const dotsEl=document.getElementById('dots'), counterEl=document.getElementById('counter');
+const stitleEl=document.getElementById('stitle'), sbodyEl=document.getElementById('sbody');
+const backBtn=document.getElementById('back'), nextBtn=document.getElementById('next');
+function renderStep(){
+  const steps=stepContent();
+  dotsEl.innerHTML='';
+  for(let i=0;i<steps.length;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':i<step?' done':''); dotsEl.appendChild(d); }
+  counterEl.textContent=`Step ${step+1} / ${steps.length}`;
+  stitleEl.textContent=steps[step].title; sbodyEl.innerHTML=steps[step].body;
+  backBtn.disabled=step===0; nextBtn.textContent=step===steps.length-1?'Restart ⟲':'Next ▶';
+}
+backBtn.addEventListener('click',()=>{ if(step>0){step--;renderStep();} });
+nextBtn.addEventListener('click',()=>{ const s=stepContent(); if(step===s.length-1)step=0; else step++; renderStep(); });
+
+setupCanvas(); refreshUI(); renderStep(); draw();
+</script>
+</body>
+</html>
