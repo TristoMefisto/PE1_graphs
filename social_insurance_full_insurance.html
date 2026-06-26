@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Insurance under Fair Odds — PE1 Social Insurance</title>
+<style>
+  :root{
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#EDEAE2;
+    --text:#1A1A2E; --muted:#75736B;
+    --budget:#33312E; --ic:#6A1B9A; --line45:#9A968C; --teal:#159C97; --tealfill:rgba(21,156,151,0.16);
+    --pt:#F9A825; --pt-stroke:#4A3000; --accent:#1565C0; --crimson:#8a1a1a; --endow:#33312E;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#2E2E35;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --budget:#DAD6D0; --ic:#B57BE0; --line45:#6f6b62; --teal:#33D0C8; --tealfill:rgba(51,208,200,0.16);
+      --pt:#FFD54F; --pt-stroke:#15171a; --accent:#5B9BE8; --crimson:#e8a0a0; --endow:#DAD6D0;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;padding:22px 16px 34px}
+  header{text-align:center;margin-bottom:4px}
+  header h1{font-size:20px;font-weight:bold;color:var(--crimson)}
+  header .relation{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:5px;line-height:1.5}
+  header .relation b{font-style:normal;color:var(--text)}
+  .crumb{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 0}
+  .layout{display:flex;gap:20px;max-width:1080px;margin:18px auto 0;align-items:flex-start;flex-wrap:wrap}
+  .canvas-wrap{flex:1 1 560px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;min-width:300px}
+  canvas{display:block;margin:0 auto}
+  .panel{flex:1 1 280px;display:flex;flex-direction:column;gap:14px;min-width:264px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:15px 16px}
+  .stepper-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .step-dots{display:flex;gap:6px}
+  .step-dot{width:9px;height:9px;border-radius:50%;background:var(--grid);border:1.5px solid var(--border);transition:all .2s}
+  .step-dot.active{background:var(--pt);border-color:var(--pt-stroke);transform:scale(1.25)}
+  .step-dot.done{background:var(--pt);border-color:var(--pt);opacity:.45}
+  .step-counter{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .step-title{font-size:15px;font-weight:bold;margin-bottom:7px;color:var(--accent)}
+  .step-body{font-size:13px;line-height:1.62}
+  .step-body .k{font-style:italic}
+  .step-body .num{font-family:'Courier New',monospace;font-weight:bold}
+  .nav-row{display:flex;gap:8px;margin-top:14px}
+  button{font-family:'Georgia',serif;font-size:13px;padding:8px 0;flex:1;border-radius:5px;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--surface);color:var(--text);transition:background .15s}
+  button:hover:not(:disabled){background:var(--bg)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(.92)}
+  .card-title{font-size:10.5px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:11px}
+  .slider-label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;margin-top:10px}
+  .slider-label:first-of-type{margin-top:0}
+  .slider-label .val{font-family:'Courier New',monospace;font-weight:bold;color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointer}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .res-box{border-radius:4px;padding:9px 11px;font-size:12px;line-height:1.5}
+  .res-box.a{background:color-mix(in srgb,var(--pt) 14%,transparent);border-left:3px solid var(--pt)}
+  .res-box.b{background:color-mix(in srgb,var(--accent) 12%,transparent);border-left:3px solid var(--accent)}
+  .res-box.opt{background:color-mix(in srgb,var(--teal) 14%,transparent);border-left:3px solid var(--teal);grid-column:1/3}
+  .res-box .lbl{font-size:10px;font-weight:bold;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+  .res-box.a .lbl{color:var(--pt-stroke)} .res-box.b .lbl{color:var(--accent)} .res-box.opt .lbl{color:var(--teal)}
+  .res-box .big{font-family:'Courier New',monospace;font-weight:bold;font-size:13px}
+  .res-box .ok{color:var(--teal);font-weight:bold}
+  .mini-wrap{display:flex;justify-content:center}
+  .legend{font-size:11.5px;line-height:1.95}
+  .legend .item{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+  .legend .sw.dash{height:0;border-top:2.4px dashed var(--ic)}
+  .legend .sw.gold{height:11px;width:11px;border-radius:50%;border:1.5px solid var(--pt-stroke);background:var(--pt)}
+  .legend .sw.ring{height:12px;width:12px;border-radius:50%;border:2px solid var(--pt);background:transparent}
+  .legend .sw.endow{height:10px;width:10px;border-radius:50%;background:var(--endow)}
+  .legend .sw.fill{height:11px;width:16px;border-radius:2px}
+  .note{font-size:11px;color:var(--muted);line-height:1.55;margin-top:11px;padding-top:11px;border-top:1px solid var(--border)}
+  .note sup{font-size:8.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Full Insurance under Actuarially-Fair Odds</h1>
+  <div class="relation">
+    State-contingent income (<b>yₕ</b> healthy, <b>yₛ</b> sick). Fair odds ⇒ a risk-averse agent
+    chooses <b>full insurance</b>: MRS = (1−p)/p ⇒ <b>u′(yₕ) = u′(yₛ)</b> ⇒ yₕ = yₛ
+  </div>
+  <div class="crumb">PE1 · Social Insurance · the risk-reduction benefit benchmark</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 1 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back">◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="res-box a"><div class="lbl">Contract</div>
+        <div class="big">I = <span id="r-i">—</span></div>
+        <div class="big">premium pI = <span id="r-prem">—</span></div>
+        <div class="big">I / M = <span id="r-frac">—</span></div></div>
+      <div class="res-box b"><div class="lbl">Outcome</div>
+        <div class="big">yₕ = <span id="r-yh">—</span></div>
+        <div class="big">yₛ = <span id="r-ys">—</span></div>
+        <div class="big">EU = <span id="r-eu">—</span></div>
+        <div class="big">CE = <span id="r-ce">—</span></div></div>
+      <div class="res-box opt"><div class="lbl">Optimality (MRS vs fair slope)</div>
+        <div class="big">MRS = <span id="r-mrs">—</span>&nbsp; −(1−p)/p = <span id="r-slope">—</span> <span class="ok" id="r-ok"></span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Coverage (indemnity) I</span><span class="val" id="v-i">50.0</span></div>
+      <input type="range" id="s-i" min="0" max="90" step="0.5" value="50">
+      <div class="slider-label"><span>Pr(sick) &nbsp;p</span><span class="val" id="v-p">0.40</span></div>
+      <input type="range" id="s-p" min="0.20" max="0.60" step="0.01" value="0.40">
+      <div class="note" id="setup-note">
+        Income Y = 100, loss M = 50, utility u(y) = √y (risk averse). Fair premium = pI.
+        Full insurance is I = M, giving certain income Y − pM in both states — the peak of EU for any p.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Expected utility vs coverage</div>
+      <div class="mini-wrap"><canvas id="mini"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--line45)"></span> 45° certainty line yₛ = yₕ</div>
+        <div class="item"><span class="sw" style="background:var(--budget)"></span> Fair-odds line, slope −(1−p)/p</div>
+        <div class="item"><span class="sw dash"></span> Indifference curve EU = const</div>
+        <div class="item"><span class="sw fill" style="background:var(--tealfill);border:1px solid var(--teal)"></span> α-triangle: tan α = (1−p)/p</div>
+        <div class="item"><span class="sw endow"></span> A — endowment (no insurance)</div>
+        <div class="item"><span class="sw ring"></span> C — full insurance optimum</div>
+        <div class="item"><span class="sw gold"></span> chosen contract (slider)</div>
+      </div>
+      <div class="note">
+        The chosen-contract dot is gold (the PE1 set's key-point colour). The state-space carries no natural
+        cost/surplus area, so the slide is unshaded; the only fill is the α-triangle, which visualises the
+        odds ratio (1−p)/p — purely a slope illustration, not an economic area.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== model (single source of truth) =====
+  const Y=100, M=50;            // income, loss (fixed)
+  let p=0.40, I=50;             // Pr(sick), coverage (sliders)
+  const u=y=>Math.sqrt(y), up=y=>0.5/Math.sqrt(y), uinv=z=>z*z;
+  function model(){
+    const yh=Y-p*I, ys=Y-M+(1-p)*I;
+    const A={yh:Y, ys:Y-M};
+    const C={yh:Y-p*M, ys:Y-p*M};
+    const slope=-(1-p)/p;
+    const EU=(1-p)*u(yh)+p*u(ys);
+    const MRS=-(1-p)*up(yh)/(p*up(ys));
+    const EUA=(1-p)*u(A.yh)+p*u(A.ys);
+    return {yh,ys,A,C,slope,EU,MRS,EUA,CE:uinv(EU),prem:p*I};
+  }
+  // indifference curve ys(yh) at expected-utility level E
+  const icYs=(yh,E)=>{const z=(E-(1-p)*u(yh))/p; return z>=0? uinv(z):NaN;};
+  const budYs=yh=>(Y-M)+(-(1-p)/p)*(yh-Y);
+
+  // ===== theme =====
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  let T={};
+  function loadTheme(){['--text','--muted','--grid','--plot-bg','--budget','--ic','--line45','--teal','--tealfill','--pt','--pt-stroke','--accent','--endow'].forEach(k=>T[k]=css(k));}
+  loadTheme();
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(()=>{loadTheme();draw();drawMini();});
+
+  // ===== main canvas =====
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const LW=560, LH=560, padL=52, padR=26, padT=26, padB=46, AX=130;
+  const PW=LW-padL-padR, PH=LH-padT-padB;
+  const gx=v=>padL+(v/AX)*PW, gy=v=>padT+PH-(v/AX)*PH;
+  function setupCanvas(){
+    const dpr=window.devicePixelRatio||1;
+    const avail=Math.max(300,cv.parentElement.clientWidth-16),cssW=Math.min(avail,640),cssH=cssW*LH/LW;
+    cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+    cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);
+    ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+  }
+  // helpers
+  function lineP(x1,y1,x2,y2,col,w,dd){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||1.4;ctx.setLineDash(dd||[]);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+  function segE(x1,y1,x2,y2,col,w,dd){lineP(gx(x1),gy(y1),gx(x2),gy(y2),col,w,dd);}
+  function curveFn(fn,col,w,dd,lo,hi){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||2;ctx.setLineDash(dd||[]);
+    ctx.lineJoin='round';ctx.beginPath();let pen=false;
+    for(let x=lo;x<=hi;x+=AX/400){const y=fn(x);
+      if(!isFinite(y)||y<-2||y>AX*1.1){pen=false;continue;}
+      const Px=gx(x),Py=gy(y);if(!pen){ctx.moveTo(Px,Py);pen=true;}else ctx.lineTo(Px,Py);}
+    ctx.stroke();ctx.restore();}
+  function ptGold(x,y,r,fill){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);
+    if(fill){ctx.fillStyle=T['--pt'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();}
+    else{ctx.lineWidth=2.2;ctx.strokeStyle=T['--pt'];ctx.stroke();}ctx.restore();}
+  function ptDark(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--endow'];ctx.fill();ctx.restore();}
+  function lab(txt,x,y,col,sz,al,halo){ctx.save();sz=sz||13;ctx.font='bold '+sz+'px Georgia';
+    ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    if(halo){const w=ctx.measureText(txt).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);
+      ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=1;}
+    ctx.fillStyle=col;ctx.fillText(txt,x,y);ctx.restore();}
+  function headUp(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x-4,y+2);ctx.lineTo(x+4,y+2);ctx.closePath();ctx.fill();ctx.restore();}
+  function headRt(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x+7,y);ctx.lineTo(x-2,y-4);ctx.lineTo(x-2,y+4);ctx.closePath();ctx.fill();ctx.restore();}
+
+  let step=0; const STEPS=5;
+
+  function draw(){
+    ctx.clearRect(0,0,LW,LH);
+    const m=model();
+    // backdrop + grid
+    ctx.save();ctx.fillStyle=T['--plot-bg'];ctx.fillRect(padL,padT,PW,PH);ctx.restore();
+    ctx.save();ctx.strokeStyle=T['--grid'];ctx.lineWidth=1;
+    for(let v=20;v<AX;v+=20){ctx.beginPath();ctx.moveTo(padL,gy(v));ctx.lineTo(padL+PW,gy(v));ctx.stroke();
+      ctx.beginPath();ctx.moveTo(gx(v),padT);ctx.lineTo(gx(v),padT+PH);ctx.stroke();}
+    ctx.restore();
+
+    // 45 deg certainty line
+    segE(0,0,AX,AX,T['--line45'],1.8);
+    lab('yₛ = yₕ',gx(AX-4),gy(AX-2),T['--line45'],12.5,'right',true);
+
+    // alpha-triangle (slope visualisation) at A, drawn behind lines
+    if(step>=1){
+      const run=18, xL=m.A.yh-run, yTop=budYs(xL);
+      ctx.save();ctx.beginPath();
+      ctx.moveTo(gx(m.A.yh),gy(m.A.ys));ctx.lineTo(gx(xL),gy(m.A.ys));ctx.lineTo(gx(xL),gy(yTop));ctx.closePath();
+      ctx.fillStyle=T['--tealfill'];ctx.fill();ctx.restore();
+      segE(m.A.yh,m.A.ys,xL,m.A.ys,T['--teal'],1,[3,3]);
+      segE(xL,m.A.ys,xL,yTop,T['--teal'],1,[3,3]);
+      // arc
+      ctx.save();ctx.strokeStyle=T['--teal'];ctx.lineWidth=1.4;ctx.beginPath();
+      ctx.arc(gx(m.A.yh),gy(m.A.ys),20,Math.PI,Math.PI+Math.atan((1-p)/p));ctx.stroke();ctx.restore();
+      lab('α',gx(m.A.yh)-26,gy(m.A.ys)-9,T['--teal'],13,'center',true);
+      lab('tan α = (1−p)/p',gx(xL)-6,gy((m.A.ys+yTop)/2),T['--teal'],11.5,'right',true);
+    }
+
+    // fair-odds budget line
+    curveFn(budYs,T['--budget'],2.4,[],0,AX);
+    {const yhTop=Y+(AX-(Y-M))/(-(1-p)/p); const yhB=Math.max(2,yhTop);
+     lab('b',gx(yhB)+5,gy(Math.min(AX-3,budYs(yhB)))+6,T['--budget'],13,'left',true);}
+    lab('fair odds',gx(110),gy(budYs(110))+12,T['--budget'],11.5,'left',true);
+
+    // indifference curve through endowment (faint reference) once insuring
+    if(step>=2){
+      const lo=Math.max(1,((m.EUA)/(1-p))**2*0+1);
+      curveFn(yh=>icYs(yh,m.EUA),T['--ic'],1.4,[3,4],1,AX);
+    }
+    // indifference curve through current point
+    if(step>=2){
+      curveFn(yh=>icYs(yh,m.EU),T['--ic'],2.0,[],1,AX);
+      // label near right end
+      let lx=AX-4,ly=icYs(lx,m.EU); if(!isFinite(ly)||ly<0||ly>AX){lx=Math.min(AX-4,(m.EU/(1-p))**2-2);ly=icYs(lx,m.EU);}
+      lab('EU',gx(lx),gy(Math.max(3,ly))-2,T['--ic'],12.5,'right',true);
+    }
+
+    // dashed projections + axis value labels for A and C
+    segE(m.A.yh,0,m.A.yh,m.A.ys,T['--muted'],1,[3,4]); segE(0,m.A.ys,m.A.yh,m.A.ys,T['--muted'],1,[3,4]);
+    segE(m.C.yh,0,m.C.yh,m.C.ys,T['--muted'],1,[3,4]); segE(0,m.C.ys,m.C.yh,m.C.ys,T['--muted'],1,[3,4]);
+    lab('Y',gx(m.A.yh),gy(0)+14,T['--muted'],12,'center');
+    lab('Y−pM',gx(m.C.yh),gy(0)+14,T['--muted'],12,'center');
+    lab('Y−M',gx(0)-6,gy(m.A.ys),T['--muted'],11.5,'right');
+    lab('Y−pM',gx(0)-6,gy(m.C.ys),T['--muted'],11.5,'right');
+
+    // axes
+    ctx.save();ctx.strokeStyle=T['--text'];ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(padL,padT-4);ctx.lineTo(padL,padT+PH);ctx.lineTo(padL+PW+8,padT+PH);ctx.stroke();ctx.restore();
+    headUp(padL,padT-4); headRt(padL+PW+8,padT+PH);
+    lab('yₛ',padL-8,padT+4,T['--text'],15,'right'); lab('yₕ',padL+PW+18,padT+PH,T['--text'],14);
+
+    // points: C target ring (always), A endowment, current chosen
+    ptGold(m.C.yh,m.C.ys,7,false);
+    lab('C',gx(m.C.yh)+10,gy(m.C.ys)-9,T['--text'],13.5,'left',true);
+    ptDark(m.A.yh,m.A.ys,5);
+    lab('A',gx(m.A.yh)+8,gy(m.A.ys)+10,T['--text'],13.5,'left',true);
+    ptGold(m.yh,m.ys,5.5,true);
+
+    // readouts
+    document.getElementById('v-i').textContent=I.toFixed(1);
+    document.getElementById('v-p').textContent=p.toFixed(2);
+    const S=(id,v)=>document.getElementById(id).textContent=v;
+    S('r-i',I.toFixed(1)); S('r-prem',m.prem.toFixed(1)); S('r-frac',(I/M).toFixed(2));
+    S('r-yh',m.yh.toFixed(1)); S('r-ys',m.ys.toFixed(1)); S('r-eu',m.EU.toFixed(3)); S('r-ce',m.CE.toFixed(1));
+    S('r-mrs',m.MRS.toFixed(3)); S('r-slope',m.slope.toFixed(3));
+    document.getElementById('r-ok').textContent=Math.abs(I-M)<0.6?'⇒ full insurance ✓':'';
+
+    renderStep(m); renderDots();
+  }
+
+  // ===== mini: EU vs coverage =====
+  const mc=document.getElementById('mini'), mctx=mc.getContext('2d');
+  const MW=236,MH=160,mL=30,mR=12,mT=14,mB=26;
+  function setupMini(){const dpr=window.devicePixelRatio||1;mc.style.width=MW+'px';mc.style.height=MH+'px';
+    mc.width=Math.round(MW*dpr);mc.height=Math.round(MH*dpr);mctx.setTransform(dpr,0,0,dpr,0,0);}
+  function drawMini(){
+    mctx.clearRect(0,0,MW,MH);
+    mctx.fillStyle=T['--plot-bg'];mctx.fillRect(mL,mT,MW-mL-mR,MH-mT-mB);
+    const Imax=90; const euAt=ii=>{const yh=Y-p*ii,ys=Y-M+(1-p)*ii;return (1-p)*u(yh)+p*u(ys);};
+    let emin=1e9,emax=-1e9;for(let ii=0;ii<=Imax;ii++){const e=euAt(ii);emin=Math.min(emin,e);emax=Math.max(emax,e);}
+    const pad=(emax-emin)*0.12||0.1; emin-=pad; emax+=pad*0.4;
+    const mx=ii=>mL+(ii/Imax)*(MW-mL-mR), my=e=>MH-mB-((e-emin)/(emax-emin))*(MH-mT-mB);
+    // axes
+    mctx.strokeStyle=T['--text'];mctx.lineWidth=1.3;
+    mctx.beginPath();mctx.moveTo(mL,mT);mctx.lineTo(mL,MH-mB);mctx.lineTo(MW-mR,MH-mB);mctx.stroke();
+    mctx.fillStyle=T['--muted'];mctx.font='bold 10px Georgia';
+    mctx.textAlign='left';mctx.fillText('EU',mL-26,mT+7);
+    mctx.textAlign='right';mctx.fillText('I',MW-mR,MH-mB+15);
+    // full-insurance marker at I=M
+    mctx.strokeStyle=T['--line45'];mctx.lineWidth=1;mctx.setLineDash([3,3]);
+    mctx.beginPath();mctx.moveTo(mx(M),mT);mctx.lineTo(mx(M),MH-mB);mctx.stroke();mctx.setLineDash([]);
+    mctx.fillStyle=T['--muted'];mctx.textAlign='center';mctx.fillText('I=M',mx(M),MH-mB+15);
+    // curve
+    mctx.strokeStyle=T['--teal'];mctx.lineWidth=2;mctx.beginPath();
+    for(let ii=0;ii<=Imax;ii++){const X=mx(ii),Yv=my(euAt(ii));ii?mctx.lineTo(X,Yv):mctx.moveTo(X,Yv);}mctx.stroke();
+    // current dot
+    const ic=Math.min(I,Imax);mctx.beginPath();mctx.arc(mx(ic),my(euAt(ic)),4,0,7);
+    mctx.fillStyle=T['--pt'];mctx.fill();mctx.lineWidth=1.6;mctx.strokeStyle=T['--pt-stroke'];mctx.stroke();
+  }
+
+  // ===== stepper =====
+  function renderDots(){
+    const d=document.getElementById('dots');d.innerHTML='';
+    for(let i=0;i<STEPS;i++){const s=document.createElement('div');
+      s.className='step-dot'+(i===step?' active':(i<step?' done':''));d.appendChild(s);}
+    document.getElementById('counter').textContent='Step '+(step+1)+' / '+STEPS;
+    document.getElementById('back').disabled=(step===0);
+  }
+  function renderStep(m){
+    const t=[
+      ['1 · The endowment A',
+       `Without insurance the agent has <span class="k">yₕ = Y</span> if healthy and <span class="k">yₛ = Y − M</span> if sick — the risky point <span class="k">A = (${m.A.yh.toFixed(0)}, ${m.A.ys.toFixed(0)})</span>, off the 45° line.`],
+      ['2 · The fair-odds line',
+       `An actuarially-fair indemnity lets the agent trade income across states along a line through A with slope <span class="k">−(1−p)/p</span> (here <span class="num">${m.slope.toFixed(2)}</span>). The angle satisfies <span class="k">tan α = Pr(H)/Pr(S)</span>.`],
+      ['3 · Indifference curves',
+       `Iso-expected-utility curves <span class="k">(1−p)u(yₕ) + p u(yₛ) = const</span> are convex (risk aversion). Their slope is <span class="k">MRS = −(1−p)u′(yₕ)/(p u′(yₛ))</span>.`],
+      ['4 · Tangency ⇒ full insurance',
+       `Optimum where MRS = fair slope: <span class="k">−(1−p)u′(yₕ)/(p u′(yₛ)) = −(1−p)/p</span> ⇒ <span class="k">u′(yₕ)=u′(yₛ)</span> ⇒ <span class="k">yₕ=yₛ</span>. That is point <span class="k">C</span> on the 45° line, <span class="num">(${m.C.yh.toFixed(0)}, ${m.C.ys.toFixed(0)})</span> = (Y−pM, Y−pM).`],
+      ['5 · Move the coverage',
+       `Slide <span class="k">I</span> along the fair-odds line. EU (mini-plot) rises to its peak exactly at <span class="k">I = M</span> (full insurance); under- and over-insurance both lower it. Changing p tilts the line but the optimum stays at full insurance for every p.`]
+    ];
+    document.getElementById('stitle').textContent=t[step][0];
+    document.getElementById('sbody').innerHTML=t[step][1];
+  }
+
+  // ===== events =====
+  document.getElementById('s-i').addEventListener('input',e=>{I=parseFloat(e.target.value);draw();drawMini();});
+  document.getElementById('s-p').addEventListener('input',e=>{p=parseFloat(e.target.value);draw();drawMini();});
+  document.getElementById('next').addEventListener('click',()=>{step=(step+1)%STEPS;draw();drawMini();});
+  document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;draw();drawMini();}});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{setupCanvas();draw();},120);});
+
+  setupCanvas(); setupMini(); draw(); drawMini();
+})();
+</script>
+</body>
+</html>
