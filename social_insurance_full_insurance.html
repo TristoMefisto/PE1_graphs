@@ -22,7 +22,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;padding:22px 16px 34px}
   header{text-align:center;margin-bottom:4px}
-  header h1{font-size:20px;font-weight:bold;color:var(--crimson)}
+  header h1{font-size:20px;font-weight:bold;color:var(--accent)}
   header .relation{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:5px;line-height:1.5}
   header .relation b{font-style:normal;color:var(--text)}
   .crumb{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 0}
@@ -124,7 +124,7 @@
       <div class="slider-label"><span>Pr(sick) &nbsp;p</span><span class="val" id="v-p">0.40</span></div>
       <input type="range" id="s-p" min="0.20" max="0.60" step="0.01" value="0.40">
       <div class="note" id="setup-note">
-        Income Y = 100, loss M = 50, utility u(y) = √y (risk averse). Fair premium = pI.
+        Income Y = 100, loss M = 50, utility u(y) = ln y (risk averse). Fair premium = pI.
         Full insurance is I = M, giving certain income Y − pM in both states — the peak of EU for any p.
       </div>
     </div>
@@ -139,16 +139,11 @@
       <div class="legend">
         <div class="item"><span class="sw" style="background:var(--line45)"></span> 45° certainty line yₛ = yₕ</div>
         <div class="item"><span class="sw" style="background:var(--budget)"></span> Fair-odds line, slope −(1−p)/p</div>
-        <div class="item"><span class="sw dash"></span> Indifference curve EU = const</div>
+        <div class="item"><span class="sw" style="background:var(--ic)"></span> Indifference curve EU = const</div>
         <div class="item"><span class="sw fill" style="background:var(--tealfill);border:1px solid var(--teal)"></span> α-triangle: tan α = (1−p)/p</div>
         <div class="item"><span class="sw endow"></span> A — endowment (no insurance)</div>
         <div class="item"><span class="sw ring"></span> C — full insurance optimum</div>
         <div class="item"><span class="sw gold"></span> chosen contract (slider)</div>
-      </div>
-      <div class="note">
-        The chosen-contract dot is gold (the PE1 set's key-point colour). The state-space carries no natural
-        cost/surplus area, so the slide is unshaded; the only fill is the α-triangle, which visualises the
-        odds ratio (1−p)/p — purely a slope illustration, not an economic area.
       </div>
     </div>
   </div>
@@ -159,7 +154,7 @@
   // ===== model (single source of truth) =====
   const Y=100, M=50;            // income, loss (fixed)
   let p=0.40, I=50;             // Pr(sick), coverage (sliders)
-  const u=y=>Math.sqrt(y), up=y=>0.5/Math.sqrt(y), uinv=z=>z*z;
+  const u=y=>Math.log(y), up=y=>1/y, uinv=z=>Math.exp(z);
   function model(){
     const yh=Y-p*I, ys=Y-M+(1-p)*I;
     const A={yh:Y, ys:Y-M};
@@ -253,17 +248,14 @@
      lab('b',gx(yhB)+5,gy(Math.min(AX-3,budYs(yhB)))+6,T['--budget'],13,'left',true);}
     lab('fair odds',gx(110),gy(budYs(110))+12,T['--budget'],11.5,'left',true);
 
-    // indifference curve through endowment (faint reference) once insuring
-    if(step>=2){
-      const lo=Math.max(1,((m.EUA)/(1-p))**2*0+1);
-      curveFn(yh=>icYs(yh,m.EUA),T['--ic'],1.4,[3,4],1,AX);
-    }
     // indifference curve through current point
     if(step>=2){
-      curveFn(yh=>icYs(yh,m.EU),T['--ic'],2.0,[],1,AX);
+      curveFn(yh=>icYs(yh,m.EU),T['--ic'],2.2,[],1,AX);
       // label near right end
-      let lx=AX-4,ly=icYs(lx,m.EU); if(!isFinite(ly)||ly<0||ly>AX){lx=Math.min(AX-4,(m.EU/(1-p))**2-2);ly=icYs(lx,m.EU);}
-      lab('EU',gx(lx),gy(Math.max(3,ly))-2,T['--ic'],12.5,'right',true);
+      let lx=AX-6, ly=icYs(lx,m.EU);
+      if(!isFinite(ly)) ly=icYs(lx,m.EU);
+      ly=Math.max(6,Math.min(AX-6,ly));
+      lab('EU',gx(lx),gy(ly)-2,T['--ic'],12.5,'right',true);
     }
 
     // dashed projections + axis value labels for A and C
