@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimal Provision by a Planner — PE1</title>
+<style>
+  :root{
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#EDEAE2;
+    --text:#1A1A2E; --muted:#75736B;
+    --ppf:#C62828; --ic:#262626; --teal:#159C97; --tealfill:rgba(21,156,151,0.14);
+    --pt:#F9A825; --pt-stroke:#4A3000; --accent:#1565C0; --crimson:#8a1a1a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#2E2E35;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --ppf:#EF6C6C; --ic:#DcDcDc; --teal:#33D0C8; --tealfill:rgba(51,208,200,0.15);
+      --pt:#FFD54F; --pt-stroke:#15171a; --accent:#5B9BE8; --crimson:#e8a0a0;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;padding:22px 16px 34px}
+  header{text-align:center;margin-bottom:4px}
+  header h1{font-size:20px;font-weight:bold;color:var(--crimson)}
+  header .relation{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:5px;line-height:1.5}
+  header .relation b{font-style:normal;color:var(--text)}
+  .crumb{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 0}
+  .crumb a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--border)}
+  .crumb a:hover{color:var(--text)} .crumb b{color:var(--text)}
+  .layout{display:flex;gap:20px;max-width:1080px;margin:18px auto 0;align-items:flex-start;flex-wrap:wrap}
+  .canvas-wrap{flex:1 1 600px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;min-width:300px}
+  canvas{display:block;margin:0 auto}
+  .panel{flex:1 1 280px;display:flex;flex-direction:column;gap:14px;min-width:264px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:15px 16px}
+  .stepper-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .step-dots{display:flex;gap:6px}
+  .step-dot{width:9px;height:9px;border-radius:50%;background:var(--grid);border:1.5px solid var(--border);transition:all .2s}
+  .step-dot.active{background:var(--pt);border-color:var(--pt-stroke);transform:scale(1.25)}
+  .step-dot.done{background:var(--pt);border-color:var(--pt);opacity:.45}
+  .step-counter{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .step-title{font-size:15px;font-weight:bold;margin-bottom:7px;color:var(--accent)}
+  .step-body{font-size:13px;line-height:1.62}
+  .step-body .k{font-style:italic}
+  .step-body .num{font-family:'Courier New',monospace;font-weight:bold}
+  .nav-row{display:flex;gap:8px;margin-top:14px}
+  button{font-family:'Georgia',serif;font-size:13px;padding:8px 0;flex:1;border-radius:5px;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--surface);color:var(--text);transition:background .15s}
+  button:hover:not(:disabled){background:var(--bg)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(.92)}
+  .card-title{font-size:10.5px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:11px}
+  .slider-label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px}
+  .slider-label .val{font-family:'Courier New',monospace;font-weight:bold;color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent);height:4px;cursor:pointer}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .res-box{border-radius:4px;padding:9px 11px;font-size:12px;line-height:1.45}
+  .res-box.alloc{background:color-mix(in srgb,var(--pt) 14%,transparent);border-left:3px solid var(--pt)}
+  .res-box.sam{background:color-mix(in srgb,var(--teal) 14%,transparent);border-left:3px solid var(--teal);grid-column:1/3}
+  .res-box .lbl{font-size:10px;font-weight:bold;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+  .res-box.alloc .lbl{color:var(--pt-stroke)} .res-box.sam .lbl{color:var(--teal)}
+  .res-box .big{font-family:'Courier New',monospace;font-weight:bold;font-size:13px}
+  .res-box .ok{color:var(--teal);font-weight:bold}
+  .upf-wrap{display:flex;justify-content:center}
+  .legend{font-size:11.5px;line-height:1.95}
+  .legend .item{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+  .legend .sw.dash{height:0;border-top:2.4px dashed var(--ic)}
+  .legend .sw.fill{height:11px;width:16px;border-radius:2px}
+  .legend .sw.gold{height:11px;width:11px;border-radius:50%;border:1.5px solid var(--pt-stroke);background:var(--pt)}
+  .note{font-size:11px;color:var(--muted);line-height:1.55;margin-top:11px;padding-top:11px;border-top:1px solid var(--border)}
+  .note sup{font-size:8.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Optimal Provision by a Planner</h1>
+  <div class="relation">
+    Fix individual&nbsp;1 at <b>Ū¹</b>, let individual&nbsp;2 optimise on the residual frontier <b>CD</b> &nbsp;⇒&nbsp;
+    <b>MRS¹ + MRS² = MRT</b> &nbsp;(the Samuelson rule)
+  </div>
+  <div class="crumb">
+    Private provision:
+    <a href="https://tristomefisto.github.io/PE1_graphs/best_response_derivation.html">1 · best response</a> ›
+    <a href="https://tristomefisto.github.io/PE1_graphs/nash_reaction_functions.html">2 · Nash</a> ›
+    <a href="https://tristomefisto.github.io/PE1_graphs/pareto_lens.html">3 · Pareto lens</a>
+    &nbsp;|&nbsp; Planner: <b>4 · optimal provision</b>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 1 / 5</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back">◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="res-box alloc"><div class="lbl">Efficient allocation</div>
+        <div class="big">Ḡ = <span id="r-g">—</span></div>
+        <div class="big">x¹ = <span id="r-x1">—</span>&nbsp; x² = <span id="r-x2">—</span></div></div>
+      <div class="res-box alloc"><div class="lbl">Marginal terms</div>
+        <div class="big">MRS¹ = <span id="r-m1">—</span></div>
+        <div class="big">MRS² = <span id="r-m2">—</span></div>
+        <div class="big">MRT&nbsp; = <span id="r-mt">—</span></div></div>
+      <div class="res-box sam"><div class="lbl">Samuelson rule</div>
+        <div class="big">MRS¹ + MRS² = <span id="r-sum">—</span> <span class="ok" id="r-ok"></span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Utility granted to individual 1 &nbsp;Ū¹</span><span class="val" id="v-u1">2.80</span></div>
+      <input type="range" id="s-u1" min="1.0" max="5.0" step="0.01" value="2.8">
+      <div class="note" id="setup-note">
+        Concave PPF X = 10(1−(G/10)²); Cobb–Douglas Uʰ = (xʰ)<sup>βʰ</sup>G<sup>1−βʰ</sup> with β¹ = 0.72, β² = 0.32.
+        Because the two value G differently, the efficient Ḡ shifts with the distribution.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Utility possibility frontier</div>
+      <div class="upf-wrap"><canvas id="upf"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--ppf)"></span> PPF — total private good X(G)</div>
+        <div class="item"><span class="sw" style="background:var(--ic)"></span> Ū¹ — individual 1's indifference curve</div>
+        <div class="item"><span class="sw" style="background:var(--ic)"></span> CD — residual frontier for individual 2</div>
+        <div class="item"><span class="sw dash"></span> Ū² — individual 2's indifference curve</div>
+        <div class="item"><span class="sw fill" style="background:var(--tealfill);border:1px solid var(--teal)"></span> X² available to individual 2</div>
+        <div class="item"><span class="sw gold"></span> E¹, E² — efficient optima</div>
+      </div>
+      <div class="note">
+        Equilibrium dots are gold (not the slide's red) for consistency across the PE1 set.
+        The teal X² region is added so the PPF→CD construction is visible — the slide itself is unshaded.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== model (single source of truth — verified) =====
+  const b1=0.72, b2=0.32, Ymax=10, Gmax=10, BMAX=10;
+  const a1=(1-b1)/b1, a2=(1-b2)/b2;
+  const F   = G => Ymax*(1-(G/Gmax)*(G/Gmax));
+  const MRT = G => 2*Ymax*G/(Gmax*Gmax);
+  const x1of= (G,U1)=> Math.pow(U1,1/b1)*Math.pow(G,-(1-b1)/b1);
+  const resid=(G,U1)=> F(G)-x1of(G,U1);
+  const U2val=(G,U1)=>{const x2=resid(G,U1); return x2<=0? -1 : Math.pow(x2,b2)*Math.pow(G,1-b2);};
+  const ic2  =(G,U2)=> Math.pow(U2,1/b2)*Math.pow(G,-(1-b2)/b2);
+  function argmax(fn,lo,hi){const N=400;let best=-1e18,bg=lo;
+    for(let i=0;i<=N;i++){const G=lo+(hi-lo)*i/N,u=fn(G); if(u>best){best=u;bg=G;}}
+    let a=Math.max(lo,bg-(hi-lo)/N*2),b=Math.min(hi,bg+(hi-lo)/N*2);
+    const gr=(Math.sqrt(5)-1)/2;let c=b-gr*(b-a),d=a+gr*(b-a);
+    for(let k=0;k<60;k++){if(fn(c)<fn(d))a=c;else b=d;c=b-gr*(b-a);d=a+gr*(b-a);}return (a+b)/2;}
+  function bisectZero(fn,lo,hi){let flo=fn(lo);
+    for(let k=0;k<80;k++){const m=(lo+hi)/2,fm=fn(m);if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}}return (lo+hi)/2;}
+  function model(U1){
+    const G=argmax(g=>U2val(g,U1),0.05,Gmax-0.02);
+    const x1=x1of(G,U1),x2=resid(G,U1),U2=U2val(G,U1);
+    const Gpk=argmax(g=>resid(g,U1),0.05,Gmax-0.02);
+    const LOc=0.04;
+    const C=(resid(LOc,U1)>=0)?LOc:bisectZero(g=>resid(g,U1),LOc,Gpk);
+    const D=bisectZero(g=>resid(g,U1),Gpk,Gmax-1e-4);
+    return {U1,G,x1,x2,U2,Gpk,C,D,MRS1:a1*x1/G,MRS2:a2*x2/G,MRTv:MRT(G)};
+  }
+  const U1LO=1.0,U1HI=5.0;
+  const UPF=[]; for(let i=0;i<=120;i++){const U1=U1LO+(U1HI-U1LO)*i/120;const m=model(U1);UPF.push([U1,m.U2]);}
+
+  // ===== theme =====
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  let T={};
+  function loadTheme(){['--text','--muted','--grid','--plot-bg','--ppf','--ic','--teal','--tealfill','--pt','--pt-stroke','--accent','--surface'].forEach(k=>T[k]=css(k));}
+  loadTheme();
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(()=>{loadTheme();draw();drawUPF();});
+
+  // ===== main canvas layout =====
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const LW=600, LH=720, padL=56, padR=22, padT=30, padB=44;
+  const PW=LW-padL-padR, plotH=LH-padT-padB;
+  const TH=plotH*0.47, GAP=plotH*0.06, BH=plotH*0.47;
+  const topY0=padT, topY1=padT+TH, botY0=topY1+GAP, botY1=botY0+BH;
+  const gx=G=>padL+(G/Gmax)*PW;
+  const tY=x=>topY1-(x/Ymax)*TH;
+  const bY=x=>botY1-(x/BMAX)*BH;
+
+  function setupCanvas(){
+    const dpr=window.devicePixelRatio||1;
+    const avail=Math.max(300,cv.parentElement.clientWidth-16),cssW=Math.min(avail,760),cssH=cssW*LH/LW;
+    cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+    cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);
+    ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+  }
+
+  // ===== helpers =====
+  function lineP(x1,y1,x2,y2,col,w,dd){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||1.4;ctx.setLineDash(dd||[]);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+  function curve(pts,col,w,dd){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||2;ctx.setLineDash(dd||[]);
+    ctx.lineJoin='round';ctx.beginPath();let pen=false;
+    for(const p of pts){if(!p||!isFinite(p[0])||!isFinite(p[1])){pen=false;continue;}
+      if(!pen){ctx.moveTo(p[0],p[1]);pen=true;}else ctx.lineTo(p[0],p[1]);}
+    ctx.stroke();ctx.restore();}
+  function dot(x,y,r){ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=T['--pt'];ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();ctx.restore();}
+  function headUp(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();
+    ctx.moveTo(x,y-7);ctx.lineTo(x-4,y+2);ctx.lineTo(x+4,y+2);ctx.closePath();ctx.fill();ctx.restore();}
+  function headRt(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();
+    ctx.moveTo(x+7,y);ctx.lineTo(x-2,y-4);ctx.lineTo(x-2,y+4);ctx.closePath();ctx.fill();ctx.restore();}
+  function lab(txt,x,y,col,sz,al,halo){ctx.save();sz=sz||13;ctx.font='bold '+sz+'px Georgia';
+    ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    if(halo){const w=ctx.measureText(txt).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);
+      ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=1;}
+    ctx.fillStyle=col;ctx.fillText(txt,x,y);ctx.restore();}
+  function gridPanel(y0,y1,yMax,yScale){
+    ctx.save();ctx.strokeStyle=T['--grid'];ctx.lineWidth=1;
+    for(let v=2;v<yMax;v+=2){const yy=yScale(v);ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+PW,yy);ctx.stroke();}
+    for(let g=2;g<Gmax;g+=2){ctx.beginPath();ctx.moveTo(gx(g),y0);ctx.lineTo(gx(g),y1);ctx.stroke();}
+    ctx.restore();
+  }
+  function panelBg(y0,y1){ctx.save();ctx.fillStyle=T['--plot-bg'];ctx.fillRect(padL,y0,PW,y1-y0);ctx.restore();}
+
+  // ===== state =====
+  let U1=2.8, step=0; const STEPS=5;
+
+  // ===== draw main =====
+  function draw(){
+    ctx.clearRect(0,0,LW,LH);
+    const m=model(U1);
+
+    panelBg(topY0,topY1); gridPanel(topY0,topY1,Ymax,tY);
+    panelBg(botY0,botY1); gridPanel(botY0,botY1,BMAX,bY);
+
+    // ---- TOP: teal residual region between PPF and IC1 over [C,D] ----
+    const lo=Math.max(m.C,0.02), hi=Math.min(m.D,Gmax-0.001);
+    ctx.save();ctx.beginPath();let stt=false;
+    for(let G=lo;G<=hi;G+=(hi-lo)/200){const y=tY(F(G));if(!stt){ctx.moveTo(gx(G),y);stt=true;}else ctx.lineTo(gx(G),y);}
+    for(let G=hi;G>=lo;G-=(hi-lo)/200)ctx.lineTo(gx(G),tY(x1of(G,U1)));
+    ctx.closePath();ctx.fillStyle=T['--tealfill'];ctx.fill();ctx.restore();
+
+    // axes (top)
+    ctx.save();ctx.strokeStyle=T['--text'];ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(padL,topY0-6);ctx.lineTo(padL,topY1);ctx.lineTo(gx(Gmax)+12,topY1);ctx.stroke();ctx.restore();
+    headUp(padL,topY0-6); headRt(gx(Gmax)+12,topY1);
+    lab('X¹',padL-10,topY0+2,T['--text'],15,'right'); lab('G',gx(Gmax)+20,topY1,T['--text'],14);
+
+    // PPF + IC1
+    {const p=[];for(let G=0;G<=Gmax;G+=Gmax/300)p.push([gx(G),tY(F(G))]);curve(p,T['--ppf'],2.6);}
+    {const p=[];for(let G=0.18;G<=Gmax;G+=Gmax/400){const x=x1of(G,U1);p.push(x<=Ymax*1.05?[gx(G),tY(x)]:null);}curve(p,T['--ic'],2.2);}
+    lab('PPF',gx(3.0),tY(F(3.0))-13,T['--ppf'],13);
+
+    // shared guides
+    lineP(gx(m.G),topY0-4,gx(m.G),botY1,T['--muted'],1.2,[5,5]);
+    lineP(gx(m.C),tY(0),gx(m.C),botY1,T['--grid'],1,[3,4]);
+    lineP(gx(m.D),tY(0),gx(m.D),botY1,T['--grid'],1,[3,4]);
+
+    // top labels
+    const GA=Math.max(m.C+0.35,1.1), GB=Math.min(m.D-0.2,8.6);
+    lab('A',gx(GA)+5,tY(x1of(GA,U1))-11,T['--ic'],13,'left',true);
+    lab('B',gx(GB)+7,tY(x1of(GB,U1))-9,T['--ic'],13,'left',true);
+    lab('Ū¹',gx(GB)+7,tY(x1of(GB,U1))+11,T['--ic'],13,'left',true);
+    if(step>=1){
+      const Gm=(m.C+m.G)/2.0, ya=tY(F(Gm)), yb=tY(x1of(Gm,U1));
+      lab('X²',gx(Gm),(ya+yb)/2,T['--teal'],13,'center',true);
+    }
+    dot(gx(m.G),tY(m.x1),5.5); lab('E¹',gx(m.G)+9,tY(m.x1)-11,T['--text'],14,'left',true);
+
+    // ---- BOTTOM axes ----
+    ctx.save();ctx.strokeStyle=T['--text'];ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(padL,botY0-6);ctx.lineTo(padL,botY1);ctx.lineTo(gx(Gmax)+12,botY1);ctx.stroke();ctx.restore();
+    headUp(padL,botY0-6); headRt(gx(Gmax)+12,botY1);
+    lab('X²',padL-10,botY0+2,T['--text'],15,'right'); lab('G',gx(Gmax)+20,botY1,T['--text'],14);
+
+    // CD
+    {const p=[];for(let G=0.18;G<=Gmax;G+=Gmax/440){const x=resid(G,U1);p.push((x>=0&&x<=BMAX*1.02)?[gx(G),bY(x)]:null);}curve(p,T['--ic'],2.4);}
+    lab('CD',gx(m.Gpk),bY(resid(m.Gpk,U1))-12,T['--ic'],13,'center',true);
+    lab('C',gx(m.C),botY1+15,T['--muted'],12.5,'center');
+    lab('D',gx(m.D),botY1+15,T['--muted'],12.5,'center');
+
+    // IC2 dashed + tangent
+    if(step>=2){
+      const p=[];for(let G=1.2;G<=Gmax;G+=Gmax/360){const x=ic2(G,m.U2);p.push((x>=0&&x<=BMAX*1.05)?[gx(G),bY(x)]:null);}
+      curve(p,T['--ic'],1.7,[6,5]);
+      const gl=Math.min(m.D+0.35,9.4); lab('Ū²',gx(gl),bY(ic2(gl,m.U2)),T['--muted'],12.5,'left',true);
+    }
+    if(step>=3){
+      const s=(m.MRS1-m.MRTv),dG=1.5;
+      lineP(gx(m.G-dG),bY(m.x2-s*dG),gx(m.G+dG),bY(m.x2+s*dG),T['--pt'],2.4);
+    }
+    dot(gx(m.G),bY(m.x2),5.5); lab('E²',gx(m.G)+9,bY(m.x2)-11,T['--text'],14,'left',true);
+    lab('Ḡ',gx(m.G),botY1+15,T['--text'],13.5,'center',true);
+
+    // readouts
+    document.getElementById('v-u1').textContent=U1.toFixed(2);
+    const set2=(id,v)=>document.getElementById(id).textContent=v;
+    set2('r-g',m.G.toFixed(2)); set2('r-x1',m.x1.toFixed(2)); set2('r-x2',m.x2.toFixed(2));
+    set2('r-m1',m.MRS1.toFixed(3)); set2('r-m2',m.MRS2.toFixed(3)); set2('r-mt',m.MRTv.toFixed(3));
+    set2('r-sum',(m.MRS1+m.MRS2).toFixed(3));
+    document.getElementById('r-ok').textContent=Math.abs(m.MRS1+m.MRS2-m.MRTv)<1e-3?'= MRT ✓':'';
+
+    renderStep(m); renderDots();
+  }
+
+  // ===== UPF mini-canvas =====
+  const uc=document.getElementById('upf'), uctx=uc.getContext('2d');
+  const UW=236,UH=200,uL=34,uR=12,uT=18,uB=26;
+  function setupUPF(){
+    const dpr=window.devicePixelRatio||1;
+    uc.style.width=UW+'px';uc.style.height=UH+'px';
+    uc.width=Math.round(UW*dpr);uc.height=Math.round(UH*dpr);
+    uctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function drawUPF(){
+    uctx.clearRect(0,0,UW,UH);
+    uctx.fillStyle=T['--plot-bg'];uctx.fillRect(uL,uT,UW-uL-uR,UH-uT-uB);
+    const u1min=U1LO,u1max=U1HI,u2min=3.8,u2max=6.4;
+    const ux=u=>uL+((u-u1min)/(u1max-u1min))*(UW-uL-uR);
+    const uy=v=>UH-uB-((v-u2min)/(u2max-u2min))*(UH-uT-uB);
+    uctx.strokeStyle=T['--text'];uctx.lineWidth=1.4;
+    uctx.beginPath();uctx.moveTo(uL,uT);uctx.lineTo(uL,UH-uB);uctx.lineTo(UW-uR,UH-uB);uctx.stroke();
+    uctx.fillStyle=T['--muted'];uctx.font='bold 11px Georgia';
+    uctx.textAlign='left';uctx.fillText('U²',uL-28,uT+8);
+    uctx.textAlign='right';uctx.fillText('U¹',UW-uR,UH-uB+16);
+    uctx.strokeStyle=T['--teal'];uctx.lineWidth=2;uctx.beginPath();
+    UPF.forEach((p,i)=>{const X=ux(p[0]),Y=uy(p[1]);i?uctx.lineTo(X,Y):uctx.moveTo(X,Y);});uctx.stroke();
+    const m=model(U1);uctx.beginPath();uctx.arc(ux(m.U1),uy(m.U2),4.5,0,7);
+    uctx.fillStyle=T['--pt'];uctx.fill();uctx.lineWidth=1.8;uctx.strokeStyle=T['--pt-stroke'];uctx.stroke();
+  }
+
+  // ===== stepper text =====
+  function renderDots(){
+    const d=document.getElementById('dots');d.innerHTML='';
+    for(let i=0;i<STEPS;i++){const s=document.createElement('div');
+      s.className='step-dot'+(i===step?' active':(i<step?' done':''));d.appendChild(s);}
+    document.getElementById('counter').textContent='Step '+(step+1)+' / '+STEPS;
+    document.getElementById('back').disabled=(step===0);
+  }
+  function renderStep(m){
+    const T_=[
+      ['1 · Fix individual 1 at Ū¹',
+       `The planner freely chooses how well-off person 1 is. Setting <span class="k">Ū¹</span> = <span class="num">${m.U1.toFixed(2)}</span> draws person 1's indifference curve (black, top panel).`],
+      ['2 · What is left for individual 2',
+       `At each G the gap between the PPF and Ū¹ is the private good still available, <span class="k">X² = PPF − Ū¹</span> (teal). Projecting that gap downward traces the residual frontier <span class="k">CD</span>.`],
+      ['3 · Individual 2 optimises on CD',
+       `Person 2 picks the point on <span class="k">CD</span> on their highest indifference curve — the tangency <span class="k">E²</span>, where <span class="k">slope(CD) = −MRS²</span>.`],
+      ['4 · Geometry ⇒ Samuelson rule',
+       `Slope of CD is the gap between the PPF and IC¹ slopes: <span class="k">slope(CD) = MRS¹ − MRT</span>. Equating to <span class="k">−MRS²</span> gives <span class="num">${m.MRS1.toFixed(3)} + ${m.MRS2.toFixed(3)} = ${m.MRTv.toFixed(3)}</span>.`],
+      ['5 · Redistribute — watch Ḡ move',
+       `Sliding <span class="k">Ū¹</span> sweeps the Pareto-efficient locus (UPF). Since β¹≠β², the efficient public-good level <span class="k">Ḡ</span> = <span class="num">${m.G.toFixed(2)}</span> itself shifts with the distribution, not just the private split.`]
+    ];
+    document.getElementById('stitle').textContent=T_[step][0];
+    document.getElementById('sbody').innerHTML=T_[step][1];
+  }
+
+  // ===== events =====
+  document.getElementById('s-u1').addEventListener('input',e=>{U1=parseFloat(e.target.value);draw();drawUPF();});
+  document.getElementById('next').addEventListener('click',()=>{step=(step+1)%STEPS;draw();drawUPF();});
+  document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;draw();drawUPF();}});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{setupCanvas();draw();},120);});
+
+  setupCanvas(); setupUPF(); draw(); drawUPF();
+})();
+</script>
+</body>
+</html>
