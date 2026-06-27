@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rothschild–Stiglitz: Pooling — PE1</title>
+<style>
+  :root{
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#EDEAE2;
+    --text:#1A1A2E; --muted:#75736B;
+    --hi:#C62828; --lo:#1565C0; --pool:#6A1B9A; --line45:#9A968C; --teal:#159C97; --lens:rgba(21,156,151,0.20);
+    --pt:#F9A825; --pt-stroke:#4A3000; --accent:#1565C0; --endow:#33312E;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#2E2E35;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --hi:#EF6C6C; --lo:#5B9BE8; --pool:#B57BE0; --line45:#6f6b62; --teal:#33D0C8; --lens:rgba(51,208,200,0.22);
+      --pt:#FFD54F; --pt-stroke:#15171a; --accent:#5B9BE8; --endow:#DAD6D0;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;padding:22px 16px 34px}
+  header{text-align:center;margin-bottom:4px}
+  header h1{font-size:20px;font-weight:bold;color:var(--accent)}
+  header .relation{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:5px;line-height:1.5}
+  header .relation b{font-style:normal;color:var(--text)}
+  header .relation b.hi{color:var(--hi)} header .relation b.lo{color:var(--lo)}
+  .crumb{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 0}
+  .layout{display:flex;gap:20px;max-width:1080px;margin:18px auto 0;align-items:flex-start;flex-wrap:wrap}
+  .canvas-wrap{flex:1 1 560px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;min-width:300px}
+  canvas{display:block;margin:0 auto}
+  .panel{flex:1 1 280px;display:flex;flex-direction:column;gap:14px;min-width:264px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:15px 16px}
+  .stepper-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .step-dots{display:flex;gap:6px}
+  .step-dot{width:9px;height:9px;border-radius:50%;background:var(--grid);border:1.5px solid var(--border);transition:all .2s}
+  .step-dot.active{background:var(--pt);border-color:var(--pt-stroke);transform:scale(1.25)}
+  .step-dot.done{background:var(--pt);border-color:var(--pt);opacity:.45}
+  .step-counter{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .step-title{font-size:15px;font-weight:bold;margin-bottom:7px;color:var(--accent)}
+  .step-body{font-size:13px;line-height:1.62}
+  .step-body .k{font-style:italic} .step-body .num{font-family:'Courier New',monospace;font-weight:bold}
+  .nav-row{display:flex;gap:8px;margin-top:14px}
+  button{font-family:'Georgia',serif;font-size:13px;padding:8px 0;flex:1;border-radius:5px;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--surface);color:var(--text);transition:background .15s}
+  button:hover:not(:disabled){background:var(--bg)} button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(.92)}
+  .card-title{font-size:10.5px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:11px}
+  .slider-label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;margin-top:10px}
+  .slider-label:first-of-type{margin-top:0}
+  .slider-label .val{font-family:'Courier New',monospace;font-weight:bold}
+  .slider-label .val.hi{color:var(--hi)} .slider-label .val.lo{color:var(--lo)} .slider-label .val.pool{color:var(--pool)}
+  input[type=range]{width:100%;height:4px;cursor:pointer}
+  #s-ph{accent-color:var(--hi)} #s-pl{accent-color:var(--lo)} #s-lam{accent-color:var(--pool)}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .res-box{border-radius:4px;padding:9px 11px;font-size:12px;line-height:1.5}
+  .res-box.pool{background:color-mix(in srgb,var(--pool) 13%,transparent);border-left:3px solid var(--pool)}
+  .res-box.tr{background:color-mix(in srgb,var(--hi) 12%,transparent);border-left:3px solid var(--hi)}
+  .res-box.dev{grid-column:1/3;background:color-mix(in srgb,var(--teal) 14%,transparent);border-left:3px solid var(--teal)}
+  .res-box .lbl{font-size:10px;font-weight:bold;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+  .res-box.pool .lbl{color:var(--pool)} .res-box.tr .lbl{color:var(--hi)} .res-box.dev .lbl{color:var(--teal)}
+  .res-box .big{font-family:'Courier New',monospace;font-weight:bold;font-size:13px}
+  .mini-wrap{display:flex;justify-content:center}
+  .legend{font-size:11.5px;line-height:1.9}
+  .legend .item{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+  .legend .sw.thin{height:0;border-top:2px solid var(--line45)}
+  .legend .sw.gold{height:11px;width:11px;border-radius:50%;border:1.5px solid var(--pt-stroke);background:var(--pt)}
+  .legend .sw.dev{height:11px;width:11px;border-radius:50%;border:2px solid var(--teal);background:transparent}
+  .legend .sw.endow{height:10px;width:10px;border-radius:50%;background:var(--endow)}
+  .legend .sw.fill{height:11px;width:16px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rothschild–Stiglitz: Pooling Is Never an Equilibrium</h1>
+  <div class="relation">
+    A single pooling contract Z (priced at the average risk p̄) is less than fair for <b class="lo">low risk</b> and
+    more than fair for <b class="hi">high risk</b> — so a cream-skimming deviation Q always picks off the low risks.
+  </div>
+  <div class="crumb">PE1 · Social Insurance · Rothschild–Stiglitz, pooling (asymmetric information)</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head"><div class="step-dots" id="dots"></div><div class="step-counter" id="counter">Step 1 / 5</div></div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row"><button id="back">◀ Back</button><button id="next" class="primary">Next ▶</button></div>
+    </div>
+
+    <div class="results">
+      <div class="res-box pool"><div class="lbl">Pooling contract Z</div>
+        <div class="big">p̄ = <span id="r-pbar">—</span></div>
+        <div class="big">Z = (<span id="r-z">—</span>)</div>
+        <div class="big">cover I = <span id="r-iz">—</span></div></div>
+      <div class="res-box tr"><div class="lbl">Cross-subsidy L → H</div>
+        <div class="big">transfer = <span id="r-tr">—</span></div>
+        <div class="big">(1−λ)(pₕ−pₗ)I</div></div>
+      <div class="res-box dev"><div class="lbl" id="devlbl">Cream-skimming deviation</div>
+        <div class="big" id="devtext">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Share of low risk λ</span><span class="val pool" id="v-lam">0.50</span></div>
+      <input type="range" id="s-lam" min="0.20" max="0.85" step="0.01" value="0.50">
+      <div class="slider-label"><span>Pr(sick), high risk pₕ</span><span class="val hi" id="v-ph">0.40</span></div>
+      <input type="range" id="s-ph" min="0.32" max="0.60" step="0.01" value="0.40">
+      <div class="slider-label"><span>Pr(sick), low risk pₗ</span><span class="val lo" id="v-pl">0.25</span></div>
+      <input type="range" id="s-pl" min="0.12" max="0.30" step="0.01" value="0.25">
+      <div class="note" style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
+        Y = 100, M = 50, u(y) = ln y. p̄ = λpₗ + (1−λ)pₕ. Z is the best pooling contract for L (its indifference curve tangent to the pooling line).
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cross-subsidy from L to H vs λ</div>
+      <div class="mini-wrap"><canvas id="mini"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw thin"></span> 45° line yₛ = yₕ</div>
+        <div class="item"><span class="sw" style="background:var(--hi)"></span> bₕ fair line · H indiff at Z</div>
+        <div class="item"><span class="sw" style="background:var(--lo)"></span> bₗ fair line · L indiff at Z</div>
+        <div class="item"><span class="sw" style="background:var(--pool)"></span> pooling zero-profit line (p̄)</div>
+        <div class="item"><span class="sw fill" style="background:var(--lens);border:1px solid var(--teal)"></span> cream-skimming region</div>
+        <div class="item"><span class="sw endow"></span> A — common endowment</div>
+        <div class="item"><span class="sw gold"></span> Z — candidate pooling contract</div>
+        <div class="item"><span class="sw dev"></span> Q — profitable deviation (L only)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const Y=100,M=50; let pH=0.40,pL=0.25,lam=0.50;
+  const u=Math.log,uinv=Math.exp;
+  const slope=p=>-(1-p)/p, bud=(yh,p)=>(Y-M)+slope(p)*(yh-Y);
+  const EU=(yh,ys,p)=>(1-p)*u(yh)+p*u(ys);
+  const icY=(yh,E,p)=>uinv((E-(1-p)*u(yh))/p);
+  function bisect(f,lo,hi){let fl=f(lo);for(let k=0;k<90;k++){const m=(lo+hi)/2,fm=f(m);if(fl*fm<=0)hi=m;else{lo=m;fl=fm;}}return (lo+hi)/2;}
+  function tangentL(sp){let best=-1e9,bx=Y-40;for(let yh=Y-45;yh<=Y-0.5;yh+=0.05){const ys=(Y-M)+sp*(yh-Y);if(ys<=0)continue;const e=EU(yh,ys,pL);if(e>best){best=e;bx=yh;}}
+    let a=bx-0.1,b=bx+0.1;for(let k=0;k<40;k++){const m1=a+(b-a)*0.382,m2=a+(b-a)*0.618;const e1=EU(m1,(Y-M)+sp*(m1-Y),pL),e2=EU(m2,(Y-M)+sp*(m2-Y),pL);if(e1<e2)a=m1;else b=m2;}return (a+b)/2;}
+  function model(){
+    const pbar=lam*pL+(1-lam)*pH;
+    const yhZ=tangentL(slope(pbar)); const Z={yh:yhZ,ys:bud(yhZ,pbar)};
+    const Iz=Z.ys-Z.yh+M; const EULZ=EU(Z.yh,Z.ys,pL), EUHZ=EU(Z.yh,Z.ys,pH);
+    const transfer=(1-lam)*(pH-pL)*Iz;
+    // cream-skim lens to the right of Z: lower=L-IC(Z), upper=min(H-IC(Z), L-fair); find right close
+    let yhClose=Z.yh;
+    for(let yh=Z.yh+0.1; yh<=Y-0.2; yh+=0.05){
+      const lo=icY(yh,EULZ,pL), up=Math.min(icY(yh,EUHZ,pH),bud(yh,pL));
+      if(up<=lo) break; yhClose=yh;
+    }
+    const yhQ=(Z.yh+yhClose)/2;
+    const yQlo=icY(yhQ,EULZ,pL), yQup=Math.min(icY(yhQ,EUHZ,pH),bud(yhQ,pL));
+    const Q={yh:yhQ,ys:(yQlo+yQup)/2};
+    return {pbar,Z,Iz,EULZ,EUHZ,transfer,yhClose,Q,A:{yh:Y,ys:Y-M}};
+  }
+
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  let T={};function loadTheme(){['--text','--muted','--grid','--plot-bg','--hi','--lo','--pool','--line45','--teal','--lens','--pt','--pt-stroke','--endow'].forEach(k=>T[k]=css(k));}
+  loadTheme();
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(()=>{loadTheme();draw();drawMini();});
+
+  const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  const LW=560,LH=560,padL=52,padR=26,padT=26,padB=46,AX=130;
+  const PW=LW-padL-padR,PH=LH-padT-padB;
+  const gx=v=>padL+(v/AX)*PW, gy=v=>padT+PH-(v/AX)*PH;
+  function setupCanvas(){const dpr=window.devicePixelRatio||1;const avail=Math.max(300,cv.parentElement.clientWidth-16),cssW=Math.min(avail,640),cssH=cssW*LH/LW;
+    cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);}
+  function segE(x1,y1,x2,y2,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||1.4;ctx.setLineDash(d||[]);ctx.beginPath();ctx.moveTo(gx(x1),gy(y1));ctx.lineTo(gx(x2),gy(y2));ctx.stroke();ctx.restore();}
+  function curveFn(fn,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||2;ctx.setLineDash(d||[]);ctx.lineJoin='round';ctx.beginPath();let pen=false;
+    for(let x=1;x<=AX;x+=AX/440){const y=fn(x);if(!isFinite(y)||y<-2||y>AX*1.12){pen=false;continue;}const Px=gx(x),Py=gy(y);if(!pen){ctx.moveTo(Px,Py);pen=true;}else ctx.lineTo(Px,Py);}ctx.stroke();ctx.restore();}
+  function ptGold(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--pt'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();ctx.restore();}
+  function ptRing(x,y,r,c){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.lineWidth=2.4;ctx.strokeStyle=c;ctx.stroke();ctx.restore();}
+  function ptDark(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--endow'];ctx.fill();ctx.restore();}
+  function lab(t,x,y,c,sz,al,halo){ctx.save();sz=sz||13;ctx.font='bold '+sz+'px Georgia';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    if(halo){const w=ctx.measureText(t).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=1;}
+    ctx.fillStyle=c;ctx.fillText(t,x,y);ctx.restore();}
+  function headUp(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x-4,y+2);ctx.lineTo(x+4,y+2);ctx.closePath();ctx.fill();ctx.restore();}
+  function headRt(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x+7,y);ctx.lineTo(x-2,y-4);ctx.lineTo(x-2,y+4);ctx.closePath();ctx.fill();ctx.restore();}
+
+  let step=0; const STEPS=5;
+  function draw(){
+    ctx.clearRect(0,0,LW,LH); const m=model();
+    ctx.save();ctx.fillStyle=T['--plot-bg'];ctx.fillRect(padL,padT,PW,PH);ctx.restore();
+    ctx.save();ctx.strokeStyle=T['--grid'];ctx.lineWidth=1;
+    for(let v=20;v<AX;v+=20){ctx.beginPath();ctx.moveTo(padL,gy(v));ctx.lineTo(padL+PW,gy(v));ctx.stroke();ctx.beginPath();ctx.moveTo(gx(v),padT);ctx.lineTo(gx(v),padT+PH);ctx.stroke();}ctx.restore();
+
+    // cream-skim lens fill (step>=3)
+    if(step>=3 && m.yhClose>m.Z.yh+0.1){
+      ctx.save();ctx.beginPath();let started=false;
+      for(let yh=m.Z.yh; yh<=m.yhClose; yh+=0.3){const up=Math.min(icY(yh,m.EUHZ,pH),bud(yh,pL));const Px=gx(yh),Py=gy(up);if(!started){ctx.moveTo(Px,Py);started=true;}else ctx.lineTo(Px,Py);}
+      for(let yh=m.yhClose; yh>=m.Z.yh; yh-=0.3){const lo=icY(yh,m.EULZ,pL);ctx.lineTo(gx(yh),gy(lo));}
+      ctx.closePath();ctx.fillStyle=T['--lens'];ctx.fill();ctx.restore();
+    }
+
+    segE(0,0,AX,AX,T['--line45'],1.8); lab('yₛ = yₕ',gx(AX-3),gy(AX-1),T['--line45'],12,'right',true);
+
+    // three lines
+    curveFn(yh=>bud(yh,pH),T['--hi'],2.0); curveFn(yh=>bud(yh,pL),T['--lo'],2.0); curveFn(yh=>bud(yh,m.pbar),T['--pool'],2.4);
+    {const yhH=Math.max(2,Y+(AX-12-(Y-M))/slope(pH)); lab('bₕ',gx(yhH)-6,gy(bud(yhH,pH)),T['--hi'],12,'right',true);}
+    {const yhL=Math.max(2,Y+(AX-12-(Y-M))/slope(pL)); lab('bₗ',gx(yhL)+6,gy(bud(yhL,pL)),T['--lo'],12,'left',true);}
+    {const yhP=Math.max(2,Y+(AX-26-(Y-M))/slope(m.pbar)); lab('pooling (p̄)',gx(yhP)+6,gy(bud(yhP,m.pbar)),T['--pool'],11.5,'left',true);}
+
+    // ICs through Z
+    if(step>=2){ curveFn(yh=>icY(yh,m.EULZ,pL),T['--lo'],1.6,[5,4]); curveFn(yh=>icY(yh,m.EUHZ,pH),T['--hi'],1.6,[5,4]); }
+
+    // projections
+    segE(m.A.yh,0,m.A.yh,m.A.ys,T['--muted'],1,[3,4]); segE(0,m.A.ys,m.A.yh,m.A.ys,T['--muted'],1,[3,4]);
+    lab('Y',gx(m.A.yh),gy(0)+14,T['--muted'],12,'center'); lab('Y−M',gx(0)-6,gy(m.A.ys),T['--muted'],11.5,'right');
+
+    ctx.save();ctx.strokeStyle=T['--text'];ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(padL,padT-4);ctx.lineTo(padL,padT+PH);ctx.lineTo(padL+PW+8,padT+PH);ctx.stroke();ctx.restore();
+    headUp(padL,padT-4); headRt(padL+PW+8,padT+PH);
+    lab('yₛ',padL-8,padT+4,T['--text'],15,'right'); lab('yₕ',padL+PW+18,padT+PH,T['--text'],14);
+
+    // points
+    ptGold(m.Z.yh,m.Z.ys,6); lab('Z',gx(m.Z.yh)-9,gy(m.Z.ys)+2,T['--text'],13,'right',true);
+    if(step>=3 && m.yhClose>m.Z.yh+0.1){ ptRing(m.Q.yh,m.Q.ys,5,T['--teal']); lab('Q',gx(m.Q.yh)+8,gy(m.Q.ys)+9,T['--teal'],12.5,'left',true); }
+    ptDark(m.A.yh,m.A.ys,5); lab('A',gx(m.A.yh)+8,gy(m.A.ys)+10,T['--text'],13,'left',true);
+
+    document.getElementById('v-lam').textContent=lam.toFixed(2);
+    document.getElementById('v-ph').textContent=pH.toFixed(2);
+    document.getElementById('v-pl').textContent=pL.toFixed(2);
+    const S=(id,v)=>document.getElementById(id).textContent=v;
+    S('r-pbar',m.pbar.toFixed(3)); S('r-z',m.Z.yh.toFixed(1)+', '+m.Z.ys.toFixed(1)); S('r-iz',m.Iz.toFixed(1));
+    S('r-tr',m.transfer.toFixed(2));
+    document.getElementById('devlbl').textContent='Cream-skimming deviation Q exists';
+    document.getElementById('devtext').textContent='Q is profitable, preferred by L, rejected by H ⇒ no pooling equilibrium';
+
+    renderStep(m); renderDots();
+  }
+
+  // mini: transfer L->H vs lambda
+  const mc=document.getElementById('mini'),mctx=mc.getContext('2d');
+  const MW=236,MH=150,mL=34,mR=12,mT=12,mB=26;
+  function setupMini(){const dpr=window.devicePixelRatio||1;mc.style.width=MW+'px';mc.style.height=MH+'px';mc.width=Math.round(MW*dpr);mc.height=Math.round(MH*dpr);mctx.setTransform(dpr,0,0,dpr,0,0);}
+  function drawMini(){
+    mctx.clearRect(0,0,MW,MH);mctx.fillStyle=T['--plot-bg'];mctx.fillRect(mL,mT,MW-mL-mR,MH-mT-mB);
+    const tr=[];let tmax=0;for(let i=0;i<=60;i++){const L=0.2+(0.85-0.2)*i/60;const pb=L*pL+(1-L)*pH;const yhZ=tangentL(slope(pb));const Iz=bud(yhZ,pb)-yhZ+M;const t=(1-L)*(pH-pL)*Iz;tr.push([L,t]);tmax=Math.max(tmax,t);}
+    tmax=tmax*1.15||1;
+    const mx=L=>mL+((L-0.2)/0.65)*(MW-mL-mR), my=v=>MH-mB-(v/tmax)*(MH-mT-mB);
+    mctx.strokeStyle=T['--text'];mctx.lineWidth=1.3;mctx.beginPath();mctx.moveTo(mL,mT);mctx.lineTo(mL,MH-mB);mctx.lineTo(MW-mR,MH-mB);mctx.stroke();
+    mctx.fillStyle=T['--muted'];mctx.font='bold 10px Georgia';mctx.textAlign='left';mctx.fillText('L→H',mL-30,mT+7);mctx.textAlign='right';mctx.fillText('λ',MW-mR,MH-mB+15);
+    mctx.strokeStyle=T['--hi'];mctx.lineWidth=2;mctx.beginPath();tr.forEach((p,i)=>{const X=mx(p[0]),Yv=my(p[1]);i?mctx.lineTo(X,Yv):mctx.moveTo(X,Yv);});mctx.stroke();
+    const pb=lam*pL+(1-lam)*pH,yhZ=tangentL(slope(pb)),Iz=bud(yhZ,pb)-yhZ+M,t=(1-lam)*(pH-pL)*Iz;
+    mctx.beginPath();mctx.arc(mx(lam),my(t),3.8,0,7);mctx.fillStyle=T['--pool'];mctx.fill();
+  }
+
+  function renderDots(){const d=document.getElementById('dots');d.innerHTML='';
+    for(let i=0;i<STEPS;i++){const s=document.createElement('div');s.className='step-dot'+(i===step?' active':(i<step?' done':''));d.appendChild(s);}
+    document.getElementById('counter').textContent='Step '+(step+1)+' / '+STEPS;document.getElementById('back').disabled=(step===0);}
+  function renderStep(m){
+    const t=[
+      ['1 · The pooling line',
+       `If one contract serves both types it must break even at the average risk <span class="k">p̄ = λpₗ + (1−λ)pₕ</span> = <span class="num">${m.pbar.toFixed(3)}</span>. Its zero-profit line lies between bₕ and bₗ.`],
+      ['2 · The candidate Z',
+       `The best pooling contract for L is <span class="k">Z</span> = (${m.Z.yh.toFixed(1)}, ${m.Z.ys.toFixed(1)}), where L's indifference curve is tangent to the pooling line. It is incomplete — the pooling price is unfair to L.`],
+      ['3 · Cream-skimming Q',
+       `Single-crossing opens a lens to the right of Z (shaded): contracts that L prefers, H rejects, and that are profitable if only L buys. <span class="k">Q</span> is one such deviation — so Z cannot survive.`],
+      ['4 · The hidden transfer',
+       `At Z, L overpays and H underpays: a cross-subsidy <span class="k">(1−λ)(pₕ−pₗ)I</span> = <span class="num">${m.transfer.toFixed(2)}</span> flows from L to H. Pooling is redistribution from low to high risk.`],
+      ['5 · Always breaks',
+       `Move λ and the risk gap: Z and the lens shift, but the cream-skimming region never vanishes. <span class="k">Pooling is never a competitive equilibrium</span> — though a government can impose it (a "pure NHS" outcome).`]
+    ];
+    document.getElementById('stitle').textContent=t[step][0];
+    document.getElementById('sbody').innerHTML=t[step][1];
+  }
+
+  document.getElementById('s-lam').addEventListener('input',e=>{lam=parseFloat(e.target.value);draw();drawMini();});
+  document.getElementById('s-ph').addEventListener('input',e=>{pH=parseFloat(e.target.value);if(pL>pH-0.04)pL=pH-0.04;document.getElementById('s-pl').value=pL;draw();drawMini();});
+  document.getElementById('s-pl').addEventListener('input',e=>{pL=parseFloat(e.target.value);if(pL>pH-0.04)pL=pH-0.04;draw();drawMini();});
+  document.getElementById('next').addEventListener('click',()=>{step=(step+1)%STEPS;draw();drawMini();});
+  document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;draw();drawMini();}});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{setupCanvas();draw();},120);});
+  setupCanvas();setupMini();draw();drawMini();
+})();
+</script>
+</body>
+</html>
