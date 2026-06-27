@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rothschild–Stiglitz: Separating Equilibrium — PE1</title>
+<style>
+  :root{
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#EDEAE2;
+    --text:#1A1A2E; --muted:#75736B;
+    --hi:#C62828; --lo:#1565C0; --pool:#6A1B9A; --line45:#9A968C; --teal:#159C97; --lens:rgba(21,156,151,0.15);
+    --pt:#F9A825; --pt-stroke:#4A3000; --accent:#1565C0; --endow:#33312E;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#2E2E35;
+      --text:#ECECEC; --muted:#9A9A9A;
+      --hi:#EF6C6C; --lo:#5B9BE8; --pool:#B57BE0; --line45:#6f6b62; --teal:#33D0C8; --lens:rgba(51,208,200,0.16);
+      --pt:#FFD54F; --pt-stroke:#15171a; --accent:#5B9BE8; --endow:#DAD6D0;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;padding:22px 16px 34px}
+  header{text-align:center;margin-bottom:4px}
+  header h1{font-size:20px;font-weight:bold;color:var(--accent)}
+  header .relation{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:5px;line-height:1.5}
+  header .relation b{font-style:normal;color:var(--text)}
+  header .relation b.hi{color:var(--hi)} header .relation b.lo{color:var(--lo)}
+  .crumb{text-align:center;font-size:12px;color:var(--muted);margin:8px 0 0}
+  .layout{display:flex;gap:20px;max-width:1080px;margin:18px auto 0;align-items:flex-start;flex-wrap:wrap}
+  .canvas-wrap{flex:1 1 560px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;min-width:300px}
+  canvas{display:block;margin:0 auto}
+  .panel{flex:1 1 280px;display:flex;flex-direction:column;gap:14px;min-width:264px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:15px 16px}
+  .stepper-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .step-dots{display:flex;gap:6px}
+  .step-dot{width:9px;height:9px;border-radius:50%;background:var(--grid);border:1.5px solid var(--border);transition:all .2s}
+  .step-dot.active{background:var(--pt);border-color:var(--pt-stroke);transform:scale(1.25)}
+  .step-dot.done{background:var(--pt);border-color:var(--pt);opacity:.45}
+  .step-counter{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .step-title{font-size:15px;font-weight:bold;margin-bottom:7px;color:var(--accent)}
+  .step-body{font-size:13px;line-height:1.62}
+  .step-body .k{font-style:italic}
+  .step-body .num{font-family:'Courier New',monospace;font-weight:bold}
+  .nav-row{display:flex;gap:8px;margin-top:14px}
+  button{font-family:'Georgia',serif;font-size:13px;padding:8px 0;flex:1;border-radius:5px;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--surface);color:var(--text);transition:background .15s}
+  button:hover:not(:disabled){background:var(--bg)} button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(.92)}
+  .card-title{font-size:10.5px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:11px}
+  .slider-label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;margin-top:10px}
+  .slider-label:first-of-type{margin-top:0}
+  .slider-label .val{font-family:'Courier New',monospace;font-weight:bold}
+  .slider-label .val.hi{color:var(--hi)} .slider-label .val.lo{color:var(--lo)} .slider-label .val.pool{color:var(--pool)}
+  input[type=range]{width:100%;height:4px;cursor:pointer}
+  #s-ph{accent-color:var(--hi)} #s-pl{accent-color:var(--lo)} #s-lam{accent-color:var(--pool)}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .res-box{border-radius:4px;padding:9px 11px;font-size:12px;line-height:1.5}
+  .res-box.hi{background:color-mix(in srgb,var(--hi) 13%,transparent);border-left:3px solid var(--hi)}
+  .res-box.lo{background:color-mix(in srgb,var(--lo) 13%,transparent);border-left:3px solid var(--lo)}
+  .res-box.ex{grid-column:1/3;border-left:3px solid var(--teal);background:color-mix(in srgb,var(--teal) 13%,transparent)}
+  .res-box.ex.fail{border-left-color:var(--hi);background:color-mix(in srgb,var(--hi) 13%,transparent)}
+  .res-box .lbl{font-size:10px;font-weight:bold;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+  .res-box.hi .lbl{color:var(--hi)} .res-box.lo .lbl{color:var(--lo)} .res-box.ex .lbl{color:var(--teal)} .res-box.ex.fail .lbl{color:var(--hi)}
+  .res-box .big{font-family:'Courier New',monospace;font-weight:bold;font-size:13px}
+  .mini-wrap{display:flex;justify-content:center}
+  .legend{font-size:11.5px;line-height:1.9}
+  .legend .item{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+  .legend .sw.thin{height:0;border-top:2px solid var(--line45)}
+  .legend .sw.dash{height:0;border-top:2.2px dashed var(--hi)}
+  .legend .sw.gold{height:11px;width:11px;border-radius:50%;border:1.5px solid var(--pt-stroke);background:var(--pt)}
+  .legend .sw.ring{height:12px;width:12px;border-radius:50%;border:2px solid var(--pt);background:transparent}
+  .legend .sw.endow{height:10px;width:10px;border-radius:50%;background:var(--endow)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rothschild–Stiglitz: Separating Equilibrium (Second Best)</h1>
+  <div class="relation">
+    Self-selection under hidden risk: <b class="hi">high risk</b> gets first-best full insurance Cₕ;
+    <b class="lo">low risk</b> is rationed to partial cover C′ₗ where H's indifference curve binds.
+  </div>
+  <div class="crumb">PE1 · Social Insurance · Rothschild–Stiglitz, separating (asymmetric information)</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head"><div class="step-dots" id="dots"></div><div class="step-counter" id="counter">Step 1 / 5</div></div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row"><button id="back">◀ Back</button><button id="next" class="primary">Next ▶</button></div>
+    </div>
+
+    <div class="results">
+      <div class="res-box hi"><div class="lbl">High risk → Cₕ (full)</div>
+        <div class="big">Cₕ = (<span id="r-ch">—</span>)</div>
+        <div class="big">premium = <span id="r-premh">—</span></div></div>
+      <div class="res-box lo"><div class="lbl">Low risk → C′ₗ (partial)</div>
+        <div class="big">C′ₗ = (<span id="r-cl">—</span>)</div>
+        <div class="big">cover I = <span id="r-il">—</span> / <span id="r-m">50</span></div></div>
+      <div class="res-box ex" id="exbox"><div class="lbl" id="exlbl">Existence (depends on λ)</div>
+        <div class="big" id="extext">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the model</div>
+      <div class="slider-label"><span>Pr(sick), high risk pₕ</span><span class="val hi" id="v-ph">0.40</span></div>
+      <input type="range" id="s-ph" min="0.32" max="0.60" step="0.01" value="0.40">
+      <div class="slider-label"><span>Pr(sick), low risk pₗ</span><span class="val lo" id="v-pl">0.25</span></div>
+      <input type="range" id="s-pl" min="0.12" max="0.30" step="0.01" value="0.25">
+      <div class="slider-label"><span>Share of low risk λ</span><span class="val pool" id="v-lam">0.50</span></div>
+      <input type="range" id="s-lam" min="0.10" max="0.95" step="0.01" value="0.50">
+      <div class="note" style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
+        Y = 100, M = 50, u(y) = ln y. C′ₗ is the intersection of the low-risk fair line with H's indifference curve through Cₕ (binding incentive constraint). λ sets the pooling line and tests existence.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Low-risk welfare: separating vs pooling</div>
+      <div class="mini-wrap"><canvas id="mini"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Legend</div>
+      <div class="legend">
+        <div class="item"><span class="sw thin"></span> 45° line yₛ = yₕ</div>
+        <div class="item"><span class="sw" style="background:var(--hi)"></span> bₕ fair line · H indiff (IC constraint)</div>
+        <div class="item"><span class="sw" style="background:var(--lo)"></span> bₗ fair line · L indiff</div>
+        <div class="item"><span class="sw" style="background:var(--pool)"></span> pooling line (share λ)</div>
+        <div class="item"><span class="sw endow"></span> A — common endowment</div>
+        <div class="item"><span class="sw gold"></span> Cₕ, C′ₗ — equilibrium contracts</div>
+        <div class="item"><span class="sw ring"></span> Cₗ — L's unattainable first best</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const Y=100,M=50; let pH=0.40,pL=0.25,lam=0.50;
+  const u=Math.log,up=y=>1/y,uinv=Math.exp;
+  const slope=p=>-(1-p)/p, bud=(yh,p)=>(Y-M)+slope(p)*(yh-Y);
+  const EU=(yh,ys,p)=>(1-p)*u(yh)+p*u(ys);
+  const icY=(yh,E,p)=>uinv((E-(1-p)*u(yh))/p);
+  function bisect(f,lo,hi){let fl=f(lo);for(let k=0;k<90;k++){const m=(lo+hi)/2,fm=f(m);if(fl*fm<=0)hi=m;else{lo=m;fl=fm;}}return (lo+hi)/2;}
+  function tangentL(sp){let best=-1e9,bx=Y-40;for(let yh=Y-45;yh<=Y-0.5;yh+=0.05){const ys=(Y-M)+sp*(yh-Y);if(ys<=0)continue;const e=EU(yh,ys,pL);if(e>best){best=e;bx=yh;}}
+    let a=bx-0.1,b=bx+0.1;for(let k=0;k<40;k++){const m1=a+(b-a)*0.382,m2=a+(b-a)*0.618;
+      const e1=EU(m1,(Y-M)+sp*(m1-Y),pL),e2=EU(m2,(Y-M)+sp*(m2-Y),pL);if(e1<e2)a=m1;else b=m2;}return (a+b)/2;}
+  function model(){
+    const CH={yh:Y-pH*M,ys:Y-pH*M}; const EUH0=EU(CH.yh,CH.ys,pH);
+    const CLfb={yh:Y-pL*M,ys:Y-pL*M};
+    const yhCpL=bisect(yh=>bud(yh,pL)-icY(yh,EUH0,pH), CH.yh+0.3, Y-0.3);
+    const CpL={yh:yhCpL,ys:bud(yhCpL,pL)};
+    const EUL_CpL=EU(CpL.yh,CpL.ys,pL);
+    const Il=CpL.ys-CpL.yh+M;
+    const pbar=lam*pL+(1-lam)*pH;
+    const yhT=tangentL(slope(pbar)); const T={yh:yhT,ys:bud(yhT,pbar)}; const EUL_T=EU(T.yh,T.ys,pL);
+    const exists=EUL_T<=EUL_CpL+1e-9;
+    return {CH,EUH0,CLfb,CpL,EUL_CpL,Il,pbar,T,EUL_T,exists,A:{yh:Y,ys:Y-M}};
+  }
+
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+  let T={}; function loadTheme(){['--text','--muted','--grid','--plot-bg','--hi','--lo','--pool','--line45','--teal','--lens','--pt','--pt-stroke','--endow'].forEach(k=>T[k]=css(k));}
+  loadTheme();
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(()=>{loadTheme();draw();drawMini();});
+
+  const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  const LW=560,LH=560,padL=52,padR=26,padT=26,padB=46,AX=130;
+  const PW=LW-padL-padR,PH=LH-padT-padB;
+  const gx=v=>padL+(v/AX)*PW, gy=v=>padT+PH-(v/AX)*PH;
+  function setupCanvas(){const dpr=window.devicePixelRatio||1;const avail=Math.max(300,cv.parentElement.clientWidth-16),cssW=Math.min(avail,640),cssH=cssW*LH/LW;
+    cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);}
+  function segE(x1,y1,x2,y2,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||1.4;ctx.setLineDash(d||[]);ctx.beginPath();ctx.moveTo(gx(x1),gy(y1));ctx.lineTo(gx(x2),gy(y2));ctx.stroke();ctx.restore();}
+  function curveFn(fn,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||2;ctx.setLineDash(d||[]);ctx.lineJoin='round';ctx.beginPath();let pen=false;
+    for(let x=1;x<=AX;x+=AX/440){const y=fn(x);if(!isFinite(y)||y<-2||y>AX*1.12){pen=false;continue;}const Px=gx(x),Py=gy(y);if(!pen){ctx.moveTo(Px,Py);pen=true;}else ctx.lineTo(Px,Py);}ctx.stroke();ctx.restore();}
+  function ptGold(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--pt'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();ctx.restore();}
+  function ptRing(x,y,r,c){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.lineWidth=2.2;ctx.strokeStyle=c||T['--pt'];ctx.stroke();ctx.restore();}
+  function ptDark(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--endow'];ctx.fill();ctx.restore();}
+  function lab(t,x,y,c,sz,al,halo){ctx.save();sz=sz||13;ctx.font='bold '+sz+'px Georgia';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    if(halo){const w=ctx.measureText(t).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=1;}
+    ctx.fillStyle=c;ctx.fillText(t,x,y);ctx.restore();}
+  function headUp(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x-4,y+2);ctx.lineTo(x+4,y+2);ctx.closePath();ctx.fill();ctx.restore();}
+  function headRt(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x+7,y);ctx.lineTo(x-2,y-4);ctx.lineTo(x-2,y+4);ctx.closePath();ctx.fill();ctx.restore();}
+
+  let step=0; const STEPS=5;
+  function draw(){
+    ctx.clearRect(0,0,LW,LH); const m=model();
+    ctx.save();ctx.fillStyle=T['--plot-bg'];ctx.fillRect(padL,padT,PW,PH);ctx.restore();
+    ctx.save();ctx.strokeStyle=T['--grid'];ctx.lineWidth=1;
+    for(let v=20;v<AX;v+=20){ctx.beginPath();ctx.moveTo(padL,gy(v));ctx.lineTo(padL+PW,gy(v));ctx.stroke();ctx.beginPath();ctx.moveTo(gx(v),padT);ctx.lineTo(gx(v),padT+PH);ctx.stroke();}ctx.restore();
+
+    segE(0,0,AX,AX,T['--line45'],1.8); lab('yₛ = yₕ',gx(AX-3),gy(AX-1),T['--line45'],12,'right',true);
+
+    // fair lines
+    curveFn(yh=>bud(yh,pH),T['--hi'],2.2); curveFn(yh=>bud(yh,pL),T['--lo'],2.2);
+    {const yhH=Math.max(2,Y+(AX-12-(Y-M))/slope(pH)); lab('bₕ',gx(yhH)-6,gy(bud(yhH,pH)),T['--hi'],12.5,'right',true);}
+    {const yhL=Math.max(2,Y+(AX-12-(Y-M))/slope(pL)); lab('bₗ',gx(yhL)+6,gy(bud(yhL,pL)),T['--lo'],12.5,'left',true);}
+
+    // pooling line (existence test)
+    if(step>=3){ curveFn(yh=>bud(yh,m.pbar),T['--pool'],1.8,[6,4]); lab('pooling',gx(108),gy(bud(108,m.pbar))+11,T['--pool'],11,'left',true); }
+
+    // rationing: dashed segment from C'_L up to first-best C_L on L-fair line
+    if(step>=1){ segE(m.CpL.yh,m.CpL.ys,m.CLfb.yh,m.CLfb.ys,T['--lo'],1.5,[3,4]); }
+
+    // H indifference through C_H (the binding IC constraint) — passes through C'_L
+    if(step>=2){ curveFn(yh=>icY(yh,m.EUH0,pH),T['--hi'],1.9);
+      let xh=Math.min(AX-6,112); lab('H indiff',gx(xh),gy(Math.max(6,icY(xh,m.EUH0,pH)))-2,T['--hi'],11,'left',true); }
+    // L indifference through C'_L
+    if(step>=2){ curveFn(yh=>icY(yh,m.EUL_CpL,pL),T['--lo'],1.6,[5,4]); }
+
+    // projections + labels
+    segE(m.A.yh,0,m.A.yh,m.A.ys,T['--muted'],1,[3,4]); segE(0,m.A.ys,m.A.yh,m.A.ys,T['--muted'],1,[3,4]);
+    lab('Y',gx(m.A.yh),gy(0)+14,T['--muted'],12,'center'); lab('Y−M',gx(0)-6,gy(m.A.ys),T['--muted'],11.5,'right');
+
+    ctx.save();ctx.strokeStyle=T['--text'];ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(padL,padT-4);ctx.lineTo(padL,padT+PH);ctx.lineTo(padL+PW+8,padT+PH);ctx.stroke();ctx.restore();
+    headUp(padL,padT-4); headRt(padL+PW+8,padT+PH);
+    lab('yₛ',padL-8,padT+4,T['--text'],15,'right'); lab('yₕ',padL+PW+18,padT+PH,T['--text'],14);
+
+    // points
+    ptRing(m.CLfb.yh,m.CLfb.ys,6,T['--pt']); lab('Cₗ',gx(m.CLfb.yh)+9,gy(m.CLfb.ys)-2,T['--muted'],12,'left',true);
+    ptGold(m.CH.yh,m.CH.ys,6); lab('Cₕ',gx(m.CH.yh)-9,gy(m.CH.ys)+2,T['--text'],13,'right',true);
+    ptGold(m.CpL.yh,m.CpL.ys,6); lab('C′ₗ',gx(m.CpL.yh)+9,gy(m.CpL.ys)+2,T['--text'],13,'left',true);
+    ptDark(m.A.yh,m.A.ys,5); lab('A',gx(m.A.yh)+8,gy(m.A.ys)+10,T['--text'],13,'left',true);
+    // T point if separating fails
+    if(step>=3 && !m.exists){ ctx.save();ctx.beginPath();ctx.arc(gx(m.T.yh),gy(m.T.ys),5,0,7);ctx.fillStyle=T['--pool'];ctx.fill();ctx.restore();
+      lab('T',gx(m.T.yh)+8,gy(m.T.ys)-8,T['--pool'],12.5,'left',true); }
+
+    // readouts
+    document.getElementById('v-ph').textContent=pH.toFixed(2);
+    document.getElementById('v-pl').textContent=pL.toFixed(2);
+    document.getElementById('v-lam').textContent=lam.toFixed(2);
+    const S=(id,v)=>document.getElementById(id).textContent=v;
+    S('r-ch',m.CH.yh.toFixed(1)+', '+m.CH.ys.toFixed(1)); S('r-premh',(pH*M).toFixed(1));
+    S('r-cl',m.CpL.yh.toFixed(1)+', '+m.CpL.ys.toFixed(1)); S('r-il',m.Il.toFixed(1));
+    const ex=document.getElementById('exbox'), exl=document.getElementById('exlbl'), ext=document.getElementById('extext');
+    if(m.exists){ ex.classList.remove('fail'); exl.textContent='Separating equilibrium exists ✓';
+      ext.textContent='λ = '+lam.toFixed(2)+' (≤ threshold): no pooling deviation beats C′ₗ'; }
+    else{ ex.classList.add('fail'); exl.textContent='No equilibrium ✗';
+      ext.textContent='λ = '+lam.toFixed(2)+' too high: pooling point T beats C′ₗ for L'; }
+
+    renderStep(m); renderDots();
+  }
+
+  // mini: L-EU separating (flat) vs best-pooling (rising) over lambda
+  const mc=document.getElementById('mini'),mctx=mc.getContext('2d');
+  const MW=236,MH=160,mL=30,mR=12,mT=14,mB=26;
+  function setupMini(){const dpr=window.devicePixelRatio||1;mc.style.width=MW+'px';mc.style.height=MH+'px';mc.width=Math.round(MW*dpr);mc.height=Math.round(MH*dpr);mctx.setTransform(dpr,0,0,dpr,0,0);}
+  function drawMini(){
+    mctx.clearRect(0,0,MW,MH); mctx.fillStyle=T['--plot-bg'];mctx.fillRect(mL,mT,MW-mL-mR,MH-mT-mB);
+    const m=model(); const sepEU=m.EUL_CpL;
+    const lams=[],poolEU=[]; for(let i=0;i<=60;i++){const L=i/60;const pb=L*pL+(1-L)*pH;const yhT=tangentL(slope(pb));lams.push(L);poolEU.push(EU(yhT,bud(yhT,pb),pL));}
+    let emin=Math.min(sepEU,...poolEU),emax=Math.max(sepEU,...poolEU);const pad=(emax-emin)*0.15||0.02;emin-=pad;emax+=pad;
+    const mx=L=>mL+L*(MW-mL-mR), my=e=>MH-mB-((e-emin)/(emax-emin))*(MH-mT-mB);
+    mctx.strokeStyle=T['--text'];mctx.lineWidth=1.3;mctx.beginPath();mctx.moveTo(mL,mT);mctx.lineTo(mL,MH-mB);mctx.lineTo(MW-mR,MH-mB);mctx.stroke();
+    mctx.fillStyle=T['--muted'];mctx.font='bold 10px Georgia';mctx.textAlign='left';mctx.fillText('EUₗ',mL-26,mT+7);mctx.textAlign='right';mctx.fillText('λ',MW-mR,MH-mB+15);
+    // separating (flat) blue
+    mctx.strokeStyle=T['--lo'];mctx.lineWidth=2;mctx.beginPath();mctx.moveTo(mx(0),my(sepEU));mctx.lineTo(mx(1),my(sepEU));mctx.stroke();
+    // pooling (rising) purple
+    mctx.strokeStyle=T['--pool'];mctx.lineWidth=2;mctx.beginPath();lams.forEach((L,i)=>{const X=mx(L),Yv=my(poolEU[i]);i?mctx.lineTo(X,Yv):mctx.moveTo(X,Yv);});mctx.stroke();
+    // current lambda
+    mctx.strokeStyle=T['--muted'];mctx.lineWidth=1;mctx.setLineDash([3,3]);mctx.beginPath();mctx.moveTo(mx(lam),mT);mctx.lineTo(mx(lam),MH-mB);mctx.stroke();mctx.setLineDash([]);
+    const pbN=lam*pL+(1-lam)*pH,yhTN=tangentL(slope(pbN));
+    mctx.beginPath();mctx.arc(mx(lam),my(EU(yhTN,bud(yhTN,pbN),pL)),3.5,0,7);mctx.fillStyle=T['--pool'];mctx.fill();
+    mctx.beginPath();mctx.arc(mx(lam),my(sepEU),3.5,0,7);mctx.fillStyle=T['--lo'];mctx.fill();
+  }
+
+  function renderDots(){const d=document.getElementById('dots');d.innerHTML='';
+    for(let i=0;i<STEPS;i++){const s=document.createElement('div');s.className='step-dot'+(i===step?' active':(i<step?' done':''));d.appendChild(s);}
+    document.getElementById('counter').textContent='Step '+(step+1)+' / '+STEPS;document.getElementById('back').disabled=(step===0);}
+  function renderStep(m){
+    const t=[
+      ['1 · First best for H, rationing for L',
+       `Offer H its first-best full-insurance contract <span class="k">Cₕ</span> = (${m.CH.yh.toFixed(0)}, ${m.CH.ys.toFixed(0)}). L would like full insurance Cₗ too, but the dashed gap up to <span class="k">Cₗ</span> is exactly the rationing L must accept.`],
+      ['2 · The incentive constraint',
+       `H must not prefer L's contract. <span class="k">C′ₗ</span> sits where <span class="k">H's indifference curve through Cₕ</span> meets the low-risk fair line bₗ — the most cover L can get while H stays indifferent and chooses Cₕ.`],
+      ['3 · Self-selection equilibrium',
+       `Each type picks its own contract: H → Cₕ (full, premium ${(pH*M).toFixed(1)}), L → <span class="k">C′ₗ</span> = (${m.CpL.yh.toFixed(1)}, ${m.CpL.ys.toFixed(1)}), partial cover I = <span class="num">${m.Il.toFixed(1)}</span> of ${M}. Adverse selection is solved, but L is rationed.`],
+      ['4 · Existence depends on λ',
+       `The pooling line (share λ of low risk) is shown. Separating survives only if no pooling contract beats C′ₗ for L. Currently λ = <span class="num">${lam.toFixed(2)}</span> ⇒ <span class="k">${m.exists?'equilibrium exists':'no equilibrium (T dominates)'}</span>.`],
+      ['5 · Move λ and the risk gap',
+       `Raise λ (more low-risk): the pooling line steepens toward bₗ and eventually point <span class="k">T</span> Pareto-beats the separating pair — no pure-strategy equilibrium. Widening pₕ−pₗ tightens L's rationing.`]
+    ];
+    document.getElementById('stitle').textContent=t[step][0];
+    document.getElementById('sbody').innerHTML=t[step][1];
+  }
+
+  document.getElementById('s-ph').addEventListener('input',e=>{pH=parseFloat(e.target.value);if(pL>pH-0.04)pL=pH-0.04;document.getElementById('s-pl').value=pL;draw();drawMini();});
+  document.getElementById('s-pl').addEventListener('input',e=>{pL=parseFloat(e.target.value);if(pL>pH-0.04)pL=pH-0.04;draw();drawMini();});
+  document.getElementById('s-lam').addEventListener('input',e=>{lam=parseFloat(e.target.value);draw();drawMini();});
+  document.getElementById('next').addEventListener('click',()=>{step=(step+1)%STEPS;draw();drawMini();});
+  document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;draw();drawMini();}});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{setupCanvas();draw();},120);});
+  setupCanvas();setupMini();draw();drawMini();
+})();
+</script>
+</body>
+</html>
