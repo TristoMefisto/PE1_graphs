@@ -23,7 +23,6 @@
   header h1 { font-size:19px; font-weight:bold; color:var(--accent); }
   header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:4px; line-height:1.5; }
   header .relation b { color:var(--text); font-style:normal; }
-  header .relation b.b { color:var(--buyers); } header .relation b.s { color:var(--sellers); }
   .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
   .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
   canvas { display:block; margin:0 auto; }
@@ -49,6 +48,7 @@
   .slider-label:first-of-type { margin-top:0; }
   .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
   .slider-label .val.sup { color:var(--supply); } .slider-label .val.dem { color:var(--demand); }
+  .ends { display:flex; justify-content:space-between; font-size:9.5px; color:var(--muted); margin-top:2px; letter-spacing:.02em; }
   input[type=range] { width:100%; height:4px; cursor:pointer; }
   #s-es { accent-color:var(--supply); } #s-ed { accent-color:var(--demand); } #s-t { accent-color:var(--accent); }
   .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -58,26 +58,13 @@
   .res-box .lbl { font-size:10.5px; font-weight:bold; margin-bottom:3px; }
   .res-box.b .lbl { color:var(--buyers); } .res-box.s .lbl { color:var(--sellers); }
   .res-box .big { font-size:16px; font-weight:bold; font-family:'Courier New',monospace; }
-  .res-box .sub { font-size:11px; color:var(--muted); font-family:'Courier New',monospace; }
-  .formula { font-size:12px; line-height:1.55; text-align:center; }
-  .formula .frac { display:inline-block; text-align:center; vertical-align:middle; margin:0 2px; }
-  .formula .frac .top { display:block; border-bottom:1.3px solid currentColor; padding:0 5px; }
-  .formula .frac .bot { display:block; padding:0 5px; }
-  .formula .row { margin:8px 0; }
-  .formula .lab { font-size:10.5px; color:var(--muted); display:block; margin-top:2px; }
-  .mini-wrap { display:flex; justify-content:center; }
-  .legend { font-size:11.5px; line-height:1.9; }
-  .legend .item { display:flex; align-items:center; gap:8px; }
-  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
-  .legend .sw.fill { height:11px; width:16px; border-radius:2px; }
-  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Tax Incidence and Elasticity — Who Bears the Tax?</h1>
-  <div class="relation">The inelastic side bears the tax. Buyers' share = ε<sub>S</sub> ÷ (ε<sub>S</sub> + |ε<sub>D</sub>|): elastic parties escape, inelastic parties pay.</div>
+  <div class="relation">The inelastic side bears the tax: the more elastic party escapes it, the more inelastic party pays.</div>
 </header>
 
 <div class="layout">
@@ -98,55 +85,22 @@
     </div>
 
     <div class="results">
-      <div class="res-box b"><div class="lbl">Incidence on buyers</div><div class="big" id="inc-b">—</div><div class="sub" id="sh-b">—</div></div>
-      <div class="res-box s"><div class="lbl">Incidence on sellers</div><div class="big" id="inc-s">—</div><div class="sub" id="sh-s">—</div></div>
+      <div class="res-box b"><div class="lbl">Incidence on buyers</div><div class="big" id="inc-b">—</div></div>
+      <div class="res-box s"><div class="lbl">Incidence on sellers</div><div class="big" id="inc-s">—</div></div>
     </div>
 
     <div class="card">
       <div class="card-title">Adjust elasticities &amp; tax</div>
       <div class="slider-label"><span>Supply elasticity ε<sub>S</sub></span><span class="val sup" id="v-es">1.00</span></div>
-      <input type="range" id="s-es" min="0.1" max="3.0" step="0.05" value="1.0">
+      <input type="range" id="s-es" min="0" max="1" step="0.01" value="0.5">
+      <div class="ends"><span>perfectly inelastic</span><span>perfectly elastic</span></div>
       <div class="slider-label"><span>Demand elasticity |ε<sub>D</sub>|</span><span class="val dem" id="v-ed">1.00</span></div>
-      <input type="range" id="s-ed" min="0.1" max="3.0" step="0.05" value="1.0">
+      <input type="range" id="s-ed" min="0" max="1" step="0.01" value="0.5">
+      <div class="ends"><span>perfectly inelastic</span><span>perfectly elastic</span></div>
       <div class="slider-label"><span>Tax per unit t</span><span class="val" id="v-t">$7.50</span></div>
       <input type="range" id="s-t" min="1" max="15" step="0.5" value="7.5">
       <div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
-        S and D pivot around the pre-tax point A = (1500, $22.5). Set ε<sub>S</sub>=1.25, |ε<sub>D</sub>|=0.85 to approach the page's $27 / $19.5 case.
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Pass-through formulas</div>
-      <div class="formula">
-        <div class="row" style="color:var(--buyers)">
-          <span class="frac"><span class="top">dq</span><span class="bot">dt</span></span> =
-          <span class="frac"><span class="top">ε<sub>S</sub></span><span class="bot">ε<sub>S</sub> − ε<sub>D</sub></span></span>
-          = <span id="f-buy" style="font-family:'Courier New',monospace;font-weight:bold">0.50</span>
-          <span class="lab">share borne by buyers</span>
-        </div>
-        <div class="row" style="color:var(--sellers)">
-          <span class="frac"><span class="top">dp</span><span class="bot">dt</span></span> =
-          <span class="frac"><span class="top">ε<sub>D</sub></span><span class="bot">ε<sub>S</sub> − ε<sub>D</sub></span></span>
-          = <span id="f-sell" style="font-family:'Courier New',monospace;font-weight:bold">−0.50</span>
-          <span class="lab">change in seller price (ε<sub>D</sub> &lt; 0)</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Buyer share vs ε<sub>S</sub> / |ε<sub>D</sub>|</div>
-      <div class="mini-wrap"><canvas id="mini"></canvas></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Legend</div>
-      <div class="legend">
-        <div class="item"><span class="sw" style="background:var(--supply)"></span> S — supply (slope set by ε<sub>S</sub>)</div>
-        <div class="item"><span class="sw" style="background:var(--demand)"></span> D — demand (slope set by |ε<sub>D</sub>|)</div>
-        <div class="item"><span class="sw fill" style="background:color-mix(in srgb,var(--buyers) 22%,transparent);border:1px solid var(--buyers)"></span> buyers' burden (raised price × Q)</div>
-        <div class="item"><span class="sw fill" style="background:color-mix(in srgb,var(--sellers) 22%,transparent);border:1px solid var(--sellers)"></span> sellers' burden (lost price × Q)</div>
-        <div class="item"><span class="sw fill" style="background:color-mix(in srgb,var(--surplus) 26%,transparent);border:1px solid var(--surplus)"></span> deadweight loss</div>
-        <div class="item"><span class="dt" style="background:var(--eq);border:1.5px solid var(--eq-stroke)"></span> A — pre-tax · C, D — after tax</div>
+        S and D pivot around the pre-tax point A = (1500, $22.5). Drag a slider to either end to see the perfectly inelastic (vertical) and perfectly elastic (horizontal) extremes.
       </div>
     </div>
   </div>
@@ -162,7 +116,7 @@ function loadTheme(){
       buyers:cssvar('--buyers'),sellers:cssvar('--sellers'),surplus:cssvar('--surplus'),accent:cssvar('--accent') };
 }
 loadTheme();
-if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();drawMini();});
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
 
 const LW=580,LH=470,padL=58,padR=22,padT=20,padB=46;
 const plotW=LW-padL-padR, plotH=LH-padT-padB;
@@ -177,21 +131,24 @@ function setupCanvas(){
 }
 let resizeTO; window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{setupCanvas();draw();},120);});
 
-// Model — S and D pivot around A=(Q0,P0); slopes from elasticities.
-const Q0=1500,P0=22.5;
-let eS=1.0,eD=1.0,tax=7.5;
-function slopes(){ return { ms:P0/(eS*Q0), md:P0/(eD*Q0) }; }
-const supplyP=q=>{const{ms}=slopes();return P0+ms*(q-Q0);};
-const demandP=q=>{const{md}=slopes();return P0-md*(q-Q0);};
+// Model — S and D pivot around A=(Q0,P0); elasticities from slider dials v in [0,1], eps=v/(1-v).
+const Q0=1500,P0=22.5,PI_EPS=0.001;
+let vS=0.5,vD=0.5,tax=7.5;
+function elas(v){ return v>=1-PI_EPS?Infinity:(v<=PI_EPS?0:v/(1-v)); }
 function model(){
-  const{ms,md}=slopes();
-  const Qe=Q0 - tax/(ms+md);
-  const Ps=P0 - ms*tax/(ms+md);
-  const Pb=Ps+tax;
-  const incB=Pb-P0, incS=P0-Ps;
-  const buyerShare=eS/(eS+eD), sellerShare=eD/(eS+eD);
-  return {ms,md,Qe,Ps,Pb,incB,incS,buyerShare,sellerShare};
+  const eS=elas(vS), eD=elas(vD);
+  const ms = eS===0?Infinity:(eS===Infinity?0:P0/(eS*Q0));
+  const md = eD===0?Infinity:(eD===Infinity?0:P0/(eD*Q0));
+  let Qe,Ps,Pb;
+  if(ms===0&&md===0){ Qe=Q0; Ps=P0-tax/2; Pb=P0+tax/2; }      // both perfectly elastic (degenerate)
+  else if(md===Infinity){ Qe=Q0; Ps=P0; Pb=P0+tax; }          // perfectly inelastic demand -> buyers bear all
+  else if(ms===Infinity){ Qe=Q0; Pb=P0; Ps=P0-tax; }          // perfectly inelastic supply -> sellers bear all
+  else { const s=ms+md; Qe=Q0-tax/s; Ps=P0-ms*tax/s; Pb=Ps+tax; }
+  const incB=Pb-P0, incS=P0-Ps, buyerShare=incB/tax;
+  return {eS,eD,ms,md,Qe,Ps,Pb,incB,incS,buyerShare,sellerShare:1-buyerShare};
 }
+const supplyP=q=>{const{ms}=model();return P0+ms*(q-Q0);};
+const demandP=q=>{const{md}=model();return P0-md*(q-Q0);};
 
 // primitives
 function line(q1,p1,q2,p2,color,width,dash){ctx.beginPath();ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.moveTo(qx(q1),py(p1));ctx.lineTo(qx(q2),py(p2));ctx.stroke();ctx.setLineDash([]);}
@@ -208,18 +165,29 @@ function projX(q,pTop,txt,color){line(q,0,q,pTop,color||T.muted,1,DASH_PROJ);if(
 function projY(p,qRight,txt,color){line(0,p,qRight,p,color||T.muted,1,DASH_PROJ);if(txt)priceTick(p,txt,color);}
 function drawBracket(x,yA,yB,color,txt){
   const top=Math.min(yA,yB),bot=Math.max(yA,yB);
+  if(bot-top<2){ // zero burden: just write the label
+    ctx.save();ctx.font='bold 10.5px Georgia';ctx.fillStyle=color;ctx.textAlign='right';ctx.fillText(txt,x-4,top+3);ctx.restore();return;
+  }
   ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.6;
   ctx.beginPath();ctx.moveTo(x+6,top);ctx.lineTo(x,top);ctx.lineTo(x,bot);ctx.lineTo(x+6,bot);ctx.stroke();
   ctx.font='bold 10.5px Georgia';ctx.fillStyle=color;ctx.textAlign='right';
   ctx.fillText(txt,x-4,(top+bot)/2+3);ctx.restore();
 }
-// label a pivoting line at an on-plot anchor
-function labelLine(fn,color,txt,prefBelow){
-  let qa=Q_MAX*0.86, pa=fn(qa);
-  if(pa>P_MAX-3||pa<3){ // walk to find on-plot point
-    for(let q=Q_MAX*0.95;q>Q_MAX*0.08;q-=Q_MAX*0.02){const v=fn(q);if(v<P_MAX-3&&v>4){qa=q;pa=v;break;}}
+// draw a supply/demand line that may be vertical (eps=0) or horizontal (eps=Inf); label at an on-plot anchor
+function drawCurve(kind,m){
+  const color = kind==='S'?T.supply:T.demand;
+  const eps = kind==='S'?m.eS:m.eD;
+  if(eps===0){ // perfectly inelastic -> vertical line at Q0
+    line(Q0,0,Q0,P_MAX,color,3);
+    label(kind,Q0,P_MAX,(kind==='S'?6:6),12,color,13,'bold','left',true);
+    return;
   }
-  label(txt,qa,pa,4,prefBelow?15:-7,color,13,'bold','left',true);
+  const fn = kind==='S'?supplyP:demandP;
+  line(0,fn(0),Q_MAX,fn(Q_MAX),color,3);
+  // anchor label on-plot
+  let qa=Q_MAX*0.86, pa=fn(qa);
+  if(pa>P_MAX-3||pa<3){ for(let q=Q_MAX*0.95;q>Q_MAX*0.08;q-=Q_MAX*0.02){const v=fn(q);if(v<P_MAX-3&&v>4){qa=q;pa=v;break;}} }
+  label(kind,qa,pa,4,kind==='S'?-7:15,color,13,'bold','left',true);
 }
 
 let step=0;
@@ -232,31 +200,21 @@ function draw(){
 
   const m=model();
 
-  // ── shaded regions (clipped to plot) ──
+  // shaded regions (clipped to plot)
   ctx.save();ctx.beginPath();ctx.rect(padL,padT,plotW,plotH);ctx.clip();
-
   if(step>=2){
-    // buyers' burden rectangle: P0..Pb over 0..Qe
     ctx.fillStyle=T.buyers;ctx.globalAlpha=0.16;
     ctx.fillRect(qx(0),py(m.Pb),qx(m.Qe)-qx(0),py(P0)-py(m.Pb));
-    // sellers' burden rectangle: Ps..P0 over 0..Qe
     ctx.fillStyle=T.sellers;ctx.globalAlpha=0.16;
     ctx.fillRect(qx(0),py(P0),qx(m.Qe)-qx(0),py(m.Ps)-py(P0));
     ctx.globalAlpha=1;
   }
   if(step>=5){
-    // deadweight loss triangle: vertices C(Qe,Pb), D(Qe,Ps), A(Q0,P0)
     ctx.beginPath();ctx.moveTo(qx(m.Qe),py(m.Pb));ctx.lineTo(qx(m.Qe),py(m.Ps));ctx.lineTo(qx(Q0),py(P0));ctx.closePath();
     ctx.fillStyle=T.surplus;ctx.globalAlpha=0.26;ctx.fill();ctx.globalAlpha=1;
   }
-
-  // curves (pivot around A)
-  line(0,supplyP(0),Q_MAX,supplyP(Q_MAX),T.supply,3);
-  line(0,demandP(0),Q_MAX,demandP(Q_MAX),T.demand,3);
+  drawCurve('S',m); drawCurve('D',m);
   ctx.restore();
-
-  labelLine(supplyP,T.supply,'S',false);
-  labelLine(demandP,T.demand,'D',true);
 
   // axes
   ctx.strokeStyle=T.text;ctx.lineWidth=1.6;
@@ -277,7 +235,6 @@ function draw(){
     projX(m.Qe,Math.max(m.Pb,P0),Math.round(m.Qe).toString());
     projY(m.Pb,m.Qe,'$'+m.Pb.toFixed(2),T.buyers);
     projY(m.Ps,m.Qe,'$'+m.Ps.toFixed(2),T.sellers);
-    // tax wedge connector at Qe
     ctx.save();ctx.strokeStyle=T.eqStroke;ctx.lineWidth=1.5;
     ctx.beginPath();ctx.moveTo(qx(m.Qe),py(m.Pb));ctx.lineTo(qx(m.Qe),py(m.Ps));ctx.stroke();
     ctx.beginPath();ctx.moveTo(qx(m.Qe)-4,py(m.Pb));ctx.lineTo(qx(m.Qe)+4,py(m.Pb));ctx.stroke();
@@ -290,39 +247,13 @@ function draw(){
 
   // incidence brackets
   if(step>=2){
-    const bx=qx(300);
+    const bx=qx(330);
     drawBracket(bx,py(P0),py(m.Pb),T.buyers,'buyers +$'+m.incB.toFixed(2));
     drawBracket(bx,py(m.Ps),py(P0),T.sellers,'sellers −$'+m.incS.toFixed(2));
   }
 }
 
-// mini-plot: buyer share = rho/(1+rho), rho = eS/|eD|
-const mc=document.getElementById('mini'),mctx=mc.getContext('2d');
-const MW=236,MH=150,mL=34,mR=12,mT=12,mB=28;
-function setupMini(){const dpr=window.devicePixelRatio||1;mc.style.width=MW+'px';mc.style.height=MH+'px';mc.width=Math.round(MW*dpr);mc.height=Math.round(MH*dpr);mctx.setTransform(dpr,0,0,dpr,0,0);}
-function drawMini(){
-  mctx.clearRect(0,0,MW,MH);
-  mctx.fillStyle=T.plotBg;mctx.fillRect(mL,mT,MW-mL-mR,MH-mT-mB);
-  const RMAX=5;
-  const mx=r=>mL+(r/RMAX)*(MW-mL-mR), my=s=>MH-mB-s*(MH-mT-mB);
-  // 0.5 reference line
-  mctx.strokeStyle=T.grid;mctx.lineWidth=1;mctx.setLineDash([3,3]);
-  mctx.beginPath();mctx.moveTo(mL,my(0.5));mctx.lineTo(MW-mR,my(0.5));mctx.stroke();mctx.setLineDash([]);
-  mctx.fillStyle=T.muted;mctx.font='9px Georgia';mctx.textAlign='left';mctx.fillText('½',mL+2,my(0.5)-3);
-  // axes
-  mctx.strokeStyle=T.text;mctx.lineWidth=1.3;mctx.beginPath();mctx.moveTo(mL,mT);mctx.lineTo(mL,MH-mB);mctx.lineTo(MW-mR,MH-mB);mctx.stroke();
-  mctx.fillStyle=T.muted;mctx.font='bold 10px Georgia';mctx.textAlign='left';mctx.fillText('buyer',mL-30,mT+6);mctx.fillText('share',mL-30,mT+16);
-  mctx.textAlign='right';mctx.fillText('εS / |εD|',MW-mR,MH-mB+16);
-  // curve
-  mctx.strokeStyle=T.buyers;mctx.lineWidth=2;mctx.beginPath();
-  for(let i=0;i<=120;i++){const r=RMAX*i/120,s=r/(1+r);const X=mx(r),Y=my(s);i?mctx.lineTo(X,Y):mctx.moveTo(X,Y);}
-  mctx.stroke();
-  // current point
-  const r=eS/eD, s=r/(1+r), rc=Math.min(r,RMAX);
-  mctx.setLineDash([3,3]);mctx.strokeStyle=T.muted;mctx.lineWidth=1;
-  mctx.beginPath();mctx.moveTo(mx(rc),MH-mB);mctx.lineTo(mx(rc),my(s));mctx.lineTo(mL,my(s));mctx.stroke();mctx.setLineDash([]);
-  mctx.beginPath();mctx.arc(mx(rc),my(s),3.8,0,7);mctx.fillStyle=T.eq;mctx.fill();mctx.lineWidth=1.5;mctx.strokeStyle=T.eqStroke;mctx.stroke();
-}
+function fmtE(e){ return e===Infinity?'∞':(e===0?'0':e.toFixed(2)); }
 
 function stepContent(){
   const m=model();
@@ -330,15 +261,15 @@ function stepContent(){
     {t:"Step 0 · Pre-tax equilibrium",
      b:`The market clears at point <b>A</b>: <span class="num">1,500</span> units at <span class="num">$22.50</span>. Buyers pay exactly what sellers receive — no wedge. The slopes of <b style="color:var(--supply)">S</b> and <b style="color:var(--demand)">D</b> are set by their elasticities, both pivoting through A.`},
     {t:"Step 1 · A tax opens a wedge",
-     b:`A specific tax <span class="num">$${tax.toFixed(2)}</span> drives a vertical wedge between the price buyers pay (<b style="color:var(--buyers)">C = $${m.Pb.toFixed(2)}</b>, on D) and the price sellers keep (<b style="color:var(--sellers)">D = $${m.Ps.toFixed(2)}</b>, on S). Quantity falls to <span class="num">${Math.round(m.Qe)}</span>. The gap C–D is the tax — but how it splits is not yet decided by the tax itself.`},
+     b:`A specific tax <span class="num">$${tax.toFixed(2)}</span> drives a vertical wedge between the price buyers pay (<b style="color:var(--buyers)">C = $${m.Pb.toFixed(2)}</b>, on D) and the price sellers keep (<b style="color:var(--sellers)">D = $${m.Ps.toFixed(2)}</b>, on S). Quantity falls to <span class="num">${Math.round(m.Qe)}</span>. The gap C–D is the tax — but how it splits is not decided by the tax itself.`},
     {t:"Step 2 · The burden splits by elasticity",
-     b:`Buyers' price rises <b style="color:var(--buyers)">+$${m.incB.toFixed(2)}</b> (${(m.buyerShare*100).toFixed(0)}%); sellers' falls <b style="color:var(--sellers)">−$${m.incS.toFixed(2)}</b> (${(m.sellerShare*100).toFixed(0)}%). The shaded rectangles are each side's burden (price change × Q). Buyers' share = ε<sub>S</sub>/(ε<sub>S</sub>+|ε<sub>D</sub>|) = <span class="num">${(m.buyerShare).toFixed(2)}</span>.`},
+     b:`Buyers' price rises <b style="color:var(--buyers)">+$${m.incB.toFixed(2)}</b>; sellers' falls <b style="color:var(--sellers)">−$${m.incS.toFixed(2)}</b>. The shaded rectangles are each side's burden (price change × Q). The split is fixed by the relative elasticities, not by who is legally taxed.`},
     {t:"Step 3 · Inelastic side bears the tax",
-     b:`Lower <b style="color:var(--demand)">|ε<sub>D</sub>|</b> toward 0: demand steepens, buyers can't substitute away, and their share climbs toward 100% — <b>full shifting</b>. Perfectly inelastic demand ⇒ the whole tax lands on buyers regardless of who is legally taxed.`},
+     b:`Drag <b style="color:var(--demand)">|ε<sub>D</sub>|</b> to the left (toward perfectly inelastic): demand becomes vertical, buyers cannot substitute away, and they bear the <b>entire</b> tax — <b>full shifting</b>. The same happens to sellers as <b style="color:var(--supply)">ε<sub>S</sub></b> goes inelastic.`},
     {t:"Step 4 · Elastic side escapes",
-     b:`Raise <b style="color:var(--demand)">|ε<sub>D</sub>|</b>: demand flattens, buyers walk away at any price rise, so sellers absorb the tax — <b>no shifting</b>. The same logic runs through ε<sub>S</sub>: whichever side is more elastic pays less.`},
+     b:`Drag <b style="color:var(--demand)">|ε<sub>D</sub>|</b> to the right (toward perfectly elastic): demand becomes horizontal, buyers walk away at any price rise, so sellers absorb the whole tax — <b>no shifting</b>. Whichever side is more elastic pays less.`},
     {t:"Step 5 · Revenue and deadweight loss",
-     b:`The two rectangles together are tax revenue, <span class="num">$${(tax*m.Qe).toLocaleString(undefined,{maximumFractionDigits:0})}</span> = t × Q. The shaded triangle A–C–D is the <b style="color:var(--surplus)">deadweight loss</b> from the ${Math.round(Q0-m.Qe)} units no longer traded — larger when both sides are more elastic.`}
+     b:`The two rectangles together are tax revenue, <span class="num">$${(tax*m.Qe).toLocaleString(undefined,{maximumFractionDigits:0})}</span> = t × Q. The triangle A–C–D is the <b style="color:var(--surplus)">deadweight loss</b> from the ${Math.round(Q0-m.Qe)} units no longer traded — it vanishes when either side is perfectly inelastic and grows as both become elastic.`}
   ];
 }
 
@@ -354,20 +285,18 @@ function render(){
   document.getElementById('next').textContent=step===5?'Done':'Next ▶';
   document.getElementById('inc-b').textContent='+$'+m.incB.toFixed(2);
   document.getElementById('inc-s').textContent='−$'+m.incS.toFixed(2);
-  document.getElementById('sh-b').textContent=(m.buyerShare*100).toFixed(0)+'% of t';
-  document.getElementById('sh-s').textContent=(m.sellerShare*100).toFixed(0)+'% of t';
-  document.getElementById('f-buy').textContent=m.buyerShare.toFixed(2);
-  document.getElementById('f-sell').textContent='−'+m.sellerShare.toFixed(2);
-  draw();drawMini();
+  document.getElementById('v-es').textContent=fmtE(m.eS);
+  document.getElementById('v-ed').textContent=fmtE(m.eD);
+  draw();
 }
 
 document.getElementById('next').addEventListener('click',()=>{if(step<5){step++;render();}});
 document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;render();}});
-document.getElementById('s-es').addEventListener('input',e=>{eS=parseFloat(e.target.value);document.getElementById('v-es').textContent=eS.toFixed(2);render();});
-document.getElementById('s-ed').addEventListener('input',e=>{eD=parseFloat(e.target.value);document.getElementById('v-ed').textContent=eD.toFixed(2);render();});
+document.getElementById('s-es').addEventListener('input',e=>{vS=parseFloat(e.target.value);render();});
+document.getElementById('s-ed').addEventListener('input',e=>{vD=parseFloat(e.target.value);render();});
 document.getElementById('s-t').addEventListener('input',e=>{tax=parseFloat(e.target.value);document.getElementById('v-t').textContent='$'+tax.toFixed(2);render();});
 
-setupCanvas();setupMini();render();
+setupCanvas();render();
 </script>
 </body>
 </html>
