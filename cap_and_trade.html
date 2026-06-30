@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cap and Trade — PE1</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --clean:#1565C0; --dirty:#C62828; --price:#2E7D32;
+    --eq:#F9A825; --eq-stroke:#4A3000; --save:#2E7D32; --accent:#1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --clean:#5B9BE8; --dirty:#EF6C6C; --price:#66BB6A;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --save:#66BB6A; --accent:#5B9BE8;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; color:var(--accent); }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:4px; line-height:1.5; }
+  header .relation b.c { color:var(--clean); } header .relation b.d { color:var(--dirty); }
+  .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; margin-top:11px; }
+  .slider-label:first-of-type { margin-top:0; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  .slider-label .val.c { color:var(--clean); } .slider-label .val.d { color:var(--dirty); }
+  input[type=range] { width:100%; height:4px; cursor:pointer; }
+  #s-cc { accent-color:var(--clean); } #s-cd { accent-color:var(--dirty); } #s-x { accent-color:var(--eq-stroke); }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
+  .res-box.p { background:color-mix(in srgb,var(--price) 14%,transparent); border-left:3px solid var(--price); }
+  .res-box.sv { background:color-mix(in srgb,var(--eq) 20%,transparent); border-left:3px solid var(--eq-stroke); }
+  .res-box .lbl { font-size:10.5px; font-weight:bold; margin-bottom:3px; }
+  .res-box.p .lbl { color:var(--price); } .res-box.sv .lbl { color:var(--eq-stroke); }
+  .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
+  .res-box .sub { font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cap and Trade — Trading to the Least-Cost Allocation</h1>
+  <div class="relation">The cap fixes total abatement Q̄. Trading permits moves abatement from the <b class="d">high-cost (dirty)</b> firm to the <b class="c">low-cost (clean)</b> firm until marginal costs are equal at the permit price p*.</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="res-box p"><div class="lbl">Permit price p* (efficient)</div><div class="big" id="r-p">—</div><div class="sub" id="r-traded">—</div></div>
+      <div class="res-box sv"><div class="lbl">Cost saving from trade</div><div class="big" id="r-save">—</div><div class="sub">vs equal allocation</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust the firms &amp; the allocation</div>
+      <div class="slider-label"><span>Clean firm MAC slope</span><span class="val c" id="v-cc">0.50</span></div>
+      <input type="range" id="s-cc" min="0.2" max="1.0" step="0.05" value="0.5">
+      <div class="slider-label"><span>Dirty firm MAC slope</span><span class="val d" id="v-cd">1.50</span></div>
+      <input type="range" id="s-cd" min="1.0" max="2.0" step="0.05" value="1.5">
+      <div class="slider-label"><span>Abatement by clean firm</span><span class="val" id="v-x">50</span></div>
+      <input type="range" id="s-x" min="2" max="98" step="1" value="50">
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
+        Total cap Q̄ = 100. The clean firm's abatement is read from the left, the dirty firm's from the right (they always sum to Q̄). Drag the allocation to the crossing to minimise total cost.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){
+  T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),border:cssvar('--border'),text:cssvar('--text'),muted:cssvar('--muted'),
+      clean:cssvar('--clean'),dirty:cssvar('--dirty'),price:cssvar('--price'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),save:cssvar('--save'),accent:cssvar('--accent') };
+}
+loadTheme();
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=580,LH=470,padL=52,padR=26,padT=22,padB=52;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+const QBAR=100, P_MAX=220, DASH=[2,3];
+const qx=q=>padL+(q/QBAR)*plotW, py=p=>padT+plotH-(p/P_MAX)*plotH;
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1, avail=Math.max(300,cv.parentElement.clientWidth-16);
+  const cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const s=(cssW/LW)*dpr; ctx.setTransform(s,0,0,s,0,0);
+}
+let resizeTO; window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+// Model: x = clean firm abatement (from left). Dirty abates QBAR-x (from right).
+let cC=0.5,cD=1.5,xAlloc=50;
+const macC=x=>cC*x;                    // clean MAC at clean-abatement x
+const macD=x=>cD*(QBAR-x);             // dirty MAC at clean-abatement x (dirty abates QBAR-x)
+function model(){
+  const xStar=cD*QBAR/(cC+cD), pStar=cC*xStar;
+  const half=QBAR/2;
+  const gapNow=macD(xAlloc)-macC(xAlloc);
+  const costAt=x=>0.5*cC*x*x + 0.5*cD*(QBAR-x)*(QBAR-x);
+  const saving=costAt(half)-costAt(xAlloc);     // realised saving from moving off equal allocation
+  const maxSaving=costAt(half)-costAt(xStar);
+  const permitsTraded=xAlloc-half;              // clean sells this many (dirty buys)
+  return {xStar,pStar,half,gapNow,saving,maxSaving,permitsTraded,
+          macCnow:macC(xAlloc),macDnow:macD(xAlloc)};
+}
+
+// primitives
+function line(q1,p1,q2,p2,color,width,dash){ctx.beginPath();ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.moveTo(qx(q1),py(p1));ctx.lineTo(qx(q2),py(p2));ctx.stroke();ctx.setLineDash([]);}
+function dot(q,p,r,fill){ctx.beginPath();ctx.arc(qx(q),py(p),r,0,7);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T.plotBg;ctx.stroke();}
+function label(txt,q,p,dx,dy,color,size,weight,align,halo){
+  ctx.save();size=size||12;ctx.font=(weight||'bold')+' '+size+'px Georgia';ctx.textAlign=align||'left';
+  const x=qx(q)+dx,y=py(p)+dy;
+  if(halo){const w=ctx.measureText(txt).width;let lx=x;if(align==='right')lx=x-w;else if(align==='center')lx=x-w/2;ctx.fillStyle=T.plotBg;ctx.globalAlpha=0.82;ctx.fillRect(lx-3,y-size+2,w+6,size+4);ctx.globalAlpha=1;}
+  ctx.fillStyle=color;ctx.fillText(txt,x,y);ctx.restore();
+}
+function priceTick(p,txt,color){ctx.save();ctx.font='11px Georgia';ctx.fillStyle=color||T.muted;ctx.textAlign='right';ctx.fillText(txt,padL-7,py(p)+4);ctx.restore();}
+function qTickBottom(q,txt,color,dy){ctx.save();ctx.font='11px Georgia';ctx.fillStyle=color||T.muted;ctx.textAlign='center';ctx.fillText(txt,qx(q),padT+plotH+(dy||16));ctx.restore();}
+
+let step=0;
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  const m=model();
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let p=40;p<P_MAX;p+=40){ctx.beginPath();ctx.moveTo(padL,py(p));ctx.lineTo(padL+plotW,py(p));ctx.stroke();}
+  for(let q=20;q<QBAR;q+=20){ctx.beginPath();ctx.moveTo(qx(q),padT);ctx.lineTo(qx(q),padT+plotH);ctx.stroke();}
+
+  ctx.save();ctx.beginPath();ctx.rect(padL,padT,plotW,plotH);ctx.clip();
+
+  // shaded cost areas under each MAC up to the current allocation
+  if(step>=1){
+    // clean abatement cost: triangle under macC from 0..xAlloc
+    ctx.fillStyle=T.clean;ctx.globalAlpha=0.12;
+    ctx.beginPath();ctx.moveTo(qx(0),py(0));ctx.lineTo(qx(xAlloc),py(0));ctx.lineTo(qx(xAlloc),py(macC(xAlloc)));ctx.closePath();ctx.fill();
+    // dirty abatement cost: triangle under macD from xAlloc..QBAR
+    ctx.fillStyle=T.dirty;ctx.globalAlpha=0.12;
+    ctx.beginPath();ctx.moveTo(qx(xAlloc),py(0));ctx.lineTo(qx(QBAR),py(0));ctx.lineTo(qx(xAlloc),py(macD(xAlloc)));ctx.closePath();ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  // cost-saving triangle between the two curves, from current allocation to the crossing
+  if(step>=3 && Math.abs(xAlloc-m.xStar)>0.5){
+    const xa=Math.min(xAlloc,m.xStar), xb=Math.max(xAlloc,m.xStar);
+    ctx.fillStyle=T.save;ctx.globalAlpha=0.28;
+    ctx.beginPath();ctx.moveTo(qx(xa),py(macC(xa)));ctx.lineTo(qx(xa),py(macD(xa)));
+    ctx.lineTo(qx(xb),py(macD(xb)));ctx.lineTo(qx(xb),py(macC(xb)));ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+  }
+
+  // MAC curves
+  line(0,macC(0),QBAR,macC(QBAR),T.clean,3);     // clean: up to the right
+  line(0,macD(0),QBAR,macD(QBAR),T.dirty,3);     // dirty: up to the left
+  ctx.restore();
+
+  label("C'_clean",QBAR-2,macC(QBAR),-4,-8,T.clean,12.5,'bold','right',true);
+  label("C'_dirty",2,macD(0),4,-8,T.dirty,12.5,'bold','left',true);
+
+  // axes
+  ctx.strokeStyle=T.text;ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath();ctx.moveTo(padL,padT-2);ctx.lineTo(padL-4,padT+8);ctx.lineTo(padL+4,padT+8);ctx.fill();
+  label('$ (MAC)',0,P_MAX,-padL+4,-4,T.text,12,'bold','left');
+  // dual origin labels
+  qTickBottom(0,'0',T.clean,16); label('clean abates →',8,0,0,34,T.clean,10.5,'bold','left');
+  qTickBottom(QBAR,'0',T.dirty,16); label('← dirty abates',QBAR-8,0,0,34,T.dirty,10.5,'bold','right');
+  qTickBottom(m.half,'Q̄/2',T.muted,16);
+
+  // equal-allocation reference
+  line(m.half,0,m.half,P_MAX,T.muted,1.2,[5,4]);
+  label('equal',m.half,P_MAX,0,8,T.muted,10.5,'bold','center',true);
+
+  // efficient crossing
+  if(step>=2){
+    line(0,m.pStar,m.xStar,m.pStar,T.price,1.3,DASH);
+    priceTick(m.pStar,'p*='+m.pStar.toFixed(0),T.price);
+    line(m.xStar,0,m.xStar,m.pStar,T.price,1.3,DASH);
+    qTickBottom(m.xStar,'',T.price); 
+    dot(m.xStar,m.pStar,6,T.eq); label('p*',m.xStar,m.pStar,9,-9,T.price,12.5,'bold','left',true);
+  }
+
+  // current allocation marker + the two MAC readings (the "gains from trade" gap)
+  line(xAlloc,0,xAlloc,Math.max(m.macCnow,m.macDnow),T.eqStroke,1.6);
+  dot(xAlloc,m.macCnow,5.5,T.clean); dot(xAlloc,m.macDnow,5.5,T.dirty);
+  if(step>=1 && m.gapNow>3){
+    // brace-ish gap label
+    const xpix=qx(xAlloc);
+    ctx.save();ctx.strokeStyle=T.eqStroke;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(xpix,py(m.macCnow));ctx.lineTo(xpix,py(m.macDnow));ctx.stroke();ctx.restore();
+    label('gains',xAlloc,(m.macCnow+m.macDnow)/2,9,-2,T.eqStroke,11,'bold','left',true);
+    label('from trade',xAlloc,(m.macCnow+m.macDnow)/2,9,12,T.eqStroke,11,'bold','left',true);
+  }
+
+  // readouts
+  document.getElementById('v-cc').textContent=cC.toFixed(2);
+  document.getElementById('v-cd').textContent=cD.toFixed(2);
+  document.getElementById('v-x').textContent=Math.round(xAlloc);
+  document.getElementById('r-p').textContent='$'+m.pStar.toFixed(1);
+  document.getElementById('r-traded').textContent=Math.round(m.xStar-m.half)+' permits clean→dirty at p*';
+  document.getElementById('r-save').textContent='$'+m.maxSaving.toFixed(0);
+}
+
+function stepContent(){
+  const m=model();
+  return [
+    {t:"Step 0 · The cap and an equal allocation",
+     b:`The regulator caps total abatement at <span class="num">Q̄ = 100</span> and hands out permits. Start with an <b>equal split</b>: each firm abates <span class="num">${m.half}</span>. The <b style="color:var(--clean)">clean</b> firm's marginal cost there is <span class="num">$${macC(50).toFixed(0)}</span>, the <b style="color:var(--dirty)">dirty</b> firm's is <span class="num">$${macD(50).toFixed(0)}</span> — they are <b>not</b> equal, so the cap is being met inefficiently.`},
+    {t:"Step 1 · Gains from trade",
+     b:`At the current split the dirty firm's marginal abatement cost exceeds the clean firm's by <span class="num">$${m.gapNow.toFixed(0)}</span>. That gap is the <b>gain from trade</b>: the dirty firm would rather buy a permit (and abate one unit less) than pay its high MAC; the clean firm will happily sell (and abate one unit more) for anything above its low MAC.`},
+    {t:"Step 2 · Where trade settles",
+     b:`Trade continues until the two marginal costs are equal — the crossing of the curves. That common value is the market <b style="color:var(--price)">permit price p* = $${m.pStar.toFixed(1)}</b>. At that point no further mutually beneficial trade exists (equimarginal principle).`},
+    {t:"Step 3 · Drag to the efficient allocation",
+     b:`Move the allocation slider to the crossing (clean abates <span class="num">${Math.round(m.xStar)}</span>, dirty abates <span class="num">${Math.round(QBAR-m.xStar)}</span>). The shaded triangle is the <b style="color:var(--save)">total abatement cost saved</b> versus the equal split: <span class="num">$${m.maxSaving.toFixed(0)}</span>. The cap is unchanged — only its cost falls.`},
+    {t:"Step 4 · Why it works",
+     b:`The clean firm sells <span class="num">${Math.round(m.xStar-m.half)}</span> permits and earns <span class="num">$${(m.pStar*(m.xStar-m.half)).toFixed(0)}</span>; the dirty firm buys them rather than abate at higher cost. Environmental efficiency pays: the fixed cap is met at <b>least total cost</b>, and each firm faces p* as the opportunity cost of polluting.`}
+  ];
+}
+
+function render(){
+  const c=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c.t;
+  document.getElementById('sbody').innerHTML=c.b;
+  document.getElementById('counter').textContent=`Step ${step} / 4`;
+  const dots=document.getElementById('dots');dots.innerHTML='';
+  for(let i=0;i<=4;i++){const d=document.createElement('div');d.className='step-dot'+(i===step?' active':(i<step?' done':''));dots.appendChild(d);}
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===4);
+  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{if(step<4){ if(step===2){ // snap allocation to x* when entering step 3
+    const m=model(); xAlloc=Math.round(m.xStar); document.getElementById('s-x').value=xAlloc; }
+  step++;render();}});
+document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;render();}});
+document.getElementById('s-cc').addEventListener('input',e=>{cC=parseFloat(e.target.value);render();});
+document.getElementById('s-cd').addEventListener('input',e=>{cD=parseFloat(e.target.value);render();});
+document.getElementById('s-x').addEventListener('input',e=>{xAlloc=parseFloat(e.target.value);render();});
+
+setupCanvas();render();
+</script>
+</body>
+</html>
