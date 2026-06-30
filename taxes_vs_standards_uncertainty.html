@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxes vs Standards under Uncertainty — PE1</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --mb:#2E7D32; --cmean:#1A1A2E; --cband:#C62828; --dwl:#1565C0;
+    --inst:#6A1B9A; --eq:#F9A825; --eq-stroke:#4A3000; --accent:#8E1B1B; --win:#2E7D32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
+      --text:#ECECEC; --muted:#9A9A9A; --mb:#66BB6A; --cmean:#ECECEC; --cband:#EF6C6C; --dwl:#5B9BE8;
+      --inst:#B57BE0; --eq:#FFD54F; --eq-stroke:#1A1A1E; --accent:#E57373; --win:#66BB6A;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
+  header { text-align:center; margin-bottom:6px; }
+  header h1 { font-size:19px; font-weight:bold; color:var(--accent); }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:4px; line-height:1.5; }
+  header .relation b { color:var(--text); font-style:normal; }
+  .layout { display:flex; gap:20px; max-width:1080px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
+  .canvas-wrap { flex:1 1 600px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
+  .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .step-dots { display:flex; gap:6px; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
+  .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
+  .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
+  .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
+  .nav-row { display:flex; gap:8px; margin-top:14px; }
+  button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
+  button:hover:not(:disabled) { background:var(--bg); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.92); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; margin-top:11px; }
+  .slider-label:first-of-type { margin-top:0; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  .slider-label .val.mb { color:var(--mb); } .slider-label .val.mc { color:var(--cband); }
+  input[type=range] { width:100%; height:4px; cursor:pointer; }
+  #s-b { accent-color:var(--mb); } #s-m { accent-color:var(--cband); } #s-u { accent-color:var(--muted); }
+  .verdict { border-radius:5px; padding:11px 13px; font-size:13px; line-height:1.5; text-align:center; border:1.5px solid var(--win); background:color-mix(in srgb,var(--win) 12%,transparent); }
+  .verdict b { color:var(--win); font-size:14px; }
+  .verdict .rule { font-size:11px; color:var(--muted); margin-top:4px; font-family:'Courier New',monospace; }
+  .dwlbars { display:flex; flex-direction:column; gap:7px; margin-top:10px; }
+  .dwlbar { font-size:11px; }
+  .dwlbar .track { height:10px; background:var(--grid); border-radius:5px; overflow:hidden; margin-top:2px; }
+  .dwlbar .fill { height:100%; border-radius:5px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Taxes vs. Standards under Cost Uncertainty (Weitzman)</h1>
+  <div class="relation">When marginal abatement cost is uncertain, the quantity (<b>standard</b>) and price (<b>tax</b>) instruments are no longer equivalent. The steeper the marginal benefit, the more a <b>standard</b> is preferred.</div>
+</header>
+
+<div class="layout">
+  <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+
+  <div class="panel">
+    <div class="card">
+      <div class="stepper-head">
+        <div class="step-dots" id="dots"></div>
+        <div class="step-counter" id="counter">Step 0 / 4</div>
+      </div>
+      <div class="step-title" id="stitle">—</div>
+      <div class="step-body" id="sbody">—</div>
+      <div class="nav-row">
+        <button id="back" disabled>◀ Back</button>
+        <button id="next" class="primary">Next ▶</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="verdict" id="verdict">—</div>
+      <div class="dwlbars">
+        <div class="dwlbar"><span>Expected DWL — standard: <b id="dq">—</b></span><div class="track"><div class="fill" id="dqf" style="background:var(--inst)"></div></div></div>
+        <div class="dwlbar"><span>Expected DWL — tax: <b id="dp">—</b></span><div class="track"><div class="fill" id="dpf" style="background:var(--inst)"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Adjust slopes &amp; uncertainty</div>
+      <div class="slider-label"><span>Marginal benefit slope |B′|</span><span class="val mb" id="v-b">2.00</span></div>
+      <input type="range" id="s-b" min="0.3" max="2.5" step="0.05" value="2.0">
+      <div class="slider-label"><span>Marginal cost slope C′</span><span class="val mc" id="v-m">1.00</span></div>
+      <input type="range" id="s-m" min="0.5" max="2.0" step="0.05" value="1.0">
+      <div class="slider-label"><span>Cost uncertainty (±shock)</span><span class="val" id="v-u">20</span></div>
+      <input type="range" id="s-u" min="5" max="30" step="1" value="20">
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
+        Marginal cost realises at C′<sub>UP</sub> or C′<sub>LO</sub> (mean C′<sub>m</sub>). Lower |B′| toward flat to flip the verdict to the tax (image: "externality not that detrimental").
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){
+  T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),border:cssvar('--border'),text:cssvar('--text'),muted:cssvar('--muted'),
+      mb:cssvar('--mb'),cmean:cssvar('--cmean'),cband:cssvar('--cband'),dwl:cssvar('--dwl'),inst:cssvar('--inst'),
+      eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),accent:cssvar('--accent'),win:cssvar('--win') };
+}
+loadTheme();
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=640,LH=384,padT=30,padB=40,GAP=40,axL=30;
+const pw=(LW-axL-16-GAP)/2, plotH=LH-padT-padB;
+const X0L=axL, X0R=axL+pw+GAP;
+const a=100, Q_MAX=140, P_MAX=125;
+let b=2.0,m=1.0,u=20;
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1, avail=Math.max(300,cv.parentElement.clientWidth-16);
+  const cssW=Math.min(avail,820), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const s=(cssW/LW)*dpr; ctx.setTransform(s,0,0,s,0,0);
+}
+let resizeTO; window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{setupCanvas();draw();},120);});
+
+const Bp=q=>a-b*q, Cm=q=>m*q, Cup=q=>m*q+u, Clo=q=>m*q-u;
+function model(){
+  const qstar=a/(b+m), pstar=m*qstar;
+  const qUP=(a-u)/(b+m), qLO=(a+u)/(b+m);
+  const q2=(pstar-u)/m, q1=(pstar+u)/m;
+  const EQ=u*u/(2*(b+m));
+  const EP=b*b*u*u/(2*m*m*(b+m));
+  return {qstar,pstar,qUP,qLO,q1,q2,EQ,EP};
+}
+
+// panel-local mappers
+const qx=(x0,q)=>x0+(q/Q_MAX)*pw, py=p=>padT+plotH-(p/P_MAX)*plotH;
+function seg(x0,q1,p1,q2,p2,color,w,dash){ctx.beginPath();ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=w;ctx.moveTo(qx(x0,q1),py(p1));ctx.lineTo(qx(x0,q2),py(p2));ctx.stroke();ctx.setLineDash([]);}
+function curve(x0,fn,color,w,dash){seg(x0,0,fn(0),Q_MAX,fn(Q_MAX),color,w,dash);}
+function tri(x0,pts,color,alpha){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();pts.forEach((p,i)=>{const X=qx(x0,p[0]),Y=py(p[1]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.fill();ctx.restore();}
+function dotP(x0,q,p,r,fill){ctx.beginPath();ctx.arc(qx(x0,q),py(p),r,0,7);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T.plotBg;ctx.stroke();}
+function lab(x0,txt,q,p,dx,dy,color,size,align,halo){
+  ctx.save();size=size||11;ctx.font='bold '+size+'px Georgia';ctx.textAlign=align||'left';
+  const X=qx(x0,q)+dx,Y=py(p)+dy;
+  if(halo){const w=ctx.measureText(txt).width;let lx=X;if(align==='right')lx=X-w;else if(align==='center')lx=X-w/2;ctx.fillStyle=T.plotBg;ctx.globalAlpha=0.82;ctx.fillRect(lx-2,Y-size+2,w+4,size+3);ctx.globalAlpha=1;}
+  ctx.fillStyle=color;ctx.fillText(txt,X,Y);ctx.restore();
+}
+
+let step=0;
+function drawPanel(x0,mode){
+  const M=model();
+  // bg + frame
+  ctx.fillStyle=T.plotBg; ctx.fillRect(x0,padT,pw,plotH);
+  ctx.save();ctx.beginPath();ctx.rect(x0,padT,pw,plotH);ctx.clip();
+
+  // DWL triangles
+  const showStd = (mode==='standard' && step>=2);
+  const showTax = (mode==='tax' && step>=3);
+  if(showStd){
+    // too restrictive (cost UP): between C'_UP and B' from qUP to qstar
+    tri(x0,[[M.qUP,Bp(M.qUP)],[M.qstar,Bp(M.qstar)],[M.qstar,Cup(M.qstar)]],T.dwl,0.5);
+    // too lenient (cost LO): between B' and C'_LO from qstar to qLO
+    tri(x0,[[M.qstar,Bp(M.qstar)],[M.qstar,Clo(M.qstar)],[M.qLO,Bp(M.qLO)]],T.dwl,0.5);
+  }
+  if(showTax){
+    tri(x0,[[M.q2,Bp(M.q2)],[M.q2,M.pstar],[M.qUP,Bp(M.qUP)]],T.dwl,0.5);
+    tri(x0,[[M.q1,Bp(M.q1)],[M.q1,M.pstar],[M.qLO,Bp(M.qLO)]],T.dwl,0.5);
+  }
+
+  // cost band + curves
+  curve(x0,Cup,T.cband,1.8); curve(x0,Clo,T.cband,1.8); curve(x0,Cm,T.cmean,2.4); curve(x0,Bp,T.mb,2.4);
+  ctx.restore();
+
+  // instrument lines
+  const M2=model();
+  if(mode==='standard'){
+    seg(x0,M2.qstar,0,M2.qstar,P_MAX,T.inst,2,[]);
+    dotP(x0,M2.qstar,M2.pstar,5,T.eq);
+    lab(x0,'q*',M2.qstar,0,0,16,T.inst,12,'center');
+  } else {
+    seg(x0,0,M2.pstar,Q_MAX,M2.pstar,T.inst,2,[]);
+    dotP(x0,M2.qstar,M2.pstar,5,T.eq);
+    lab(x0,'p*',0,M2.pstar,2,-3,T.inst,11,'left',true);
+    if(step>=3){
+      seg(x0,M2.q2,0,M2.q2,M2.pstar,T.muted,1,[3,3]); lab(x0,'q₂',M2.q2,0,0,16,T.muted,11,'center');
+      seg(x0,M2.q1,0,M2.q1,M2.pstar,T.muted,1,[3,3]); lab(x0,'q₁',M2.q1,0,0,16,T.muted,11,'center');
+    }
+    lab(x0,'q*',M2.qstar,0,0,16,T.muted,11,'center');
+  }
+
+  // axes
+  ctx.strokeStyle=T.text;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(qx(x0,0),padT-2);ctx.lineTo(qx(x0,0),padT+plotH);ctx.lineTo(qx(x0,Q_MAX),padT+plotH);ctx.stroke();
+  // curve labels
+  lab(x0,"C'_UP",Q_MAX*0.62,Cup(Q_MAX*0.62),2,-3,T.cband,10.5,'left',true);
+  lab(x0,"C'_m",Q_MAX*0.78,Cm(Q_MAX*0.78),2,-2,T.cmean,10.5,'left',true);
+  lab(x0,"B'",Math.max(2,(a-6)/b),6,2,-2,T.mb,11,'left',true);
+  // panel title
+  ctx.save();ctx.font='bold 12.5px Georgia';ctx.fillStyle=(mode==='standard'?T.inst:T.inst);ctx.textAlign='center';
+  ctx.fillText(mode==='standard'?'STANDARD (fix quantity q*)':'TAX (fix price p*)',x0+pw/2,padT-12);ctx.restore();
+  ctx.save();ctx.font='11px Georgia';ctx.fillStyle=T.muted;ctx.textAlign='right';ctx.fillText('q',qx(x0,Q_MAX),padT+plotH+16);ctx.restore();
+}
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  drawPanel(X0L,'standard');
+  drawPanel(X0R,'tax');
+  // shared $ axis label
+  ctx.save();ctx.font='bold 11px Georgia';ctx.fillStyle=T.text;ctx.textAlign='left';ctx.fillText('$',2,padT+4);ctx.restore();
+
+  const M=model();
+  document.getElementById('v-b').textContent=b.toFixed(2);
+  document.getElementById('v-m').textContent=m.toFixed(2);
+  document.getElementById('v-u').textContent=Math.round(u);
+  document.getElementById('dq').textContent=M.EQ.toFixed(0);
+  document.getElementById('dp').textContent=M.EP.toFixed(0);
+  const mx=Math.max(M.EQ,M.EP);
+  document.getElementById('dqf').style.width=(100*M.EQ/mx).toFixed(0)+'%';
+  document.getElementById('dpf').style.width=(100*M.EP/mx).toFixed(0)+'%';
+  document.getElementById('dqf').style.background=M.EQ<=M.EP?T.win:T.cband;
+  document.getElementById('dpf').style.background=M.EP<M.EQ?T.win:T.cband;
+  const v=document.getElementById('verdict');
+  if(Math.abs(b-m)<0.03){ v.innerHTML='Instruments are <b>equivalent</b><div class="rule">|B′| = C′ → same expected DWL</div>'; }
+  else if(b>m){ v.innerHTML='Steep MB → <b>STANDARD</b> preferred<div class="rule">DWL_tax / DWL_std = (|B′|/C′)² = '+((b/m)**2).toFixed(2)+'</div>'; }
+  else { v.innerHTML='Flat MB → <b>TAX</b> preferred<div class="rule">DWL_tax / DWL_std = (|B′|/C′)² = '+((b/m)**2).toFixed(2)+'</div>'; }
+}
+
+function stepContent(){
+  const M=model();
+  return [
+    {t:"Step 0 · The optimum under mean cost",
+     b:`If cost were known at its mean C′<sub>m</sub>, the optimum is where C′<sub>m</sub> meets B′: quantity <span class="num">q* = ${M.qstar.toFixed(0)}</span> and price <span class="num">p* = ${M.pstar.toFixed(0)}</span>. With certainty, a standard set at q* and a tax set at p* deliver the same outcome.`},
+    {t:"Step 1 · Cost is uncertain",
+     b:`Marginal cost actually realises at <b style="color:var(--cband)">C′<sub>UP</sub></b> (high) or <b style="color:var(--cband)">C′<sub>LO</sub></b> (low). The regulator must commit to one instrument <b>before</b> learning which. Now the two instruments diverge.`},
+    {t:"Step 2 · The standard's error (left panel)",
+     b:`A fixed quantity q* is right on average but wrong ex post: if cost is high the standard is <b>too restrictive</b>, if low it is <b>too lenient</b>. The blue triangles are the resulting deadweight loss around q*.`},
+    {t:"Step 3 · The tax's error (right panel)",
+     b:`A fixed price p* lets firms choose quantity: they abate to <span class="num">q₂</span> if cost is high, <span class="num">q₁</span> if low. Because quantity now swings with the cost shock, the blue triangles sit far from the realised optimum.`},
+    {t:"Step 4 · The slope rule",
+     b:`Compare the triangles: DWL<sub>tax</sub> / DWL<sub>standard</sub> = (|B′| / C′)². <b>Steep MB</b> (|B′| &gt; C′) ⇒ the standard wins (quantity matters, so pin it down). <b>Flat MB</b> ⇒ the tax wins (quantity barely matters, so pin the price). Move the |B′| slider across C′ to flip the verdict.`}
+  ];
+}
+
+function render(){
+  const c=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c.t;
+  document.getElementById('sbody').innerHTML=c.b;
+  document.getElementById('counter').textContent=`Step ${step} / 4`;
+  const dots=document.getElementById('dots');dots.innerHTML='';
+  for(let i=0;i<=4;i++){const d=document.createElement('div');d.className='step-dot'+(i===step?' active':(i<step?' done':''));dots.appendChild(d);}
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===4);
+  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{if(step<4){step++;render();}});
+document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;render();}});
+document.getElementById('s-b').addEventListener('input',e=>{b=parseFloat(e.target.value);render();});
+document.getElementById('s-m').addEventListener('input',e=>{m=parseFloat(e.target.value);render();});
+document.getElementById('s-u').addEventListener('input',e=>{u=parseFloat(e.target.value);render();});
+
+setupCanvas();render();
+</script>
+</body>
+</html>
