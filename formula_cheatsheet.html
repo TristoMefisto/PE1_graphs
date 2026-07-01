@@ -11,15 +11,15 @@
   :root {
     --bg:#F7F6F2; --surface:#FFFFFF; --border:#DDD9D0; --text:#1A1A2E; --muted:#75736B;
     --accent:#1565C0;
-    --c1:#1565C0; --c2:#2E7D32; --c3:#6A1B9A; --c5:#E07B00; --c6:#AD1457; --c7:#00838F; --c8:#5D4037;
-    --c4:#C62828; --c9:#3949AB; --c10:#00695C; --c11:#EF6C00; --c12:#4527A0;
+    --black:#1A1A1E; --orange:#E07B00; --red:#C62828; --blue:#1565C0;
+    --green:#2E7D32; --purple:#6A1B9A; --teal:#00838F;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg:#1A1A1E; --surface:#242428; --border:#3A3A40; --text:#ECECEC; --muted:#9A9A9A;
       --accent:#5B9BE8;
-      --c1:#5B9BE8; --c2:#66BB6A; --c3:#BA68C8; --c5:#FFB74D; --c6:#F06292; --c7:#4DD0E1; --c8:#A1887F;
-      --c4:#EF6C6C; --c9:#8C9EFF; --c10:#4DB6AC; --c11:#FFA726; --c12:#9575CD;
+      --black:#ECECEC; --orange:#FFB74D; --red:#EF6C6C; --blue:#5B9BE8;
+      --green:#66BB6A; --purple:#BA68C8; --teal:#4DD0E1;
     }
   }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -80,7 +80,7 @@
 <div class="board">
 
   <!-- 1. Utility / MRS -->
-  <div class="card" style="--c-accent:var(--c1)">
+  <div class="card" style="--c-accent:var(--black)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 18 C 8 18, 8 8, 14 8 C 19 8, 19 14, 21 14" stroke-linecap="round"/><circle cx="9" cy="13.6" r="1.4" fill="currentColor" stroke="none"/></svg> Utility &amp; MRS</h2>
     <div class="block">
       $$U = U(x_1, x_2)$$
@@ -93,7 +93,7 @@
   </div>
 
   <!-- 2. Tax incidence - competitive markets -->
-  <div class="card" style="--c-accent:var(--c2)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20 L21 4" stroke-linecap="round"/><path d="M3 4 L21 20" stroke-linecap="round"/></svg> Tax Incidence — Competitive Markets</h2>
     <div class="sub-lbl">Equilibrium condition (either side): $Q = S(P) = D(P)$</div>
     <div class="twocol">
@@ -123,7 +123,7 @@
   </div>
 
   <!-- 3. Elasticity + elasticity-based incidence -->
-  <div class="card" style="--c-accent:var(--c3)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 Q 10 20 14 10 Q 17 3 20 3" stroke-linecap="round"/><path d="M20 3 l-4 0 M20 3 l0 4" stroke-linecap="round"/></svg> Elasticity</h2>
     <div class="block">
       $$\varepsilon = \frac{dx}{dy}\cdot\frac{y}{x} \qquad \left(\text{log form: } \varepsilon = \frac{d\log y}{d\log x}\right)$$
@@ -155,7 +155,7 @@
   </div>
 
   <!-- 4. Monopoly - linear demand -->
-  <div class="card" style="--c-accent:var(--c5)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5 L21 19 M3 19 L21 5" stroke-linecap="round"/></svg> Tax Incidence — Monopoly, Linear Demand</h2>
     <div class="eq-stack">
       <div class="eq-block">$$P = a - bS$$</div>
@@ -173,7 +173,7 @@
   </div>
 
   <!-- 5. Monopoly - isoelastic demand -->
-  <div class="card" style="--c-accent:var(--c6)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20 Q 6 7 21 4" stroke-linecap="round"/></svg> Tax Incidence — Monopoly, Isoelastic Demand</h2>
     <div class="sub-lbl">EQ: MR = MC</div>
     $$P\left(1 - \frac{1}{\varepsilon_D}\right) = C'(S) + t$$
@@ -193,7 +193,7 @@
   </div>
 
   <!-- 6. Specific vs ad valorem -->
-  <div class="card" style="--c-accent:var(--c7)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M4 20 L20 4" stroke-linecap="round"/></svg> Specific vs Ad-Valorem Tax (Monopoly)</h2>
     <div class="block">
       <div class="h">Specific tax t</div>
@@ -211,7 +211,7 @@
   </div>
 
   <!-- 7. Harberger -->
-  <div class="card" style="--c-accent:var(--c8)">
+  <div class="card" style="--c-accent:var(--orange)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M8 6 L16 6 M6 8 L6 16 M18 8 L18 16 M8 18 L16 18 M8 8 L16 16 M16 8 L8 16"/></svg> Harberger General-Equilibrium Model</h2>
     <div class="sub-lbl">Two sectors, two mobile factors — 10 equations, 10 unknowns</div>
     <div class="block">
@@ -237,7 +237,7 @@
   </div>
 
   <!-- 8. Harberger Triangle -->
-  <div class="card" style="--c-accent:var(--c4)">
+  <div class="card" style="--c-accent:var(--red)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L20 20 L4 4 Z"/></svg> Excess Burden — Harberger Triangle</h2>
     <div class="sub-lbl">Partial equilibrium, quasilinear utility</div>
     <div class="eq-block">
@@ -253,7 +253,7 @@
   </div>
 
   <!-- 9. Excess Burden in General + MEB -->
-  <div class="card" style="--c-accent:var(--c9)">
+  <div class="card" style="--c-accent:var(--red)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12 C 4 6, 9 4, 12 4 C 15 4, 20 6, 20 12 C 20 18, 15 20, 12 20 C 9 20, 4 18, 4 12 Z"/><path d="M12 4 L12 20"/></svg> Excess Burden — General Case &amp; MEB</h2>
     <div class="block">
       <div class="lbl" style="font-size:12px">Compensating / Equivalent Variation</div>
@@ -289,7 +289,7 @@
   </div>
 
   <!-- 10. Ramsey Model -->
-  <div class="card" style="--c-accent:var(--c10)">
+  <div class="card" style="--c-accent:var(--blue)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4 L4 20 L20 20" stroke-linecap="round"/><path d="M7 17 L11 11 L14 14 L20 6" stroke-linecap="round"/></svg> Ramsey Model — Optimal Commodity Taxation</h2>
     <div class="block">
       $$\hat q \hat x \le m + w(T-\ell), \qquad m=0,\ \ q_i = P_i+t_i,\ \ N=2 \text{ goods}$$
@@ -338,7 +338,7 @@
   </div>
 
   <!-- 11. Externalities -->
-  <div class="card" style="--c-accent:var(--c11)">
+  <div class="card" style="--c-accent:var(--green)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 C 7 3, 4 7, 4 12 C 4 17, 8 21, 13 20 C 11 18, 12 15, 15 15 C 19 15, 20 11, 18 8" stroke-linecap="round"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg> Negative Production Externality Model</h2>
     <div class="block">
       $$U(x,y) = U(x) + y - d\,P(x)$$
@@ -366,7 +366,7 @@
   </div>
 
   <!-- 12. General Abatement Framework -->
-  <div class="card" style="--c-accent:var(--c12)">
+  <div class="card" style="--c-accent:var(--green)">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L4 4 M4 20 L20 20" stroke-linecap="round"/><path d="M4 16 Q10 14 14 8 Q17 4 20 4" stroke-linecap="round"/></svg> General Abatement Framework</h2>
     <div class="block">
       <div class="lbl" style="font-size:12px">Optimum defined as</div>
