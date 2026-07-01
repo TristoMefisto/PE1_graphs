@@ -482,6 +482,68 @@
     <div class="note">$MRT$ = physical marginal rate of transformation. The bracket $\frac{\lambda}{\alpha}\big(MRT - tH\,dX/dG\big)$ is the <b>economic</b> correction term — it diverges from the physical MRT because raising G through taxation distorts the labor/consumption choice, so the shadow cost of public funds differs from the pure production trade-off.</div>
   </div>
 
+  <!-- 17. Indemnity Insurance Model -->
+  <div class="card" style="--c-accent:var(--teal)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 L19 6 L19 12 C19 17 16 20 12 21 C8 20 5 17 5 12 L5 6 Z"/><path d="M9 12 L11 14.5 L15.5 9.5"/></svg> Indemnity Insurance Model</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Zero-profit (fair) premium</div>
+      $$\underbrace{P(1-\pi)}_{\text{expected cost for insurer}} = \underbrace{(1-P)\pi}_{\text{expected revenue for insurer}} \;\Rightarrow\; \underbrace{\pi = PI}_{\text{fair premium}}$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      $$EU = (1-P)\,U(Y_H) + P\,U(Y_S)$$
+      <div class="note">Slope (MRS<sub>Y_S,Y_H</sub>) is obtained by setting dEU = 0:</div>
+      $$dEU = P\,U'(Y_S)\,dY_S + (1-P)\,U'(Y_H)\,dY_H = 0$$
+      <div class="eq-block">
+        $$\left.\frac{dY_S}{dY_H}\right. = -\frac{1-P}{P}\cdot\frac{U'(Y_H)}{U'(Y_S)}$$
+      </div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Zero-profit line</div>
+    $$P(1-\pi) = (1-P)\pi$$
+    $$P(Y_S - S_E) = (1-P)(H_E - Y_H)$$
+    $$P(Y_S - Y + M) = (1-P)(Y - Y_H)$$
+    <div class="eq-block">
+      $$Y_S = Y - M + \frac{1-P}{P}(Y - Y_H)$$
+    </div>
+    <div class="note">M: medical expense &nbsp;·&nbsp; H_E: healthy-state income (no insurance), $H_E=Y$ &nbsp;·&nbsp; Y_H: healthy-state income with insurance &nbsp;·&nbsp; S_E: sick-state income (no insurance), $S_E=Y-M$ &nbsp;·&nbsp; Y_S: sick-state income with insurance.</div>
+    <hr class="div">
+    <div class="sub-lbl">Demand for full insurance</div>
+    <div class="note">IC tangent to the zero-profit line:</div>
+    $$\frac{1-P}{P}\cdot\frac{U'(Y_H)}{U'(Y_S)} = \frac{1-P}{P} \;\Rightarrow\; U'(Y_H)=U'(Y_S) \;\Rightarrow\; Y_H=Y_S$$
+    <div class="note">At a fair premium, a risk-averse consumer fully insures — equalizing income (and marginal utility) across states.</div>
+  </div>
+
+  <!-- 18. RS Pooling Equilibrium & Moral Hazard -->
+  <div class="card" style="--c-accent:var(--teal)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M4 20 C4 16 6 14 8 14 C10 14 12 16 12 20 M12 20 C12 16 14 14 16 14 C18 14 20 16 20 20"/></svg> RS Pooling Equilibrium &amp; Moral Hazard</h2>
+    <div class="sub-lbl">$P^H > P^L$ &nbsp;·&nbsp; pooling contract $z(\pi_z, l_z)$</div>
+    <div class="block">
+      $$\bar\pi_z = P\,l_z, \qquad P = \lambda P^L + (1-\lambda)P^H$$
+      $$\bar\pi_z = \big[\lambda P^L + (1-\lambda)P^H\big]\,l_z$$
+    </div>
+    <hr class="div">
+    <div class="note">This implies — L-type:</div>
+    <div class="eq-block">
+      $$\bar\pi_z - P^L l_z = (P^H-P^L)(1-\lambda)\,l_z \;>\;0$$
+    </div>
+    <div class="note">H-type:</div>
+    <div class="eq-block">
+      $$\bar\pi_z - P^H l_z = -\lambda(P^H-P^L)\,l_z \;<\;0$$
+    </div>
+    <div class="note">L→H transfer under pooling: $(P^H-P^L)\,l_z$ — the low-risk type pays above their own fair premium, cross-subsidizing the high-risk type. This is the source of L-type's incentive to exit the pool (unraveling toward a separating equilibrium, or requiring mandation).</div>
+    <hr class="div">
+    <div class="sub-lbl">Government intervention</div>
+    <div class="note">Mandatory partial-coverage pooling contract $(\bar\pi_G, l_G)$:</div>
+    $$\bar\pi_G = \big[\lambda P_L + (1-\lambda)P_H\big]\,l_G$$
+    <hr class="div">
+    <div class="sub-lbl">Moral hazard</div>
+    <div class="eq-block">
+      $$\underbrace{E(L)}_{\text{exp. loss}} = \underbrace{P(e_P)}_{\substack{\text{effort to reduce}\\ \text{risk of loss}}}\cdot \underbrace{L(e_L)}_{\substack{\text{effort to reduce}\\ \text{loss size}}}$$
+    </div>
+    <div class="note">Insurance dulls the incentive to exert either type of effort — more coverage lowers the marginal private return to reducing P(e_P) or L(e_L), pushing expected loss up. This is the standard equity (risk-pooling) vs. efficiency (effort incentives) trade-off in insurance design.</div>
+  </div>
+
 </div>
 
 <script>
