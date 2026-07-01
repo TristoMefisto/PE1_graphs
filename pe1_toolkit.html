@@ -201,6 +201,9 @@
   .test-sidebar-logo { font-size:13px; font-weight:bold; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:3px; }
   .test-sidebar-sub { font-size:11px; color:var(--muted); line-height:1.5; font-style:italic; }
   .test-nav { padding:12px 8px; flex:1; overflow-y:auto; }
+  .test-sidebar-footer { padding:8px; border-top:1px solid var(--border); }
+  .test-nav-item.exam { color:var(--accent); font-weight:bold; }
+  .test-nav-item.exam.active, .test-nav-item.exam:hover { background:rgba(21,101,192,.08); color:var(--accent); }
   .test-nav-item { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:5px; cursor:pointer;
                     font-size:13px; color:var(--muted); transition:all .15s; margin-bottom:1px; border-left:2.5px solid transparent; }
   .test-nav-item:hover { background:var(--bg); color:var(--text); }
@@ -217,6 +220,17 @@
   .test-tab .cnt { opacity:.75; font-weight:normal; margin-left:3px; }
   .test-content { flex:1; overflow-y:auto; padding:26px; display:flex; justify-content:center; }
   .test-inner { max-width:720px; width:100%; }
+
+  /* Mock exam */
+  .exam-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .exam-new-btn { border:1px solid var(--accent); background:var(--accent); color:#fff; font-family:'Georgia',serif;
+                  font-size:12.5px; font-weight:bold; padding:8px 16px; border-radius:6px; cursor:pointer; }
+  .exam-timer-note { font-size:11px; color:var(--muted2); font-style:italic; }
+  .exam-section-title { font-size:15px; font-weight:bold; color:var(--accent); margin:22px 0 4px; padding-top:14px; border-top:2px solid var(--border); }
+  .exam-section-title:first-of-type { margin-top:0; padding-top:0; border-top:none; }
+  .exam-section-sub { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:12px; }
+  .exam-tag { display:inline-block; font-size:10px; color:var(--muted2); text-transform:uppercase; letter-spacing:.05em;
+              margin-bottom:6px; font-family:'Courier New',monospace; }
 
   /* Flashcards */
   .fc-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
@@ -1418,6 +1432,11 @@
         <div class="test-sidebar-sub">Flashcards · MCQ · Exercises<br>Sourced from course exams + notes</div>
       </div>
       <nav class="test-nav" id="test-nav"></nav>
+      <div class="test-sidebar-footer">
+        <div class="test-nav-item exam" id="mock-exam-nav" onclick="openMockExam()">
+          <span class="test-nav-icon">📝</span>Mock Exam
+        </div>
+      </div>
     </aside>
     <div class="test-main">
       <div class="test-topbar">
@@ -1781,30 +1800,42 @@ const TESTING_DATA = [
     "icon": "⚖️",
     "title": "Competitive Economies & Pareto Efficiency",
     "flashcards": [
-      {
-        "q": "When is an allocation Pareto efficient in a 2-good exchange economy (interior, convex preferences)?",
-        "a": "When MRS^A = MRS^B — no further trade can make one person better off without making the other worse off. This is exactly the tangency condition that defines the contract curve."
-      },
-      {
-        "q": "Is a Pareto improvement necessary for social welfare to rise?",
-        "a": "No — sufficient, not necessary. A social welfare function can rise from a policy that isn't a Pareto improvement (e.g. redistribution that hurts one party but helps another more)."
-      },
-      {
-        "q": "State the First Welfare Theorem's core conditions.",
-        "a": "No externalities, perfect information, perfect competition (+ optionally no behavioral fallacies) ⇒ any competitive equilibrium is Pareto efficient."
-      },
-      {
-        "q": "What does a Rawlsian (maximin) SWF maximize?",
-        "a": "The utility of the worst-off individual. Its social indifference curves are L-shaped — no substitutability between individuals' utilities."
-      },
-      {
-        "q": "Utilitarian SWF $W=U_A+U_B$: what does the slope of its indifference curves imply?",
-        "a": "Slope $=-1$ everywhere: 1 util to A is worth exactly 1 util to B, regardless of who already has more."
-      },
-      {
-        "q": "What are the two classic justifications for government intervention besides market failure?",
-        "a": "Redistribution, and (per Musgrave) macroeconomic stabilization."
-      }
+      [
+        "When is an allocation Pareto efficient in a 2-good exchange economy (interior, convex preferences)?",
+        "When MRS^A = MRS^B — no further trade can make one person better off without making the other worse off. This is exactly the tangency condition that defines the contract curve."
+      ],
+      [
+        "Is a Pareto improvement necessary for social welfare to rise?",
+        "No — sufficient, not necessary. A social welfare function can rise from a policy that isn't a Pareto improvement (e.g. redistribution that hurts one party but helps another more)."
+      ],
+      [
+        "State the First Welfare Theorem's core conditions.",
+        "No externalities, perfect information, perfect competition (+ optionally no behavioral fallacies) ⇒ any competitive equilibrium is Pareto efficient."
+      ],
+      [
+        "What does a Rawlsian (maximin) SWF maximize?",
+        "The utility of the worst-off individual. Its social indifference curves are L-shaped — no substitutability between individuals' utilities."
+      ],
+      [
+        "Utilitarian SWF $W=U_A+U_B$: what does the slope of its indifference curves imply?",
+        "Slope $=-1$ everywhere: 1 util to A is worth exactly 1 util to B, regardless of who already has more."
+      ],
+      [
+        "What are the two classic justifications for government intervention besides market failure?",
+        "Redistribution, and (per Musgrave) macroeconomic stabilization."
+      ],
+      [
+        "What's the difference between Pareto efficiency and equity?",
+        "Pareto efficiency is purely about eliminating waste — no further mutually beneficial trade is possible. Equity is about how the gains are distributed. An allocation can be Pareto efficient and extremely unequal at the same time."
+      ],
+      [
+        "What is the contract curve in an Edgeworth box?",
+        "The set of all Pareto-efficient allocations — the locus of points where both individuals' indifference curves are tangent (equal MRS)."
+      ],
+      [
+        "State the Second Welfare Theorem's core claim.",
+        "Any Pareto-efficient allocation can be achieved as a competitive equilibrium, provided the government first carries out an appropriate lump-sum redistribution of initial endowments — efficiency and equity can, in principle, be separated."
+      ]
     ],
     "mcq": [
       {
@@ -1818,12 +1849,27 @@ const TESTING_DATA = [
         ],
         "correct": 1,
         "rationale": "In the standard interior, convex-preferences exchange setting, \"equal MRS\" and \"Pareto efficient\" are logically equivalent (both directions hold — that's exactly what defines the contract curve), so 1 and 2 are both true. Statement 3 is false: a Pareto improvement is sufficient but not necessary for social welfare to rise under a given SWF."
+      },
+      {
+        "q": "Which of the following is NOT one of the three conditions of the First Welfare Theorem?",
+        "options": [
+          "No externalities",
+          "Perfect information",
+          "Perfect competition",
+          "Balanced government budget"
+        ],
+        "correct": 3,
+        "rationale": "The First Welfare Theorem's classic conditions are no externalities, perfect information, and perfect competition (sometimes + no behavioral fallacies). A balanced government budget isn't one of them — it isn't even a precondition for a competitive equilibrium to exist."
       }
     ],
     "exercises": [
       {
         "q": "Explain the difference between Pareto optimality and a Pareto improvement. If a policy moves the economy from a non-Pareto-optimal situation to a Pareto-optimal one, does this necessarily raise social welfare?",
         "solution": "Pareto optimality is a property of an allocation (no further mutually beneficial trade is possible). A Pareto improvement is a property of a *change* (at least one person gains, no one loses). Moving to a Pareto-optimal allocation is not automatically a Pareto improvement: the move could make some individuals worse off along the way (e.g. a reallocation that reaches the contract curve but redistributes badly). So it does not necessarily raise welfare under every SWF — it depends on how the gains and losses are distributed and how the SWF weights them."
+      },
+      {
+        "q": "Consider a simple economy with only two individuals, Alice and Bruno. (a) Let $W=U_A+U_B$. Graph the social indifference curves and describe the relative importance assigned to their well-being. (b) Repeat for $W=U_A+2U_B$. (c) How would the optimal point on the utility possibility frontier change under a Rawlsian SWF?",
+        "solution": "**(a)** $W=U_A+U_B$ gives straight-line social indifference curves with slope $-1$: a util to Alice is worth exactly as much as a util to Bruno — perfectly egalitarian in *utility* terms (not in outcomes). **(b)** $W=U_A+2U_B$ gives straight lines with slope $-2$ (steeper): Bruno's utility is weighted twice as heavily, so the optimum on the utility-possibility frontier shifts toward higher $U_B$. **(c)** A Rawlsian SWF has L-shaped (maximin) social indifference curves; the optimum is where the utility-possibility frontier meets the 45° line from the origin (or wherever the frontier is tangent to the corner of the L) — i.e. wherever it maximizes the *minimum* of the two utilities, regardless of the trade-off rate available."
       }
     ]
   },
@@ -1832,30 +1878,42 @@ const TESTING_DATA = [
     "icon": "📊",
     "title": "Tax Incidence",
     "flashcards": [
-      {
-        "q": "What determines economic (as opposed to statutory) incidence of a tax?",
-        "a": "Relative elasticities of demand and supply — not who is legally required to remit the tax. The side that is more inelastic (less able to adjust quantity) bears more of the burden."
-      },
-      {
-        "q": "Formula for the price effect on buyers from a specific tax $t$, competitive market.",
-        "a": "$\\dfrac{dp_D}{dt} = \\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}$, and correspondingly $\\dfrac{dp_S}{dt}=\\dfrac{\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}$ for sellers."
-      },
-      {
-        "q": "Perfectly inelastic supply ($\\varepsilon_S=0$): who bears the tax, regardless of statutory incidence?",
-        "a": "Sellers bear 100% of the burden. Since quantity can't adjust, the price consumers pay is pinned down by $Q_D=\\bar Q$ and never changes; the price sellers receive absorbs the entire tax."
-      },
-      {
-        "q": "Perfectly elastic supply ($\\varepsilon_S\\to\\infty$): who bears the tax?",
-        "a": "Buyers bear 100% of the burden — sellers won't accept any price below their (flat) marginal cost, so the full tax is passed through to the price buyers pay."
-      },
-      {
-        "q": "Specific vs. ad-valorem tax raising equal revenue in a competitive market: same incidence?",
-        "a": "Yes — under perfect competition, a specific and an ad-valorem tax calibrated to raise the same revenue at the same equilibrium are equivalent in incidence and deadweight loss. This equivalence breaks under monopoly."
-      },
-      {
-        "q": "Why does a tax on a good in genuinely fixed supply (e.g. an original Picasso) create zero excess burden?",
-        "a": "Quantity traded can't respond to price — there's no marginal transaction destroyed by the tax, so there's a transfer but no deadweight loss."
-      }
+      [
+        "What determines economic (as opposed to statutory) incidence of a tax?",
+        "Relative elasticities of demand and supply — not who is legally required to remit the tax. The side that is more inelastic (less able to adjust quantity) bears more of the burden."
+      ],
+      [
+        "Formula for the price effect on buyers from a specific tax $t$, competitive market.",
+        "$\\dfrac{dp_D}{dt} = \\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}$, and correspondingly $\\dfrac{dp_S}{dt}=\\dfrac{\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}$ for sellers."
+      ],
+      [
+        "Perfectly inelastic supply ($\\varepsilon_S=0$): who bears the tax, regardless of statutory incidence?",
+        "Sellers bear 100% of the burden. Since quantity can't adjust, the price consumers pay is pinned down by $Q_D=\\bar Q$ and never changes; the price sellers receive absorbs the entire tax."
+      ],
+      [
+        "Perfectly elastic supply ($\\varepsilon_S\\to\\infty$): who bears the tax?",
+        "Buyers bear 100% of the burden — sellers won't accept any price below their (flat) marginal cost, so the full tax is passed through to the price buyers pay."
+      ],
+      [
+        "Specific vs. ad-valorem tax raising equal revenue in a competitive market: same incidence?",
+        "Yes — under perfect competition, a specific and an ad-valorem tax calibrated to raise the same revenue at the same equilibrium are equivalent in incidence and deadweight loss. This equivalence breaks under monopoly."
+      ],
+      [
+        "Why does a tax on a good in genuinely fixed supply (e.g. an original Picasso) create zero excess burden?",
+        "Quantity traded can't respond to price — there's no marginal transaction destroyed by the tax, so there's a transfer but no deadweight loss."
+      ],
+      [
+        "Statutory incidence vs. economic incidence — key distinction.",
+        "Statutory incidence is who legally writes the check to the government. Economic incidence is who actually ends up poorer after prices adjust. They can differ enormously — the market doesn't care who remits the tax, only who can pass the burden along."
+      ],
+      [
+        "Perfectly inelastic *demand* ($\\varepsilon_D=0$): who bears a tax on sellers?",
+        "Buyers bear 100% — plug $\\varepsilon_D=0$ into $dp_D/dt=\\varepsilon_S/(\\varepsilon_S-\\varepsilon_D)=\\varepsilon_S/\\varepsilon_S=1$: the entire tax shows up in the price buyers pay, regardless of the supply elasticity."
+      ],
+      [
+        "Ad-valorem tax on a monopolist vs. equal-revenue specific tax: still equivalent?",
+        "No — unlike under competition, a specific tax raises the monopoly price by more than an equal-revenue ad-valorem tax, because the ad-valorem tax shrinks proportionally as price falls while the specific tax doesn't."
+      ]
     ],
     "mcq": [
       {
@@ -1880,6 +1938,17 @@ const TESTING_DATA = [
         ],
         "correct": 2,
         "rationale": "EV is defined at the *original* (pre-tax) prices as the amount that would leave the consumer at the new, lower utility level — equivalently, the maximum lump sum they'd pay upfront to avoid the price increase altogether. That's exactly the willingness-to-pay-to-avoid interpretation of EV."
+      },
+      {
+        "q": "If demand is perfectly inelastic and supply is upward-sloping, a specific tax levied on sellers is borne:",
+        "options": [
+          "Entirely by buyers",
+          "Entirely by sellers",
+          "Split according to relative elasticities, roughly 50/50",
+          "It cannot be determined without more information"
+        ],
+        "correct": 0,
+        "rationale": "Plug $\\varepsilon_D=0$ into the incidence formula: $dp_D/dt=\\varepsilon_S/(\\varepsilon_S-\\varepsilon_D)=\\varepsilon_S/\\varepsilon_S=1$. The full tax shows up in the buyer's price no matter how elastic supply is — the statutory target (sellers) is irrelevant."
       }
     ],
     "exercises": [
@@ -1890,6 +1959,10 @@ const TESTING_DATA = [
       {
         "q": "Consider a per-unit tax on purchases in a monopoly market. What is tax overshifting, and what demand conditions produce it?",
         "solution": "Overshifting means the price rises by *more* than the tax ($dp/dt>1$) — the monopolist doesn't just pass the tax through, it amplifies it. It happens when the demand curve is convex enough that marginal revenue falls faster than price as quantity drops — most cleanly, with isoelastic demand ($\\varepsilon>1$ constant), pass-through is $\\varepsilon/(\\varepsilon-1)>1$ always. With linear demand, by contrast, pass-through is exactly $1/2$ (undershifting) — so the demand curve's *curvature*, not just its elasticity level, is what drives over- vs under-shifting."
+      },
+      {
+        "q": "Assuming a quasilinear utility function, analyse the effects of raising a per-unit tax on purchases in a competitive market. (1) What happens to the equilibrium? (2) What is the incidence on consumers and suppliers? (3) Present and derive the excess burden.",
+        "solution": "**(1)** The tax drives a wedge $t$ between the price buyers pay $p_D$ and the price sellers receive $p_S=p_D-t$. Quantity traded falls from $Q_0$ (where $D=S$) to $Q_1$ (where $D(p_S+t)=S(p_S)$); $p_D$ rises and $p_S$ falls relative to the pre-tax price $p_0$.\n**(2)** Incidence splits by elasticities: $\\Delta p_D = \\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}t$, $\\Delta p_S = \\dfrac{\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}t$ — the more inelastic side bears more of the burden, regardless of statutory incidence.\n**(3)** Since utility is quasilinear, Marshallian = Hicksian demand (no income effects), so the excess burden is exactly the Harberger triangle: $EB\\approx\\tfrac12(Q_0-Q_1)\\,t$ — the lost surplus on the $(Q_0-Q_1)$ units that no longer trade, bounded above by demand and below by supply, sitting strictly beyond the tax revenue rectangle $t\\cdot Q_1$."
       }
     ]
   },
@@ -1898,30 +1971,42 @@ const TESTING_DATA = [
     "icon": "🔻",
     "title": "Efficiency Cost of Taxes",
     "flashcards": [
-      {
-        "q": "Ordering of CV, Marshallian surplus, and EV for a price increase of a normal good (one price change).",
-        "a": "$EV < \\text{Marshallian Surplus} < CV$. Only under quasilinear utility do all three coincide exactly."
-      },
-      {
-        "q": "Why does the Marshallian measure overstate excess burden relative to Hicksian (CV/EV) measures?",
-        "a": "It bundles in the income effect. Buying less because you're poorer isn't itself an efficiency loss — no surplus is foregone from transactions that don't occur purely due to lost income."
-      },
-      {
-        "q": "Standard Harberger formula for EB (no pre-existing tax).",
-        "a": "$EB = -\\tfrac12 \\dfrac{dh}{d\\tau}(\\Delta\\tau)^2$ — a triangle in the Hicksian (compensated) demand, not the Marshallian one."
-      },
-      {
-        "q": "Why use compensated (Hicksian) elasticities, not Marshallian ones, to compute EB?",
-        "a": "EB should isolate the pure substitution effect — how relative-price changes distort behavior — not the income effect, which isn't a distortion."
-      },
-      {
-        "q": "How do you get from the unobservable Hicksian elasticity to something measurable?",
-        "a": "Slutsky equation: $\\dfrac{\\partial h}{\\partial p}=\\dfrac{\\partial x}{\\partial p}+\\dfrac{\\partial x}{\\partial m}x$, relating Hicksian and Marshallian demand derivatives via the observable income effect."
-      },
-      {
-        "q": "Marginal excess burden (MEB) and the pre-existing tax rate: relationship?",
-        "a": "MEB rises with the pre-existing tax rate — the 'Harberger trapezoid' gets taller as $\\tau$ grows, so each extra unit of tax is more distortionary than the last."
-      }
+      [
+        "Ordering of CV, Marshallian surplus, and EV for a price increase of a normal good (one price change).",
+        "$EV < \\text{Marshallian Surplus} < CV$. Only under quasilinear utility do all three coincide exactly."
+      ],
+      [
+        "Why does the Marshallian measure overstate excess burden relative to Hicksian (CV/EV) measures?",
+        "It bundles in the income effect. Buying less because you're poorer isn't itself an efficiency loss — no surplus is foregone from transactions that don't occur purely due to lost income."
+      ],
+      [
+        "Standard Harberger formula for EB (no pre-existing tax).",
+        "$EB = -\\tfrac12 \\dfrac{dh}{d\\tau}(\\Delta\\tau)^2$ — a triangle in the Hicksian (compensated) demand, not the Marshallian one."
+      ],
+      [
+        "Why use compensated (Hicksian) elasticities, not Marshallian ones, to compute EB?",
+        "EB should isolate the pure substitution effect — how relative-price changes distort behavior — not the income effect, which isn't a distortion."
+      ],
+      [
+        "How do you get from the unobservable Hicksian elasticity to something measurable?",
+        "Slutsky equation: $\\dfrac{\\partial h}{\\partial p}=\\dfrac{\\partial x}{\\partial p}+\\dfrac{\\partial x}{\\partial m}x$, relating Hicksian and Marshallian demand derivatives via the observable income effect."
+      ],
+      [
+        "Marginal excess burden (MEB) and the pre-existing tax rate: relationship?",
+        "MEB rises with the pre-existing tax rate — the 'Harberger trapezoid' gets taller as $\\tau$ grows, so each extra unit of tax is more distortionary than the last."
+      ],
+      [
+        "Why is DWL proportional to the *square* of the tax rate (holding elasticities fixed)?",
+        "The Harberger triangle's area is $\\tfrac12\\times\\text{base}\\times\\text{height}$, and both the base (quantity change) and height (price wedge) scale linearly with $t$ — so their product, the area, scales with $t^2$. Doubling a tax roughly quadruples its DWL."
+      ],
+      [
+        "What is the 'Harberger trapezoid' and how does it differ from the basic Harberger triangle?",
+        "The trapezoid is the MEB of raising an *already-existing* tax by $\\Delta\\tau$ — its base doesn't start at zero quantity distortion, so it's a trapezoid (triangle + a rectangle-like strip) rather than a pure triangle from zero."
+      ],
+      [
+        "Does a subsidy also create deadweight loss?",
+        "Yes — a subsidy creates the same kind of price wedge (between what buyers pay and sellers receive), pushing quantity traded *above* the efficient level. The resulting DWL triangle sits past the efficient quantity, mirroring a tax's triangle exactly, on the other side of equilibrium."
+      ]
     ],
     "mcq": [
       {
@@ -1934,12 +2019,27 @@ const TESTING_DATA = [
         ],
         "correct": 2,
         "rationale": "Quasilinear utility kills income effects entirely, so Marshallian surplus *equals* CV and EV exactly — 'exceeds' is wrong for (a). General utility doesn't guarantee equality with EV either — only the ordering $EV<MS<CV$ holds, not equality — wrong for (b). Leontief (perfect complements) is a normal good with real income effects, so the general ordering applies: for a price increase, Marshallian Surplus exceeds EV — exactly what (c) states."
+      },
+      {
+        "q": "The deadweight loss of a specific tax, holding the tax rate constant, is (all else equal) proportional to:",
+        "options": [
+          "The square of the tax rate",
+          "The tax rate itself (linear)",
+          "Only the elasticity of supply",
+          "It is independent of the tax rate"
+        ],
+        "correct": 0,
+        "rationale": "The Harberger triangle's area is $-\\tfrac12\\,dh/d\\tau\\,(\\Delta\\tau)^2$ — quadratic in the tax rate, because both the quantity distortion and the price wedge scale linearly with $t$ and DWL is their product (times $\\tfrac12$)."
       }
     ],
     "exercises": [
       {
         "q": "Assuming quasilinear utility and a per-unit tax on purchases in a competitive market: derive the excess burden and show the incidence split.",
         "solution": "With quasilinear utility (no income effects), Marshallian demand = Hicksian demand, so the standard Harberger triangle applies directly: $EB\\approx\\tfrac12\\,\\Delta Q\\cdot t$, where $\\Delta Q = Q_0-Q_1$ is the quantity reduction from the tax. Incidence splits by relative elasticities: buyers absorb $\\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}$ of $t$ in price, sellers absorb $\\dfrac{-\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}$; the DWL splits in the same proportion between lost consumer and producer surplus. On the graph: the triangle sits between $Q_1$ and $Q_0$, bounded above by demand and below by supply."
+      },
+      {
+        "q": "Now allow for income effects (general, non-quasilinear utility). Explain how to measure the excess burden of the tax using EV or CV, and why the choice matters.",
+        "solution": "With income effects, Marshallian demand no longer coincides with Hicksian demand, so the naive Marshallian-triangle DWL is only an approximation (and overstates the true burden — it doesn't net out the pure income effect, which isn't a distortion). The rigorous measures use Hicksian demand at either $u^0$ (giving $EB(u^0)$, related to CV) or $u^1$ (giving $EB(u^1)$, related to EV): $EB(u^0)=CV+(p'-p^0)h(p',u^0)$ and $EB(u^1)=EV+(p'-p^0)h(p',u^1)$. These generally differ because $CV\\neq EV$ once there are income effects — the choice matters because CV evaluates welfare loss using the compensated demand at the *original* utility level (relevant if compensating the consumer at new prices), while EV uses the *new*, lower utility level (relevant for WTP-to-avoid comparisons). Graphically, each corresponds to the area under a different Hicksian demand curve (one for $u^0$, one for $u^1$), and the true (unobservable) DWL lies between them, bracketed by $EV < \\text{true EB} < CV$ under normal-good, single-price-change conditions."
       }
     ]
   },
@@ -1948,22 +2048,34 @@ const TESTING_DATA = [
     "icon": "📐",
     "title": "Optimal Commodity Taxation (Ramsey)",
     "flashcards": [
-      {
-        "q": "State the inverse elasticity rule.",
-        "a": "Optimal tax rate on a good is (roughly) inversely proportional to its compensated own-price elasticity of demand: tax inelastic goods more, elastic goods less, to minimize total deadweight loss for a given revenue target."
-      },
-      {
-        "q": "Why not just use lump-sum taxes for everything?",
-        "a": "Lump-sum taxes aren't distortionary but are usually infeasible/undesirable — they can't be conditioned on ability to pay without becoming an (distortionary) income tax, and pure lump sums are typically politically and informationally infeasible."
-      },
-      {
-        "q": "What is $k$ in the Ramsey inverse-elasticity rule as covered in this course?",
-        "a": "$k=(\\alpha-\\lambda)/\\alpha$ — where $\\lambda$ is the social marginal value of tax revenue and $\\alpha$ the marginal value of income to the household; NOT divided by 2."
-      },
-      {
-        "q": "Corlett–Hague / complementarity idea: how can commodity taxes help fix income-tax distortions?",
-        "a": "An income tax distorts the labor/leisure margin. Taxing goods that are complementary to leisure (relatively) more than goods complementary to labor helps claw back some of that distortion — a second-best argument for non-uniform commodity taxes even beyond pure elasticity considerations."
-      }
+      [
+        "State the inverse elasticity rule.",
+        "Optimal tax rate on a good is (roughly) inversely proportional to its compensated own-price elasticity of demand: tax inelastic goods more, elastic goods less, to minimize total deadweight loss for a given revenue target."
+      ],
+      [
+        "Why not just use lump-sum taxes for everything?",
+        "Lump-sum taxes aren't distortionary but are usually infeasible/undesirable — they can't be conditioned on ability to pay without becoming an (distortionary) income tax, and pure lump sums are typically politically and informationally infeasible."
+      ],
+      [
+        "What is $k$ in the Ramsey inverse-elasticity rule as covered in this course?",
+        "$k=(\\alpha-\\lambda)/\\alpha$ — where $\\lambda$ is the social marginal value of tax revenue and $\\alpha$ the marginal value of income to the household; NOT divided by 2."
+      ],
+      [
+        "Corlett–Hague / complementarity idea: how can commodity taxes help fix income-tax distortions?",
+        "An income tax distorts the labor/leisure margin. Taxing goods that are complementary to leisure (relatively) more than goods complementary to labor helps claw back some of that distortion — a second-best argument for non-uniform commodity taxes even beyond pure elasticity considerations."
+      ],
+      [
+        "Why does uniform commodity taxation typically fail to minimize DWL for a given revenue target?",
+        "Because DWL from a tax grows with the *square* of the rate; spreading the tax burden unevenly — taxing inelastic goods more and elastic goods less — reduces total DWL for the same total revenue, versus taxing every good at the same flat rate."
+      ],
+      [
+        "What is the 'equal proportional reduction' characterization of the Ramsey rule?",
+        "An equivalent way to state the inverse elasticity rule: efficient commodity taxes reduce the compensated (Hicksian) quantity demanded of every taxed good by roughly the *same percentage*, rather than by the same absolute amount or the same tax rate."
+      ],
+      [
+        "How does the many-person Ramsey rule differ from the single-consumer version?",
+        "When the government also cares about distribution, the pure efficiency-only inverse elasticity rule gets modified by a distributional weight — goods disproportionately consumed by lower-income households get taxed less even if they're relatively inelastic, because their social marginal utility of income is higher."
+      ]
     ],
     "mcq": [
       {
@@ -1991,39 +2103,67 @@ const TESTING_DATA = [
         ],
         "correct": 1,
         "rationale": "Ratio of elasticities: $0.2$ vs $2$ — a factor of $10$. The inverse elasticity rule makes the tax rate roughly proportional to $1/\\varepsilon$, so the good with elasticity $10\\times$ smaller in magnitude ($0.2$ vs $2$) should carry a tax rate $10\\times$ larger."
+      },
+      {
+        "q": "Under the simple single-consumer Ramsey rule with independent (no cross-price effects) demands, welfare-maximizing commodity taxes are set such that:",
+        "options": [
+          "All goods are taxed at the same ad-valorem rate",
+          "The percentage reduction in compensated (Hicksian) demand is roughly equalized across taxed goods",
+          "Only the most inelastic good is taxed, all others left untaxed",
+          "None of the above"
+        ],
+        "correct": 1,
+        "rationale": "This is the 'equal proportional reduction' equivalent statement of the inverse elasticity rule: efficient Ramsey taxation shrinks compensated quantity demanded by about the same percentage for every taxed good, not by the same rate or the same absolute amount."
       }
     ],
-    "exercises": []
+    "exercises": [
+      {
+        "q": "Two goods have compensated demand elasticities $\\varepsilon_1=-0.5$ and $\\varepsilon_2=-1.5$. Using the simple inverse elasticity rule, what is the ratio of optimal tax rates $t_1/t_2$?",
+        "solution": "The inverse elasticity rule gives $t_i \\propto 1/|\\varepsilon_i|$, so $\\dfrac{t_1}{t_2}=\\dfrac{1/0.5}{1/1.5}=\\dfrac{2}{0.667}=3$. Good 1 (more inelastic) should be taxed at **3 times** the rate of good 2, all else (in particular cross-price effects, which we're assuming away) equal."
+      }
+    ]
   },
   {
     "key": "externalities",
     "icon": "🏭",
     "title": "Externalities",
     "flashcards": [
-      {
-        "q": "With a negative production externality, is the market price too high or too low relative to the social optimum?",
-        "a": "Too low. The market sets $P=MPC$ (private cost) but the true social cost is $MSC>MPC$; equilibrium quantity is too high and the implicit price signal too low."
-      },
-      {
-        "q": "Optimal Pigouvian tax on a negative externality.",
-        "a": "Set $t=MD(Q^*)$, the marginal damage evaluated at the socially optimal quantity $Q^*$ where $MC+MD=MB$ (equivalently $MC_{private}+t=MB$)."
-      },
-      {
-        "q": "Weitzman (1974): when does uncertainty make taxes vs. quantity regulation NOT equivalent?",
-        "a": "When there's uncertainty about marginal abatement *costs* (with marginal benefits/damages known) — under certainty the two are equivalent, but under cost uncertainty they diverge, and the preferred instrument depends on the relative slopes of MB and MC."
-      },
-      {
-        "q": "Weitzman's rule of thumb for choosing price vs. quantity under cost uncertainty.",
-        "a": "If MB is relatively flat compared to MC (steep), prefer a quantity instrument. If MB is relatively steep compared to MC (flat), prefer a price instrument. (Errors are costlier on the steeper curve.)"
-      },
-      {
-        "q": "Coase theorem — core claim.",
-        "a": "With well-defined property rights, zero transaction costs, and no wealth effects, private bargaining reaches the efficient outcome regardless of who is assigned the initial right."
-      },
-      {
-        "q": "Tragedy of the commons — root cause.",
-        "a": "Open-access resources have no price for use, so each user ignores the negative externality imposed on others; private marginal benefit exceeds social marginal benefit, leading to overuse."
-      }
+      [
+        "With a negative production externality, is the market price too high or too low relative to the social optimum?",
+        "Too low. The market sets $P=MPC$ (private cost) but the true social cost is $MSC>MPC$; equilibrium quantity is too high and the implicit price signal too low."
+      ],
+      [
+        "Optimal Pigouvian tax on a negative externality.",
+        "Set $t=MD(Q^*)$, the marginal damage evaluated at the socially optimal quantity $Q^*$ where $MC+MD=MB$ (equivalently $MC_{private}+t=MB$)."
+      ],
+      [
+        "Weitzman (1974): when does uncertainty make taxes vs. quantity regulation NOT equivalent?",
+        "When there's uncertainty about marginal abatement *costs* (with marginal benefits/damages known) — under certainty the two are equivalent, but under cost uncertainty they diverge, and the preferred instrument depends on the relative slopes of MB and MC."
+      ],
+      [
+        "Weitzman's rule of thumb for choosing price vs. quantity under cost uncertainty.",
+        "If MB is relatively flat compared to MC (steep), prefer a quantity instrument. If MB is relatively steep compared to MC (flat), prefer a price instrument. (Errors are costlier on the steeper curve.)"
+      ],
+      [
+        "Coase theorem — core claim.",
+        "With well-defined property rights, zero transaction costs, and no wealth effects, private bargaining reaches the efficient outcome regardless of who is assigned the initial right."
+      ],
+      [
+        "Tragedy of the commons — root cause.",
+        "Open-access resources have no price for use, so each user ignores the negative externality imposed on others; private marginal benefit exceeds social marginal benefit, leading to overuse."
+      ],
+      [
+        "With a positive externality, is quantity produced too high or too low relative to the social optimum?",
+        "Too low — private agents only weigh their own marginal benefit and ignore the extra benefit conferred on others, so the market underprovides relative to $MSB=MSB_{private}+MEB>MPB$."
+      ],
+      [
+        "What is the shape and interpretation of the Marginal Abatement Cost (MAC) curve?",
+        "Typically upward-sloping in the amount abated: the first units of pollution are cheap to cut, later units progressively more expensive — it's the mirror image of the marginal cost of pollution (steep MAC = costly to abate further)."
+      ],
+      [
+        "Main efficiency critique of command-and-control regulation vs. market-based instruments (taxes/permits) when firms have heterogeneous abatement costs?",
+        "Uniform standards force every firm to abate the same amount regardless of cost, so total abatement isn't allocated to the cheapest-cost abaters first — market-based instruments equalize marginal abatement cost across firms (cost-effectiveness), achieving the same total abatement at lower total cost."
+      ]
     ],
     "mcq": [
       {
@@ -2048,6 +2188,17 @@ const TESTING_DATA = [
         ],
         "correct": 3,
         "rationale": "Weitzman's classic result concerns uncertainty about marginal abatement COSTS with known marginal BENEFITS (damages) — that's precisely the case where price and quantity instruments diverge (are NOT equivalent), unlike under full certainty."
+      },
+      {
+        "q": "A Pigouvian subsidy correcting a positive externality should be set equal to:",
+        "options": [
+          "The marginal private benefit at the market quantity",
+          "The marginal external benefit evaluated at the efficient quantity",
+          "The average external benefit over all units produced",
+          "None of the above"
+        ],
+        "correct": 1,
+        "rationale": "Mirroring the Pigouvian tax logic: the subsidy should close the gap between private and social marginal benefit exactly at the socially efficient quantity, so the subsidized private incentive lines up with the true social marginal benefit there."
       }
     ],
     "exercises": [
@@ -2058,6 +2209,10 @@ const TESTING_DATA = [
       {
         "q": "Two types of community: high-benefit/high-cost of pollution control, and low-benefit/low-cost. The government must choose a uniform regulation (quantity) or a uniform fine (price) across both. When is regulation preferable to fines?",
         "solution": "This is a Weitzman slope-comparison problem across heterogeneous agents rather than uncertainty over one agent, but the same logic applies: a uniform standard is preferable when marginal benefit (damage avoided) is steep relative to marginal cost — getting the quantity wrong is very costly in welfare terms, so it's better to fix the quantity and let the (uniform) fine/price be whatever clears it. If instead the asymmetry is reversed — communities with high MC of control also have low MB (so the 'costly to control' communities also don't need much control) — a uniform price (fine) does better, because it automatically lets each community choose its own efficient abatement level rather than forcing the same quantity on both. When MB is very steep, a uniform quantity standard is generally still safer regardless of the cost-side pairing, since the welfare loss from picking the wrong aggregate quantity dominates."
+      },
+      {
+        "q": "Two firms face different marginal abatement cost curves, $MAC_1=10+2Q_1$ and $MAC_2=4+Q_2$. The regulator wants total abatement $Q_1+Q_2=30$ at minimum total cost. Find the cost-effective allocation and the resulting permit price if achieved via tradable permits.",
+        "solution": "Cost-effectiveness requires $MAC_1=MAC_2=p$ (equalized marginal cost, the essence of a uniform permit price). Set $10+2Q_1=4+Q_2$ with $Q_2=30-Q_1$: $10+2Q_1=4+30-Q_1 \\Rightarrow 3Q_1=24 \\Rightarrow Q_1=8,\\,Q_2=22$. Permit price $p=MAC_1(8)=10+16=26=MAC_2(22)=4+22=26$ ✓. A tradable-permit market decentralizes exactly this allocation: firm 1 (steep MAC) abates less and buys permits; firm 2 (flatter MAC) abates more and sells permits, both facing the same market price $p=26$ — a uniform standard splitting 15/15 would instead cost more in total, since $MAC_1(15)=40\\neq MAC_2(15)=19$."
       }
     ]
   },
@@ -2066,28 +2221,56 @@ const TESTING_DATA = [
     "icon": "🏛️",
     "title": "Public Goods",
     "flashcards": [
+      [
+        "Samuelson condition for efficient public good provision.",
+        "$\\sum_h MRS^h_{G,x} = MRT_{G,x}$ — sum of individual marginal rates of substitution equals the marginal rate of transformation (unlike private goods, where MRS is equalized *across* individuals, not summed)."
+      ],
+      [
+        "Why does private (voluntary) provision of a public good typically undersupply it?",
+        "Free-riding: each contributor only weighs their own MRS against the cost, ignoring the benefit their contribution confers on everyone else — so the Nash equilibrium sum of contributions falls short of the Samuelson-efficient level."
+      ],
+      [
+        "Lindahl equilibrium — core idea.",
+        "Each individual faces a personalized 'Lindahl price' for the public good equal to their own MRS; if these personalized prices sum to the true marginal cost, the resulting allocation is Pareto efficient — a decentralized way to satisfy the Samuelson rule."
+      ],
+      [
+        "How does the Samuelson rule change when the public good is financed by a distortionary (not lump-sum) tax?",
+        "It must be adjusted to account for the excess burden of the financing tax, and for how the increase in public-good provision affects consumption of the taxed private good."
+      ],
+      [
+        "What defines a pure public good along the excludability/rivalry grid?",
+        "Non-excludable (can't prevent others from consuming it) and non-rival (one person's consumption doesn't reduce what's available to others)."
+      ],
+      [
+        "Where do club goods and common-pool resources sit on that same grid?",
+        "Club goods: excludable, non-rival (e.g. cable TV, a toll road below capacity). Common-pool resources: non-excludable, rival (e.g. an open fishery) — that's exactly the tragedy-of-the-commons setup."
+      ],
+      [
+        "Why might voting mechanisms fail to reveal true preferences for public-good provision?",
+        "Because there's typically no cost to over- or under-stating your preference when your individual vote doesn't set the price you personally pay — unlike a market, where misrepresenting your valuation costs you directly."
+      ]
+    ],
+    "mcq": [
       {
-        "q": "Samuelson condition for efficient public good provision.",
-        "a": "$\\sum_h MRS^h_{G,x} = MRT_{G,x}$ — sum of individual marginal rates of substitution equals the marginal rate of transformation (unlike private goods, where MRS is equalized *across* individuals, not summed)."
-      },
-      {
-        "q": "Why does private (voluntary) provision of a public good typically undersupply it?",
-        "a": "Free-riding: each contributor only weighs their own MRS against the cost, ignoring the benefit their contribution confers on everyone else — so the Nash equilibrium sum of contributions falls short of the Samuelson-efficient level."
-      },
-      {
-        "q": "Lindahl equilibrium — core idea.",
-        "a": "Each individual faces a personalized 'Lindahl price' for the public good equal to their own MRS; if these personalized prices sum to the true marginal cost, the resulting allocation is Pareto efficient — a decentralized way to satisfy the Samuelson rule."
-      },
-      {
-        "q": "How does the Samuelson rule change when the public good is financed by a distortionary (not lump-sum) tax?",
-        "a": "It must be adjusted to account for the excess burden of the financing tax, and for how the increase in public-good provision affects consumption of the taxed private good."
+        "q": "Free-riding in the private (voluntary) provision of a public good implies that, relative to the Samuelson-efficient level, the Nash-equilibrium quantity provided is:",
+        "options": [
+          "Efficient — free-riding doesn't affect the aggregate outcome",
+          "Oversupplied",
+          "Undersupplied",
+          "Ambiguous — depends only on the number of contributors"
+        ],
+        "correct": 2,
+        "rationale": "Each contributor equates their own MRS to the price of the good, ignoring the marginal benefit their contribution generates for everyone else. Summing individual best-responses therefore falls short of the Samuelson condition (which requires the *sum* of MRS to equal MRT) — private provision is systematically undersupplied."
       }
     ],
-    "mcq": [],
     "exercises": [
       {
         "q": "Three consumers with $U_i=x_iG$ ($i=1,2,3$), $x_i$ = private good, $G$ = public good jointly consumed. $p_x=1$, $p_G=10$. Wealth sums to $W_1+W_2+W_3=100$. Efficient amount of $G$?",
         "solution": "$MRS^i_{G,x}=\\dfrac{U_G^i}{U_x^i}=\\dfrac{x_i}{G}$. Samuelson rule: $\\sum_i MRS^i = MRT=10 \\Rightarrow \\dfrac{x_1+x_2+x_3}{G}=10 \\Rightarrow X=10G$ where $X=\\sum x_i$. Budget: $X+10G=100$. Substituting: $10G+10G=100 \\Rightarrow G^*=5$, and $X=50$."
+      },
+      {
+        "q": "Using the same setup ($U_i=x_iG$, $p_x=1$, $p_G=10$, $G^*=5$), find the Lindahl price for each individual if all three have equal wealth $W_i=100/3$, and verify the prices sum to the true marginal cost.",
+        "solution": "Each individual's Lindahl price equals their own $MRS^i=x_i/G$ evaluated at the efficient allocation. With equal wealth and symmetric preferences, each consumer's optimal private-good consumption at their personalized price is $x_i=W_i/2=50/3$ (splitting income evenly between $x$ and the $G$-share, a property of this Cobb–Douglas-like preference), giving $MRS^i=(50/3)/5=10/3$ for each of the three. Summing: $3\\times(10/3)=10=MRT=p_G$ ✓ — the three personalized Lindahl prices exactly cover the true marginal cost of the public good, confirming the allocation is a valid Lindahl (and hence Pareto-efficient) equilibrium."
       }
     ]
   },
@@ -2096,22 +2279,38 @@ const TESTING_DATA = [
     "icon": "🛡️",
     "title": "Social Insurance & Adverse Selection",
     "flashcards": [
-      {
-        "q": "Rothschild–Stiglitz separating equilibrium: how do low-risk types get partial insurance?",
-        "a": "High-risk types would mimic low-risk contracts if those offered full insurance at the low-risk price, so insurers must offer low-risk types *less than full* coverage — just enough that high-risk types prefer their own (full-coverage, higher-premium) contract. The incentive-compatibility constraint binds."
-      },
-      {
-        "q": "Why can mandatory pooling be a Pareto improvement in the RS model?",
-        "a": "When the low-risk share $\\lambda$ of the population is large enough, the pooled (average-risk) price is close enough to the low-risk price that both types can be offered more coverage at an acceptable premium — everyone gains relative to the separating equilibrium's under-insurance of low-risk types."
-      },
-      {
-        "q": "What determines whether the separating equilibrium even exists in the RS model?",
-        "a": "The relative population share of high- vs low-risk types; if there are too many low-risk types, pooling contracts become attractive enough to high-risk types that no separating equilibrium survives — this is the classic RS non-existence problem."
-      },
-      {
-        "q": "Full-insurance benchmark: what does it assume away?",
-        "a": "Adverse selection and moral hazard — insurer knows the true risk type and payouts don't affect the insured's behavior, so the efficient contract fully equalizes consumption across states at the actuarially fair price."
-      }
+      [
+        "Rothschild–Stiglitz separating equilibrium: how do low-risk types get partial insurance?",
+        "High-risk types would mimic low-risk contracts if those offered full insurance at the low-risk price, so insurers must offer low-risk types *less than full* coverage — just enough that high-risk types prefer their own (full-coverage, higher-premium) contract. The incentive-compatibility constraint binds."
+      ],
+      [
+        "Why can mandatory pooling be a Pareto improvement in the RS model?",
+        "When the low-risk share $\\lambda$ of the population is large enough, the pooled (average-risk) price is close enough to the low-risk price that both types can be offered more coverage at an acceptable premium — everyone gains relative to the separating equilibrium's under-insurance of low-risk types."
+      ],
+      [
+        "What determines whether the separating equilibrium even exists in the RS model?",
+        "The relative population share of high- vs low-risk types; if there are too many low-risk types, pooling contracts become attractive enough to high-risk types that no separating equilibrium survives — this is the classic RS non-existence problem."
+      ],
+      [
+        "Full-insurance benchmark: what does it assume away?",
+        "Adverse selection and moral hazard — insurer knows the true risk type and payouts don't affect the insured's behavior, so the efficient contract fully equalizes consumption across states at the actuarially fair price."
+      ],
+      [
+        "Moral hazard vs. adverse selection — key distinction.",
+        "Adverse selection is hidden information *before* the contract is signed (the insurer doesn't know your risk type). Moral hazard is a hidden *action* taken *after* the contract (the insured's behavior changes precisely because they're now insured)."
+      ],
+      [
+        "Why does full insurance typically induce moral hazard?",
+        "Once fully insured, the individual no longer bears the marginal cost of their own risk-related choices (e.g. care use, precaution), so they over-consume relative to the social optimum — the classic 'zero marginal price' over-consumption result."
+      ],
+      [
+        "What problem do deductibles and co-pays address, and at what cost?",
+        "They restore some marginal cost-sharing to the insured, mitigating moral hazard — at the cost of leaving the insured bearing more risk. It's a fundamental trade-off between insurance (risk-pooling) and incentives (cost-consciousness)."
+      ],
+      [
+        "Why can't a pooling contract offering full insurance ever be an RS equilibrium?",
+        "A rival insurer can always profitably 'cream-skim': offer a slightly less generous contract that only low-risk types find attractive (since high-risk types prefer full coverage), poaching the profitable low-risk customers and leaving the original pooling insurer with only high-risk (loss-making) customers."
+      ]
     ],
     "mcq": [
       {
@@ -2125,43 +2324,114 @@ const TESTING_DATA = [
         ],
         "correct": 3,
         "rationale": "Feasible (non-loss-making) contracts for the insurer must lie on or below the zero-profit line. The separating equilibrium's low-risk contract must additionally offer strictly less than full coverage to keep high-risk types from mimicking it — i.e. below the 45° full-insurance line. Both binding constraints put the relevant menu below zero-profit and below full insurance."
+      },
+      {
+        "q": "In the Rothschild–Stiglitz model, why can a pooling equilibrium with full insurance never survive as an equilibrium?",
+        "options": [
+          "It's never profitable for any insurer to offer it",
+          "A rival insurer can profitably 'cream-skim' by offering a contract attractive only to low-risk types",
+          "High-risk types would never purchase it",
+          "There is no reason — pooling with full insurance is a valid equilibrium"
+        ],
+        "correct": 1,
+        "rationale": "The classic RS instability result: any pooling contract can be broken by a rival offering a slightly-less-generous contract that only low-risk types prefer, stealing the profitable low-risk customers and leaving the incumbent pooling insurer with a loss-making, high-risk-only pool."
       }
-    ],
-    "exercises": []
+    ]
   },
   {
     "key": "papers",
     "icon": "📄",
     "title": "Papers: Carbon Tax & Sugar Tax",
     "flashcards": [
+      [
+        "Goulder & Schein — why are exogenous emissions prices (carbon tax / hybrid with price ceiling) generally preferred to a pure endogenous cap-and-trade price?",
+        "They give price stability (policymakers set it directly, rather than a fluctuating permit market), reduce the risk of costly policy errors under abatement-cost uncertainty, and avoid unintended wealth transfers to oil-exporting countries that can arise if fossil-fuel suppliers strategically restrict supply to push up permit prices."
+      ],
+      [
+        "Goulder & Schein — why are carbon taxes often perceived as more burdensome to firms than cap-and-trade, even when designed to be equivalent?",
+        "A tax charges a fee on every unit of emissions with no flexibility, while cap-and-trade often hands out free allowances to affected industries and lets firms trade rather than simply pay — this cushions the financial hit and makes cap-and-trade feel more politically and economically palatable, even though a tax with targeted exemptions could in principle be designed to be just as accommodating."
+      ],
+      [
+        "Cawley & Frisvold — what is 'pass-through rate' in the Berkeley SSB tax study, and what did they find?",
+        "The share of the per-ounce tax that shows up in higher retail prices. They found only ~43% average pass-through — well below 100% — meaning retailers absorbed a large share of the tax rather than passing it fully to consumers."
+      ],
+      [
+        "Cawley & Frisvold — how did proximity to untaxed jurisdictions affect pass-through?",
+        "Stores closer to the untaxed San Francisco border passed through less of the tax (kept prices lower) to avoid losing customers to cross-border shopping; pass-through rose with distance from the border, especially for larger, less-portable package sizes."
+      ],
+      [
+        "Cawley & Frisvold — what does the Berkeley result imply about the effectiveness of city-level (vs. national) SSB taxes?",
+        "Local taxes face two dampening forces — partial pass-through and cross-border shopping — that don't apply at the national level (as in Mexico/France, where pass-through was near 100%), suggesting city-level SSB taxes are a weaker public-health lever than broader-scale ones."
+      ],
+      [
+        "What is a hybrid cap-and-trade system (price ceiling/floor), and why does it matter in the tax-vs-cap-and-trade debate?",
+        "A cap-and-trade scheme with a price ceiling and/or floor on permits — it behaves like a quantity instrument inside the band and like a price instrument at the boundaries. It blends the two designs, muting the price-volatility concern that otherwise favors a pure tax."
+      ],
+      [
+        "Why did Goulder & Schein frame the comparison as 'exogenous vs. endogenous' pricing rather than simply 'tax vs. cap-and-trade'?",
+        "Because the real economic distinction that drives most of the paper's results is whether the emissions *price* is fixed by policy (exogenous, as under a tax or a price-collared cap-and-trade) or left to be determined by the market for permits (endogenous, as under pure cap-and-trade) — that framing captures hybrid designs too, not just the two textbook polar cases."
+      ]
+    ],
+    "mcq": [
       {
-        "q": "Goulder & Schein — why are exogenous emissions prices (carbon tax / hybrid with price ceiling) generally preferred to a pure endogenous cap-and-trade price?",
-        "a": "They give price stability (policymakers set it directly, rather than a fluctuating permit market), reduce the risk of costly policy errors under abatement-cost uncertainty, and avoid unintended wealth transfers to oil-exporting countries that can arise if fossil-fuel suppliers strategically restrict supply to push up permit prices."
+        "q": "In Cawley & Frisvold's Berkeley SSB tax study, the average pass-through rate of the tax to retail prices was approximately:",
+        "options": [
+          "0%",
+          "43%",
+          "100%",
+          "Over 100% (overshifting)"
+        ],
+        "correct": 1,
+        "rationale": "The study found an average pass-through of about 43.1% across products and sizes — well below full (100%) pass-through, indicating retailers absorbed a substantial share of the tax rather than passing it on."
       },
       {
-        "q": "Goulder & Schein — why are carbon taxes often perceived as more burdensome to firms than cap-and-trade, even when designed to be equivalent?",
-        "a": "A tax charges a fee on every unit of emissions with no flexibility, while cap-and-trade often hands out free allowances to affected industries and lets firms trade rather than simply pay — this cushions the financial hit and makes cap-and-trade feel more politically and economically palatable, even though a tax with targeted exemptions could in principle be designed to be just as accommodating."
-      },
-      {
-        "q": "Cawley & Frisvold — what is 'pass-through rate' in the Berkeley SSB tax study, and what did they find?",
-        "a": "The share of the per-ounce tax that shows up in higher retail prices. They found only ~43% average pass-through — well below 100% — meaning retailers absorbed a large share of the tax rather than passing it fully to consumers."
-      },
-      {
-        "q": "Cawley & Frisvold — how did proximity to untaxed jurisdictions affect pass-through?",
-        "a": "Stores closer to the untaxed San Francisco border passed through less of the tax (kept prices lower) to avoid losing customers to cross-border shopping; pass-through rose with distance from the border, especially for larger, less-portable package sizes."
-      },
-      {
-        "q": "Cawley & Frisvold — what does the Berkeley result imply about the effectiveness of city-level (vs. national) SSB taxes?",
-        "a": "Local taxes face two dampening forces — partial pass-through and cross-border shopping — that don't apply at the national level (as in Mexico/France, where pass-through was near 100%), suggesting city-level SSB taxes are a weaker public-health lever than broader-scale ones."
+        "q": "Goulder & Schein argue exogenous emissions pricing (e.g. a carbon tax) is generally preferable to a pure endogenous cap-and-trade price mainly because it:",
+        "options": [
+          "Raises strictly more government revenue in all cases",
+          "Avoids price volatility and reduces the risk of costly policy errors under abatement-cost uncertainty",
+          "Has zero administrative or monitoring cost",
+          "Eliminates the need for any emissions monitoring"
+        ],
+        "correct": 1,
+        "rationale": "Their central argument is about price stability and reduced policy-error risk under uncertainty (plus avoiding wealth transfers to oil-exporting countries) — not about revenue superiority or administrative simplicity, which aren't the paper's key claims."
       }
     ],
-    "mcq": [],
     "exercises": [
       {
         "q": "Carbon taxes are generally perceived to be more burdensome to firms than cap-and-trade programs. Discuss the statement.",
         "solution": "The perception stems from *design differences*, not an inherent property of price vs. quantity instruments: a carbon tax charges every unit of emissions with no built-in relief, while cap-and-trade systems commonly grant free allowances to exposed industries and let firms recoup costs by trading, which softens the immediate financial impact and is more politically palatable. In principle, a carbon tax with targeted exemptions or revenue recycling could be designed to be just as accommodating — but such exemptions are rarely built into carbon tax proposals in practice, whereas free allocation is a standard feature of cap-and-trade. So the 'burden gap' is largely a policy-design artifact, not a fundamental economic difference between the two instruments."
+      },
+      {
+        "q": "Explain the concept of 'pass-through rate' in the Cawley & Frisvold paper and summarize their key finding on partial pass-through in Berkeley.",
+        "solution": "Pass-through rate is the fraction of a per-unit tax on distributors that ends up reflected in the retail price consumers actually pay. Full (100%) pass-through means the tax is fully shifted onto consumers; 0% means retailers absorb it entirely. Using a difference-in-differences design comparing Berkeley (taxed) to San Francisco (untaxed control), the authors found average pass-through of only about 43%, with meaningful variation by product size and by distance from the untaxed border — retailers closer to untaxed alternatives passed through less, to avoid losing customers to cross-border shopping. The partial pass-through implies the tax's intended deterrent effect on consumption was correspondingly muted, since consumers didn't face the full price increase the tax was designed to generate."
       }
     ]
+  }
+];
+const EXAM_BONUS = [
+  {
+    "q": "Explain what is meant by the 'excess burden' of a tax, and why lump-sum taxes have none.",
+    "solution": "Excess burden (deadweight loss) is the welfare loss beyond the revenue collected — the cost of the behavioral distortion a tax induces, not the transfer itself. It arises because a tax drives a wedge between the price paid and received, causing agents to substitute away from the taxed activity even on units where the true social cost was below the true social benefit. A lump-sum tax, by contrast, doesn't depend on any choice the agent makes — there is no margin to distort, so there's an income effect but no substitution effect, and hence no excess burden (only the loss of the money itself)."
+  },
+  {
+    "q": "Explain the Coase theorem and its key assumptions.",
+    "solution": "The Coase theorem states that, given well-defined property rights, zero transaction costs, and no wealth effects, private bargaining between the parties to an externality will reach the efficient outcome regardless of how the initial property right is assigned — only the distribution of gains (who pays whom), not the final efficient allocation, depends on that assignment. Its bite in practice is limited by its assumptions: transaction costs are rarely zero (especially with many affected parties), property rights are often ill-defined or costly to enforce, and wealth effects can matter — which is exactly why government intervention (Pigouvian taxes, regulation) is often invoked when the assumptions plausibly fail."
+  },
+  {
+    "q": "Explain why marginal excess burden (MEB) rises with the pre-existing tax rate.",
+    "solution": "MEB measures the *additional* distortion from raising an existing tax by a small amount. Because the DWL triangle's area grows with the square of the total tax rate, each successive increment of tax lands on top of an already-distorted base — geometrically, you're adding a 'trapezoid' strip further and further out along the demand/supply curves, where the quantity response per unit of tax increase is being applied to an ever-larger tax wedge. This is why a modest tax hike on an already heavily-taxed good is far more costly, at the margin, than the same-sized hike on an untaxed good."
+  },
+  {
+    "q": "Explain the free-rider problem in the private provision of public goods.",
+    "solution": "Because a public good is non-excludable, once it's provided nobody can be prevented from enjoying it — including those who contributed nothing. Each individual, in deciding how much to voluntarily contribute, only weighs their own private benefit against the cost, ignoring the benefit their contribution confers on everyone else. The resulting Nash equilibrium level of aggregate provision falls short of the Samuelson-efficient level (which requires summing everyone's marginal benefit), because contributors implicitly hope others will pick up the slack — the same underlying logic as the tragedy of the commons, but for undersupply rather than overuse."
+  },
+  {
+    "q": "Explain why the Rothschild–Stiglitz separating equilibrium may fail to exist.",
+    "solution": "The candidate separating equilibrium offers high-risk types full insurance at their own actuarially fair price, and low-risk types only partial insurance (enough to keep high-risk types from mimicking them). But if the share of low-risk types in the population is large enough, a rival insurer can profitably offer a pooling contract — priced at the population-average risk — that is attractive to *both* types relative to the separating menu, since the average price is close to the low-risk price when low-risk types dominate the pool. Because this pooling contract would be preferred by everyone (and is profitable for the entrant), the proposed separating equilibrium cannot survive — no equilibrium of the standard Nash-competition type exists in this region of the parameter space, a well-known instability result in the RS model."
+  },
+  {
+    "q": "Explain the difference between Compensating Variation (CV) and Equivalent Variation (EV), and when a policymaker should prefer each.",
+    "solution": "Both measure the monetary value of a price change, but at different reference utility levels and prices: CV asks how much money, given to the consumer *at the new prices*, would restore their *original* utility — it's the natural measure if the policymaker is designing a compensation scheme after the change takes effect. EV asks how much money, taken away *at the original prices*, would leave the consumer at the *new* (post-change) utility level — it's the natural measure of willingness-to-pay to avoid the change, expressed in today's prices. EV is generally preferred when comparing multiple different policies, since it always uses the same (status-quo) price base, making comparisons consistent; CV is preferred when the actual compensation will be paid out at the new prices."
   }
 ];
 
@@ -2190,6 +2460,8 @@ function initTesting(){
   renderTestTopic();
 }
 function setTestTopic(i, el){
+  inExamMode = false;
+  document.getElementById('test-tabs').style.display = '';
   currentTopicIdx = i; fcIdx = 0; fcShowingAnswer = false;
   document.querySelectorAll('.test-nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
@@ -2283,6 +2555,120 @@ function renderExercises(inner, items){
 }
 function toggleSolution(ei){
   const el = document.getElementById(`ex-sol-${ei}`);
+  el.classList.toggle('shown');
+  if(el.classList.contains('shown') && window.renderMathInElement) renderMathInElement(el, KATEX_OPTS);
+}
+
+/* ══════════════ MOCK EXAM ══════════════ */
+let inExamMode = false;
+let currentExam = null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function openMockExam(){
+  inExamMode = true;
+  document.querySelectorAll('.test-nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('mock-exam-nav').classList.add('active');
+  document.getElementById('test-topic-title').textContent = '📝 Mock Exam';
+  document.getElementById('test-tabs').style.display = 'none';
+  generateMockExam();
+}
+
+function generateMockExam(){
+  const allMCQ = [];
+  const allExercises = [];
+  let paperExercises = [];
+  TESTING_DATA.forEach(t=>{
+    (t.mcq||[]).forEach(m=>allMCQ.push({...m, topic:t.title}));
+    if(t.key==='papers'){ (t.exercises||[]).forEach(e=>paperExercises.push({...e, topic:t.title})); }
+    else { (t.exercises||[]).forEach(e=>allExercises.push({...e, topic:t.title})); }
+  });
+  currentExam = {
+    mcq: shuffle(allMCQ).slice(0,4),
+    open: shuffle(allExercises).slice(0,2),
+    paper: shuffle(paperExercises).slice(0,1),
+    bonus: shuffle(EXAM_BONUS).slice(0,1)
+  };
+  renderMockExam();
+}
+
+function renderMockExam(){
+  const inner = document.getElementById('test-inner');
+  const e = currentExam;
+  let html = `
+    <div class="exam-toolbar">
+      <button class="exam-new-btn" onclick="generateMockExam()">🔄 New mock exam</button>
+      <div class="exam-timer-note">Structured like the course's own mock exams — self-graded, no time limit enforced</div>
+    </div>
+
+    <div class="exam-section-title">Section A (max score = 24) — multiple choice</div>
+    <div class="exam-section-sub">Choose the most appropriate answer. 4 questions, drawn at random across all topics.</div>`;
+
+  e.mcq.forEach((m,qi)=>{
+    html += `
+    <div class="mcq-block">
+      <div class="exam-tag">A${qi+1} · ${m.topic}</div>
+      <div class="mcq-q">${m.q}</div>
+      ${m.options.map((opt,oi)=>
+        `<button class="mcq-opt" id="exam-mcq-${qi}-${oi}" onclick="answerExamMCQ(${qi},${oi},${m.correct})">${String.fromCharCode(97+oi)}. ${opt}</button>`
+      ).join('')}
+      <div class="mcq-rationale" id="exam-mcq-rat-${qi}">${m.rationale}</div>
+    </div>`;
+  });
+
+  html += `<div class="exam-section-title">Section B (max score = 50) — open questions</div>
+    <div class="exam-section-sub">2 questions, drawn at random. Work through them on paper, then reveal the model solution.</div>`;
+  e.open.forEach((ex,ei)=>{
+    html += `
+    <div class="ex-block">
+      <div class="exam-tag">B${ei+1} · ${ex.topic}</div>
+      <div class="ex-q">${ex.q}</div>
+      <button class="ex-toggle" onclick="toggleExamSolution('open',${ei})">Show solution</button>
+      <div class="ex-sol" id="exam-open-sol-${ei}">${ex.solution.replace(/\n\n/g,'<br><br>')}</div>
+    </div>`;
+  });
+
+  html += `<div class="exam-section-title">Section C (max score = 26) — question on assigned papers</div>`;
+  e.paper.forEach((ex,ei)=>{
+    html += `
+    <div class="ex-block">
+      <div class="exam-tag">C · ${ex.topic}</div>
+      <div class="ex-q">${ex.q}</div>
+      <button class="ex-toggle" onclick="toggleExamSolution('paper',${ei})">Show solution</button>
+      <div class="ex-sol" id="exam-paper-sol-${ei}">${ex.solution.replace(/\n\n/g,'<br><br>')}</div>
+    </div>`;
+  });
+
+  html += `<div class="exam-section-title">Bonus question (max score = 8) — theory</div>`;
+  e.bonus.forEach((ex,ei)=>{
+    html += `
+    <div class="ex-block">
+      <div class="ex-q">${ex.q}</div>
+      <button class="ex-toggle" onclick="toggleExamSolution('bonus',${ei})">Show solution</button>
+      <div class="ex-sol" id="exam-bonus-sol-${ei}">${ex.solution.replace(/\n\n/g,'<br><br>')}</div>
+    </div>`;
+  });
+
+  inner.innerHTML = html;
+  if(window.renderMathInElement) renderMathInElement(inner, KATEX_OPTS);
+}
+
+function answerExamMCQ(qi, chosen, correct){
+  const m = currentExam.mcq[qi];
+  m.options.forEach((_,oi)=>{
+    const el = document.getElementById(`exam-mcq-${qi}-${oi}`);
+    el.disabled = true;
+    if(oi===correct) el.classList.add('correct');
+    else if(oi===chosen) el.classList.add('wrong');
+  });
+  document.getElementById(`exam-mcq-rat-${qi}`).classList.add('shown');
+}
+function toggleExamSolution(kind, ei){
+  const el = document.getElementById(`exam-${kind}-sol-${ei}`);
   el.classList.toggle('shown');
   if(el.classList.contains('shown') && window.renderMathInElement) renderMathInElement(el, KATEX_OPTS);
 }
