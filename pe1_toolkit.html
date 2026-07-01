@@ -30,6 +30,16 @@
   html,body { height:100%; }
   body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; overflow:hidden; }
 
+  /* ── Theory / Testing mode split ── */
+  .mode-switch { position:fixed; top:10px; right:14px; z-index:500; display:flex; gap:2px;
+                 background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px;
+                 box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .mode-btn { border:none; background:transparent; font-family:'Georgia',serif; font-size:12px; font-weight:bold;
+              padding:6px 13px; border-radius:5px; cursor:pointer; color:var(--muted); letter-spacing:.02em; }
+  .mode-btn.active { background:var(--accent); color:#fff; }
+  .mode-panel { display:none; height:100vh; }
+  .mode-panel.active { display:flex; }
+
   .app { display:flex; height:100vh; }
 
   /* ── Sidebar ── */
@@ -183,10 +193,79 @@
   #panel-formulas .card, #panel-formulas .twocol .half { min-width:0; overflow-wrap:break-word; }
   #panel-formulas .ring-red { border:2.2px solid #D32F2F; border-radius:50%; padding:2px 9px; display:inline-block; }
   #panel-formulas .ring-green { border:2.2px solid #2E7D32; border-radius:50%; padding:2px 8px; display:inline-block; }
+  /* ── Testing mode ── */
+  .test-app { display:flex; height:100vh; width:100%; }
+  .test-sidebar { width:250px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border);
+                  display:flex; flex-direction:column; }
+  .test-sidebar-header { padding:20px 18px 14px; border-bottom:1px solid var(--border); }
+  .test-sidebar-logo { font-size:13px; font-weight:bold; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:3px; }
+  .test-sidebar-sub { font-size:11px; color:var(--muted); line-height:1.5; font-style:italic; }
+  .test-nav { padding:12px 8px; flex:1; overflow-y:auto; }
+  .test-nav-item { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:5px; cursor:pointer;
+                    font-size:13px; color:var(--muted); transition:all .15s; margin-bottom:1px; border-left:2.5px solid transparent; }
+  .test-nav-item:hover { background:var(--bg); color:var(--text); }
+  .test-nav-item.active { background:var(--bg); color:var(--text); border-left-color:var(--accent); font-weight:bold; }
+  .test-nav-icon { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+
+  .test-main { flex:1; overflow:hidden; display:flex; flex-direction:column; min-width:0; }
+  .test-topbar { padding:14px 26px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+  .test-topbar-title { font-size:17px; font-weight:bold; color:var(--accent); margin-bottom:10px; }
+  .test-tabs { display:flex; gap:6px; }
+  .test-tab { border:1px solid var(--border); background:var(--bg); color:var(--muted); font-family:'Georgia',serif;
+              font-size:12.5px; font-weight:bold; padding:6px 14px; border-radius:16px; cursor:pointer; }
+  .test-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .test-tab .cnt { opacity:.75; font-weight:normal; margin-left:3px; }
+  .test-content { flex:1; overflow-y:auto; padding:26px; display:flex; justify-content:center; }
+  .test-inner { max-width:720px; width:100%; }
+
+  /* Flashcards */
+  .fc-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .fc-progress { font-size:12px; color:var(--muted2); font-family:'Courier New',monospace; }
+  .fc-card { width:100%; min-height:220px; background:var(--surface); border:1px solid var(--border2); border-radius:12px;
+             box-shadow:0 3px 14px rgba(0,0,0,.06); padding:30px 34px; display:flex; align-items:center; justify-content:center;
+             text-align:center; cursor:pointer; font-size:16px; line-height:1.55; }
+  .fc-card .fc-tag { position:absolute; margin-top:-160px; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+                      color:var(--muted2); font-family:Georgia,serif; font-style:italic; }
+  .fc-card.answer { background:var(--bg); }
+  .fc-hint { font-size:11px; color:var(--muted2); font-style:italic; }
+  .fc-controls { display:flex; gap:10px; }
+  .fc-btn { border:1px solid var(--border2); background:var(--surface); color:var(--text); font-family:'Georgia',serif;
+            font-size:13px; padding:8px 18px; border-radius:6px; cursor:pointer; }
+  .fc-btn:hover { background:var(--bg); }
+  .fc-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* MCQ */
+  .mcq-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 24px; margin-bottom:20px; }
+  .mcq-q { font-size:14.5px; line-height:1.5; margin-bottom:14px; }
+  .mcq-opt { display:block; width:100%; text-align:left; padding:9px 13px; margin-bottom:7px; border-radius:7px;
+             border:1px solid var(--border2); background:var(--bg); color:var(--text); font-family:'Georgia',serif;
+             font-size:13.5px; cursor:pointer; }
+  .mcq-opt:hover { border-color:var(--accent); }
+  .mcq-opt.correct { background:rgba(46,125,50,.14); border-color:var(--green); font-weight:bold; }
+  .mcq-opt.wrong { background:rgba(198,40,40,.12); border-color:var(--red); }
+  .mcq-opt[disabled] { cursor:default; }
+  .mcq-rationale { margin-top:10px; font-size:13px; color:var(--muted); line-height:1.55; border-top:1px dashed var(--border); padding-top:10px; display:none; }
+  .mcq-rationale.shown { display:block; }
+
+  /* Exercises */
+  .ex-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 24px; margin-bottom:20px; }
+  .ex-q { font-size:14.5px; line-height:1.6; margin-bottom:12px; }
+  .ex-sol { font-size:13.5px; line-height:1.65; color:var(--text); border-top:1px dashed var(--border); padding-top:12px; margin-top:6px; display:none; }
+  .ex-sol.shown { display:block; }
+  .ex-toggle { border:1px solid var(--accent); background:transparent; color:var(--accent); font-family:'Georgia',serif;
+               font-size:12.5px; font-weight:bold; padding:6px 14px; border-radius:6px; cursor:pointer; }
+
+  .test-empty { color:var(--muted); font-style:italic; font-size:13px; padding:30px 0; text-align:center; }
 </style>
 </head>
 <body>
 
+<div class="mode-switch">
+  <button class="mode-btn active" id="mode-btn-theory" onclick="switchMode('theory')">📚 Theory</button>
+  <button class="mode-btn" id="mode-btn-testing" onclick="switchMode('testing')">✏️ Testing</button>
+</div>
+
+<div class="mode-panel active" id="mode-theory">
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -1329,6 +1408,30 @@
     </div>
   </div>
 </div>
+</div><!-- /mode-theory -->
+
+<div class="mode-panel" id="mode-testing">
+  <div class="test-app">
+    <aside class="test-sidebar">
+      <div class="test-sidebar-header">
+        <div class="test-sidebar-logo">PE1 Testing</div>
+        <div class="test-sidebar-sub">Flashcards · MCQ · Exercises<br>Sourced from course exams + notes</div>
+      </div>
+      <nav class="test-nav" id="test-nav"></nav>
+    </aside>
+    <div class="test-main">
+      <div class="test-topbar">
+        <div class="test-topbar-title" id="test-topic-title">—</div>
+        <div class="test-tabs" id="test-tabs">
+          <button class="test-tab active" data-type="flashcards" onclick="setTestType('flashcards',this)">🗂️ Flashcards</button>
+          <button class="test-tab" data-type="mcq" onclick="setTestType('mcq',this)">☑️ MCQ</button>
+          <button class="test-tab" data-type="exercises" onclick="setTestType('exercises',this)">✍️ Exercises</button>
+        </div>
+      </div>
+      <div class="test-content"><div class="test-inner" id="test-inner"></div></div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════════════ SHELL: sidebar navigation ══════════════ */
@@ -1671,6 +1774,518 @@ document.getElementById('s-mc0').addEventListener('input',e=>{state.mc0=parseFlo
 document.getElementById('s-tm').addEventListener('input',e=>{state.tm=parseFloat(e.target.value);document.getElementById('v-tm').textContent=state.tm.toFixed(1);draw();});
 
 setupCanvas(); draw();
+
+const TESTING_DATA = [
+  {
+    "key": "competitive",
+    "icon": "⚖️",
+    "title": "Competitive Economies & Pareto Efficiency",
+    "flashcards": [
+      {
+        "q": "When is an allocation Pareto efficient in a 2-good exchange economy (interior, convex preferences)?",
+        "a": "When MRS^A = MRS^B — no further trade can make one person better off without making the other worse off. This is exactly the tangency condition that defines the contract curve."
+      },
+      {
+        "q": "Is a Pareto improvement necessary for social welfare to rise?",
+        "a": "No — sufficient, not necessary. A social welfare function can rise from a policy that isn't a Pareto improvement (e.g. redistribution that hurts one party but helps another more)."
+      },
+      {
+        "q": "State the First Welfare Theorem's core conditions.",
+        "a": "No externalities, perfect information, perfect competition (+ optionally no behavioral fallacies) ⇒ any competitive equilibrium is Pareto efficient."
+      },
+      {
+        "q": "What does a Rawlsian (maximin) SWF maximize?",
+        "a": "The utility of the worst-off individual. Its social indifference curves are L-shaped — no substitutability between individuals' utilities."
+      },
+      {
+        "q": "Utilitarian SWF $W=U_A+U_B$: what does the slope of its indifference curves imply?",
+        "a": "Slope $=-1$ everywhere: 1 util to A is worth exactly 1 util to B, regardless of who already has more."
+      },
+      {
+        "q": "What are the two classic justifications for government intervention besides market failure?",
+        "a": "Redistribution, and (per Musgrave) macroeconomic stabilization."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "In a pure exchange economy: (1) If everyone has the same MRS then the allocation is Pareto efficient. (2) If the allocation is Pareto efficient then everyone has the same MRS. (3) A policy change increases social welfare if and only if it represents a Pareto improvement. You would conclude that:",
+        "options": [
+          "1 = FALSE; 2 & 3 = TRUE",
+          "1, 2 = TRUE; 3 = FALSE",
+          "2 = TRUE; 1, 3 = FALSE",
+          "1, 2 & 3 = TRUE",
+          "None of the listed answers"
+        ],
+        "correct": 1,
+        "rationale": "In the standard interior, convex-preferences exchange setting, \"equal MRS\" and \"Pareto efficient\" are logically equivalent (both directions hold — that's exactly what defines the contract curve), so 1 and 2 are both true. Statement 3 is false: a Pareto improvement is sufficient but not necessary for social welfare to rise under a given SWF."
+      }
+    ],
+    "exercises": [
+      {
+        "q": "Explain the difference between Pareto optimality and a Pareto improvement. If a policy moves the economy from a non-Pareto-optimal situation to a Pareto-optimal one, does this necessarily raise social welfare?",
+        "solution": "Pareto optimality is a property of an allocation (no further mutually beneficial trade is possible). A Pareto improvement is a property of a *change* (at least one person gains, no one loses). Moving to a Pareto-optimal allocation is not automatically a Pareto improvement: the move could make some individuals worse off along the way (e.g. a reallocation that reaches the contract curve but redistributes badly). So it does not necessarily raise welfare under every SWF — it depends on how the gains and losses are distributed and how the SWF weights them."
+      }
+    ]
+  },
+  {
+    "key": "tax-incidence",
+    "icon": "📊",
+    "title": "Tax Incidence",
+    "flashcards": [
+      {
+        "q": "What determines economic (as opposed to statutory) incidence of a tax?",
+        "a": "Relative elasticities of demand and supply — not who is legally required to remit the tax. The side that is more inelastic (less able to adjust quantity) bears more of the burden."
+      },
+      {
+        "q": "Formula for the price effect on buyers from a specific tax $t$, competitive market.",
+        "a": "$\\dfrac{dp_D}{dt} = \\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}$, and correspondingly $\\dfrac{dp_S}{dt}=\\dfrac{\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}$ for sellers."
+      },
+      {
+        "q": "Perfectly inelastic supply ($\\varepsilon_S=0$): who bears the tax, regardless of statutory incidence?",
+        "a": "Sellers bear 100% of the burden. Since quantity can't adjust, the price consumers pay is pinned down by $Q_D=\\bar Q$ and never changes; the price sellers receive absorbs the entire tax."
+      },
+      {
+        "q": "Perfectly elastic supply ($\\varepsilon_S\\to\\infty$): who bears the tax?",
+        "a": "Buyers bear 100% of the burden — sellers won't accept any price below their (flat) marginal cost, so the full tax is passed through to the price buyers pay."
+      },
+      {
+        "q": "Specific vs. ad-valorem tax raising equal revenue in a competitive market: same incidence?",
+        "a": "Yes — under perfect competition, a specific and an ad-valorem tax calibrated to raise the same revenue at the same equilibrium are equivalent in incidence and deadweight loss. This equivalence breaks under monopoly."
+      },
+      {
+        "q": "Why does a tax on a good in genuinely fixed supply (e.g. an original Picasso) create zero excess burden?",
+        "a": "Quantity traded can't respond to price — there's no marginal transaction destroyed by the tax, so there's a transfer but no deadweight loss."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "A tax on … is likely to impose a … excess burden?",
+        "options": [
+          "Rice (in China) + large",
+          "Blueberries + small",
+          "Life-saving drugs + large",
+          "Picasso paintings + small",
+          "None of the above"
+        ],
+        "correct": 3,
+        "rationale": "Excess burden comes from the quantity distortion, which requires an elastic margin. Rice and life-saving drugs have very inelastic demand → small EB, not large (rules out a, c). Blueberries have many substitutes → relatively elastic demand → large EB, not small (rules out b). Picasso paintings are in genuinely fixed supply — no new ones can be produced — so quantity traded can't fall, and the tax generates essentially no deadweight loss: small EB. Classic 'tax the fixed-supply asset' result."
+      },
+      {
+        "q": "The government raises a specific tax on soft drinks. ___ is the lump-sum amount that the individual is willing to pay ___ the tax increase.",
+        "options": [
+          "EV; to accept",
+          "CV; to avoid",
+          "EV; to avoid",
+          "CV; to accept"
+        ],
+        "correct": 2,
+        "rationale": "EV is defined at the *original* (pre-tax) prices as the amount that would leave the consumer at the new, lower utility level — equivalently, the maximum lump sum they'd pay upfront to avoid the price increase altogether. That's exactly the willingness-to-pay-to-avoid interpretation of EV."
+      }
+    ],
+    "exercises": [
+      {
+        "q": "A mineral is in fixed supply, $Q_S=4$. Demand is $Q_D=12-2p$. The government imposes a $2/kg tax on consumers. (a) Price paid by consumers before and after the tax? (b) Deadweight loss? (c) Repeat with $Q_S=3+p$.",
+        "solution": "**(a) Fixed supply.** Pre-tax: $4=12-2p \\Rightarrow p=4$. Post-tax, market clearing requires $Q_S(p_S)=Q_D(p_S+t)=4$ *always* (quantity can't move), which pins the consumer price at $Q_D(p_c)=4 \\Rightarrow p_c=4$ — **unchanged**. The seller price then absorbs the whole tax: $p_S=p_c-t=4-2=2$. **DWL = 0** since quantity never moves — no transaction is destroyed, only a transfer from seller to government.\n\n*Flag: the traditional solution to this exercise in the source material states the reverse (seller price unchanged, consumer price rising to 6) — that's inconsistent with market clearing at fixed $Q_S=4$ (it would require $Q_D(6)=0\\neq4$). The version above is the one consistent with the equilibrium condition.*\n\n**(c) $Q_S=3+p$.** Pre-tax: $3+p=12-2p\\Rightarrow p=3,\\,Q=6$. Post-tax: $3+p=12-2(p+2)\\Rightarrow p=5/3,\\,Q=14/3$. $\\text{DWL}=\\tfrac12\\Delta Q\\cdot t=\\tfrac12\\left(6-\\tfrac{14}{3}\\right)\\cdot2=\\tfrac43$. Consumer price rises to $p_c=11/3$ (up by $2/3$, i.e. $1/3$ of the tax), seller price falls to $5/3$ (down by $4/3$, i.e. $2/3$ of the tax) — incidence now split by relative elasticities, unlike the fixed-supply case."
+      },
+      {
+        "q": "Consider a per-unit tax on purchases in a monopoly market. What is tax overshifting, and what demand conditions produce it?",
+        "solution": "Overshifting means the price rises by *more* than the tax ($dp/dt>1$) — the monopolist doesn't just pass the tax through, it amplifies it. It happens when the demand curve is convex enough that marginal revenue falls faster than price as quantity drops — most cleanly, with isoelastic demand ($\\varepsilon>1$ constant), pass-through is $\\varepsilon/(\\varepsilon-1)>1$ always. With linear demand, by contrast, pass-through is exactly $1/2$ (undershifting) — so the demand curve's *curvature*, not just its elasticity level, is what drives over- vs under-shifting."
+      }
+    ]
+  },
+  {
+    "key": "efficiency-cost",
+    "icon": "🔻",
+    "title": "Efficiency Cost of Taxes",
+    "flashcards": [
+      {
+        "q": "Ordering of CV, Marshallian surplus, and EV for a price increase of a normal good (one price change).",
+        "a": "$EV < \\text{Marshallian Surplus} < CV$. Only under quasilinear utility do all three coincide exactly."
+      },
+      {
+        "q": "Why does the Marshallian measure overstate excess burden relative to Hicksian (CV/EV) measures?",
+        "a": "It bundles in the income effect. Buying less because you're poorer isn't itself an efficiency loss — no surplus is foregone from transactions that don't occur purely due to lost income."
+      },
+      {
+        "q": "Standard Harberger formula for EB (no pre-existing tax).",
+        "a": "$EB = -\\tfrac12 \\dfrac{dh}{d\\tau}(\\Delta\\tau)^2$ — a triangle in the Hicksian (compensated) demand, not the Marshallian one."
+      },
+      {
+        "q": "Why use compensated (Hicksian) elasticities, not Marshallian ones, to compute EB?",
+        "a": "EB should isolate the pure substitution effect — how relative-price changes distort behavior — not the income effect, which isn't a distortion."
+      },
+      {
+        "q": "How do you get from the unobservable Hicksian elasticity to something measurable?",
+        "a": "Slutsky equation: $\\dfrac{\\partial h}{\\partial p}=\\dfrac{\\partial x}{\\partial p}+\\dfrac{\\partial x}{\\partial m}x$, relating Hicksian and Marshallian demand derivatives via the observable income effect."
+      },
+      {
+        "q": "Marginal excess burden (MEB) and the pre-existing tax rate: relationship?",
+        "a": "MEB rises with the pre-existing tax rate — the 'Harberger trapezoid' gets taller as $\\tau$ grows, so each extra unit of tax is more distortionary than the last."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "A consumer derives utility from two goods $x,y$ ($y$ numeraire, $p_y=1$). With a price increase $\\Delta p_x$, if …… then the Marshallian Surplus …… the ……",
+        "options": [
+          "utility $=u(x)+y$ (quasilinear); exceeds; Compensating Variation",
+          "utility $=u(x,y)$ (general); equals; Equivalent Variation",
+          "utility $=\\min(x,y)$ (Leontief); exceeds; Equivalent Variation",
+          "None of the listed answers"
+        ],
+        "correct": 2,
+        "rationale": "Quasilinear utility kills income effects entirely, so Marshallian surplus *equals* CV and EV exactly — 'exceeds' is wrong for (a). General utility doesn't guarantee equality with EV either — only the ordering $EV<MS<CV$ holds, not equality — wrong for (b). Leontief (perfect complements) is a normal good with real income effects, so the general ordering applies: for a price increase, Marshallian Surplus exceeds EV — exactly what (c) states."
+      }
+    ],
+    "exercises": [
+      {
+        "q": "Assuming quasilinear utility and a per-unit tax on purchases in a competitive market: derive the excess burden and show the incidence split.",
+        "solution": "With quasilinear utility (no income effects), Marshallian demand = Hicksian demand, so the standard Harberger triangle applies directly: $EB\\approx\\tfrac12\\,\\Delta Q\\cdot t$, where $\\Delta Q = Q_0-Q_1$ is the quantity reduction from the tax. Incidence splits by relative elasticities: buyers absorb $\\dfrac{\\varepsilon_S}{\\varepsilon_S-\\varepsilon_D}$ of $t$ in price, sellers absorb $\\dfrac{-\\varepsilon_D}{\\varepsilon_S-\\varepsilon_D}$; the DWL splits in the same proportion between lost consumer and producer surplus. On the graph: the triangle sits between $Q_1$ and $Q_0$, bounded above by demand and below by supply."
+      }
+    ]
+  },
+  {
+    "key": "ramsey",
+    "icon": "📐",
+    "title": "Optimal Commodity Taxation (Ramsey)",
+    "flashcards": [
+      {
+        "q": "State the inverse elasticity rule.",
+        "a": "Optimal tax rate on a good is (roughly) inversely proportional to its compensated own-price elasticity of demand: tax inelastic goods more, elastic goods less, to minimize total deadweight loss for a given revenue target."
+      },
+      {
+        "q": "Why not just use lump-sum taxes for everything?",
+        "a": "Lump-sum taxes aren't distortionary but are usually infeasible/undesirable — they can't be conditioned on ability to pay without becoming an (distortionary) income tax, and pure lump sums are typically politically and informationally infeasible."
+      },
+      {
+        "q": "What is $k$ in the Ramsey inverse-elasticity rule as covered in this course?",
+        "a": "$k=(\\alpha-\\lambda)/\\alpha$ — where $\\lambda$ is the social marginal value of tax revenue and $\\alpha$ the marginal value of income to the household; NOT divided by 2."
+      },
+      {
+        "q": "Corlett–Hague / complementarity idea: how can commodity taxes help fix income-tax distortions?",
+        "a": "An income tax distorts the labor/leisure margin. Taxing goods that are complementary to leisure (relatively) more than goods complementary to labor helps claw back some of that distortion — a second-best argument for non-uniform commodity taxes even beyond pure elasticity considerations."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "According to Ramsey analysis of optimal commodity taxation:",
+        "options": [
+          "Commodities with low elasticity of demand have lower MEB per marginal $ of revenue, and should face higher marginal tax rates.",
+          "Commodities with low elasticity of supply have lower MEB per marginal $, and should face higher marginal tax rates.",
+          "Commodity taxation may help correct the distortion created by an income tax.",
+          "Both a. and b. are correct",
+          "Both a. and c. are correct",
+          "Both b. and c. are correct",
+          "a., b. and c. are all correct"
+        ],
+        "correct": 4,
+        "rationale": "(a) is the core inverse elasticity rule — true. (c) is the Corlett–Hague second-best argument — true. (b) is not the standard formulation: the basic Ramsey model here assumes supply is not the binding elasticity margin (producer prices normalized/fixed), so it's demand elasticity that does the work, not supply. Hence 'both a and c' is correct."
+      },
+      {
+        "q": "Assume the inverse elasticity rule applies, and the marginal value of $1 to the government is twice its marginal value to a household. Optimal tax on good 1 ($\\varepsilon=-0.2$) should be …… than on good 2 ($\\varepsilon=-2$)?",
+        "options": [
+          "Twice larger",
+          "10 times larger",
+          "10 times smaller",
+          "5 times smaller",
+          "Twice smaller"
+        ],
+        "correct": 1,
+        "rationale": "Ratio of elasticities: $0.2$ vs $2$ — a factor of $10$. The inverse elasticity rule makes the tax rate roughly proportional to $1/\\varepsilon$, so the good with elasticity $10\\times$ smaller in magnitude ($0.2$ vs $2$) should carry a tax rate $10\\times$ larger."
+      }
+    ],
+    "exercises": []
+  },
+  {
+    "key": "externalities",
+    "icon": "🏭",
+    "title": "Externalities",
+    "flashcards": [
+      {
+        "q": "With a negative production externality, is the market price too high or too low relative to the social optimum?",
+        "a": "Too low. The market sets $P=MPC$ (private cost) but the true social cost is $MSC>MPC$; equilibrium quantity is too high and the implicit price signal too low."
+      },
+      {
+        "q": "Optimal Pigouvian tax on a negative externality.",
+        "a": "Set $t=MD(Q^*)$, the marginal damage evaluated at the socially optimal quantity $Q^*$ where $MC+MD=MB$ (equivalently $MC_{private}+t=MB$)."
+      },
+      {
+        "q": "Weitzman (1974): when does uncertainty make taxes vs. quantity regulation NOT equivalent?",
+        "a": "When there's uncertainty about marginal abatement *costs* (with marginal benefits/damages known) — under certainty the two are equivalent, but under cost uncertainty they diverge, and the preferred instrument depends on the relative slopes of MB and MC."
+      },
+      {
+        "q": "Weitzman's rule of thumb for choosing price vs. quantity under cost uncertainty.",
+        "a": "If MB is relatively flat compared to MC (steep), prefer a quantity instrument. If MB is relatively steep compared to MC (flat), prefer a price instrument. (Errors are costlier on the steeper curve.)"
+      },
+      {
+        "q": "Coase theorem — core claim.",
+        "a": "With well-defined property rights, zero transaction costs, and no wealth effects, private bargaining reaches the efficient outcome regardless of who is assigned the initial right."
+      },
+      {
+        "q": "Tragedy of the commons — root cause.",
+        "a": "Open-access resources have no price for use, so each user ignores the negative externality imposed on others; private marginal benefit exceeds social marginal benefit, leading to overuse."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "When a negative externality is present in the market for a good:",
+        "options": [
+          "The market price is too low",
+          "The market price is too high",
+          "The market price is at the social optimum",
+          "None of the above"
+        ],
+        "correct": 0,
+        "rationale": "Equilibrium price reflects only private marginal cost, which is below true social marginal cost — so the price signal understates the good's real cost, and (uncorrected) quantity traded is inefficiently high."
+      },
+      {
+        "q": "In case of uncertainty about the marginal …… of reducing pollution with known …… , taxes and quantity policies are ……",
+        "options": [
+          "Benefits; costs; equivalent",
+          "Benefits; costs; not equivalent",
+          "Costs; benefits; equivalent",
+          "Costs; benefits; not equivalent",
+          "Both a. and d. are correct"
+        ],
+        "correct": 3,
+        "rationale": "Weitzman's classic result concerns uncertainty about marginal abatement COSTS with known marginal BENEFITS (damages) — that's precisely the case where price and quantity instruments diverge (are NOT equivalent), unlike under full certainty."
+      }
+    ],
+    "exercises": [
+      {
+        "q": "An industry's pollution cleanup has $MD=200-5Q$ (marginal damage averted) and $MC=20+Q$ (marginal abatement cost). (a) Unregulated cleanup level? (b) Socially optimal level? (c) What per-unit tax achieves it?",
+        "solution": "**(a)** Cleanup is costly and unrewarded absent regulation, so the industry does none: $Q=0$.\n**(b)** Set $MD=MC$: $200-5Q^*=20+Q^*\\Rightarrow 6Q^*=180\\Rightarrow Q^*=30$.\n**(c)** Tax the *pollution emitted* (equivalently, subsidize/price cleanup) at $P^*=MC(Q^*)=20+30=50$ per unit. Facing this price, the firm cleans up exactly up to the point where its marginal abatement cost equals the price — i.e. $Q^*=30$ — since abating is worthwhile whenever the tax saved exceeds the marginal cost of abatement."
+      },
+      {
+        "q": "Two types of community: high-benefit/high-cost of pollution control, and low-benefit/low-cost. The government must choose a uniform regulation (quantity) or a uniform fine (price) across both. When is regulation preferable to fines?",
+        "solution": "This is a Weitzman slope-comparison problem across heterogeneous agents rather than uncertainty over one agent, but the same logic applies: a uniform standard is preferable when marginal benefit (damage avoided) is steep relative to marginal cost — getting the quantity wrong is very costly in welfare terms, so it's better to fix the quantity and let the (uniform) fine/price be whatever clears it. If instead the asymmetry is reversed — communities with high MC of control also have low MB (so the 'costly to control' communities also don't need much control) — a uniform price (fine) does better, because it automatically lets each community choose its own efficient abatement level rather than forcing the same quantity on both. When MB is very steep, a uniform quantity standard is generally still safer regardless of the cost-side pairing, since the welfare loss from picking the wrong aggregate quantity dominates."
+      }
+    ]
+  },
+  {
+    "key": "public-goods",
+    "icon": "🏛️",
+    "title": "Public Goods",
+    "flashcards": [
+      {
+        "q": "Samuelson condition for efficient public good provision.",
+        "a": "$\\sum_h MRS^h_{G,x} = MRT_{G,x}$ — sum of individual marginal rates of substitution equals the marginal rate of transformation (unlike private goods, where MRS is equalized *across* individuals, not summed)."
+      },
+      {
+        "q": "Why does private (voluntary) provision of a public good typically undersupply it?",
+        "a": "Free-riding: each contributor only weighs their own MRS against the cost, ignoring the benefit their contribution confers on everyone else — so the Nash equilibrium sum of contributions falls short of the Samuelson-efficient level."
+      },
+      {
+        "q": "Lindahl equilibrium — core idea.",
+        "a": "Each individual faces a personalized 'Lindahl price' for the public good equal to their own MRS; if these personalized prices sum to the true marginal cost, the resulting allocation is Pareto efficient — a decentralized way to satisfy the Samuelson rule."
+      },
+      {
+        "q": "How does the Samuelson rule change when the public good is financed by a distortionary (not lump-sum) tax?",
+        "a": "It must be adjusted to account for the excess burden of the financing tax, and for how the increase in public-good provision affects consumption of the taxed private good."
+      }
+    ],
+    "mcq": [],
+    "exercises": [
+      {
+        "q": "Three consumers with $U_i=x_iG$ ($i=1,2,3$), $x_i$ = private good, $G$ = public good jointly consumed. $p_x=1$, $p_G=10$. Wealth sums to $W_1+W_2+W_3=100$. Efficient amount of $G$?",
+        "solution": "$MRS^i_{G,x}=\\dfrac{U_G^i}{U_x^i}=\\dfrac{x_i}{G}$. Samuelson rule: $\\sum_i MRS^i = MRT=10 \\Rightarrow \\dfrac{x_1+x_2+x_3}{G}=10 \\Rightarrow X=10G$ where $X=\\sum x_i$. Budget: $X+10G=100$. Substituting: $10G+10G=100 \\Rightarrow G^*=5$, and $X=50$."
+      }
+    ]
+  },
+  {
+    "key": "social-insurance",
+    "icon": "🛡️",
+    "title": "Social Insurance & Adverse Selection",
+    "flashcards": [
+      {
+        "q": "Rothschild–Stiglitz separating equilibrium: how do low-risk types get partial insurance?",
+        "a": "High-risk types would mimic low-risk contracts if those offered full insurance at the low-risk price, so insurers must offer low-risk types *less than full* coverage — just enough that high-risk types prefer their own (full-coverage, higher-premium) contract. The incentive-compatibility constraint binds."
+      },
+      {
+        "q": "Why can mandatory pooling be a Pareto improvement in the RS model?",
+        "a": "When the low-risk share $\\lambda$ of the population is large enough, the pooled (average-risk) price is close enough to the low-risk price that both types can be offered more coverage at an acceptable premium — everyone gains relative to the separating equilibrium's under-insurance of low-risk types."
+      },
+      {
+        "q": "What determines whether the separating equilibrium even exists in the RS model?",
+        "a": "The relative population share of high- vs low-risk types; if there are too many low-risk types, pooling contracts become attractive enough to high-risk types that no separating equilibrium survives — this is the classic RS non-existence problem."
+      },
+      {
+        "q": "Full-insurance benchmark: what does it assume away?",
+        "a": "Adverse selection and moral hazard — insurer knows the true risk type and payouts don't affect the insured's behavior, so the efficient contract fully equalizes consumption across states at the actuarially fair price."
+      }
+    ],
+    "mcq": [
+      {
+        "q": "The feasible contract wedge in the Rothschild–Stiglitz model is:",
+        "options": [
+          "Above the zero-profit line and above the full-insurance line",
+          "Below the zero-profit line and above the full-insurance line",
+          "Above the zero-profit line and below the full-insurance line",
+          "Below the zero-profit line and below the full-insurance line",
+          "None of the listed alternatives"
+        ],
+        "correct": 3,
+        "rationale": "Feasible (non-loss-making) contracts for the insurer must lie on or below the zero-profit line. The separating equilibrium's low-risk contract must additionally offer strictly less than full coverage to keep high-risk types from mimicking it — i.e. below the 45° full-insurance line. Both binding constraints put the relevant menu below zero-profit and below full insurance."
+      }
+    ],
+    "exercises": []
+  },
+  {
+    "key": "papers",
+    "icon": "📄",
+    "title": "Papers: Carbon Tax & Sugar Tax",
+    "flashcards": [
+      {
+        "q": "Goulder & Schein — why are exogenous emissions prices (carbon tax / hybrid with price ceiling) generally preferred to a pure endogenous cap-and-trade price?",
+        "a": "They give price stability (policymakers set it directly, rather than a fluctuating permit market), reduce the risk of costly policy errors under abatement-cost uncertainty, and avoid unintended wealth transfers to oil-exporting countries that can arise if fossil-fuel suppliers strategically restrict supply to push up permit prices."
+      },
+      {
+        "q": "Goulder & Schein — why are carbon taxes often perceived as more burdensome to firms than cap-and-trade, even when designed to be equivalent?",
+        "a": "A tax charges a fee on every unit of emissions with no flexibility, while cap-and-trade often hands out free allowances to affected industries and lets firms trade rather than simply pay — this cushions the financial hit and makes cap-and-trade feel more politically and economically palatable, even though a tax with targeted exemptions could in principle be designed to be just as accommodating."
+      },
+      {
+        "q": "Cawley & Frisvold — what is 'pass-through rate' in the Berkeley SSB tax study, and what did they find?",
+        "a": "The share of the per-ounce tax that shows up in higher retail prices. They found only ~43% average pass-through — well below 100% — meaning retailers absorbed a large share of the tax rather than passing it fully to consumers."
+      },
+      {
+        "q": "Cawley & Frisvold — how did proximity to untaxed jurisdictions affect pass-through?",
+        "a": "Stores closer to the untaxed San Francisco border passed through less of the tax (kept prices lower) to avoid losing customers to cross-border shopping; pass-through rose with distance from the border, especially for larger, less-portable package sizes."
+      },
+      {
+        "q": "Cawley & Frisvold — what does the Berkeley result imply about the effectiveness of city-level (vs. national) SSB taxes?",
+        "a": "Local taxes face two dampening forces — partial pass-through and cross-border shopping — that don't apply at the national level (as in Mexico/France, where pass-through was near 100%), suggesting city-level SSB taxes are a weaker public-health lever than broader-scale ones."
+      }
+    ],
+    "mcq": [],
+    "exercises": [
+      {
+        "q": "Carbon taxes are generally perceived to be more burdensome to firms than cap-and-trade programs. Discuss the statement.",
+        "solution": "The perception stems from *design differences*, not an inherent property of price vs. quantity instruments: a carbon tax charges every unit of emissions with no built-in relief, while cap-and-trade systems commonly grant free allowances to exposed industries and let firms recoup costs by trading, which softens the immediate financial impact and is more politically palatable. In principle, a carbon tax with targeted exemptions or revenue recycling could be designed to be just as accommodating — but such exemptions are rarely built into carbon tax proposals in practice, whereas free allocation is a standard feature of cap-and-trade. So the 'burden gap' is largely a policy-design artifact, not a fundamental economic difference between the two instruments."
+      }
+    ]
+  }
+];
+
+/* ══════════════ THEORY / TESTING MODE SWITCH ══════════════ */
+function switchMode(mode){
+  document.getElementById('mode-theory').classList.toggle('active', mode==='theory');
+  document.getElementById('mode-testing').classList.toggle('active', mode==='testing');
+  document.getElementById('mode-btn-theory').classList.toggle('active', mode==='theory');
+  document.getElementById('mode-btn-testing').classList.toggle('active', mode==='testing');
+  if(mode==='testing' && !testingInitialized){ initTesting(); testingInitialized = true; }
+}
+
+/* ══════════════ TESTING MODE ══════════════ */
+let testingInitialized = false;
+let currentTopicIdx = 0;
+let currentType = 'flashcards';
+let fcIdx = 0;
+let fcShowingAnswer = false;
+
+function initTesting(){
+  const nav = document.getElementById('test-nav');
+  nav.innerHTML = TESTING_DATA.map((t,i)=>
+    `<div class="test-nav-item${i===0?' active':''}" data-idx="${i}" onclick="setTestTopic(${i},this)">
+       <span class="test-nav-icon">${t.icon}</span>${t.title}
+     </div>`).join('');
+  renderTestTopic();
+}
+function setTestTopic(i, el){
+  currentTopicIdx = i; fcIdx = 0; fcShowingAnswer = false;
+  document.querySelectorAll('.test-nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderTestTopic();
+}
+function setTestType(type, el){
+  currentType = type; fcIdx = 0; fcShowingAnswer = false;
+  document.querySelectorAll('.test-tab').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderTestContent();
+}
+function renderTestTopic(){
+  const t = TESTING_DATA[currentTopicIdx];
+  document.getElementById('test-topic-title').textContent = t.icon+' '+t.title;
+  document.querySelectorAll('.test-tab').forEach(tab=>{
+    const type = tab.dataset.type;
+    const n = t[type] ? t[type].length : 0;
+    const label = {flashcards:'🗂️ Flashcards', mcq:'☑️ MCQ', exercises:'✍️ Exercises'}[type];
+    tab.innerHTML = `${label}<span class="cnt">(${n})</span>`;
+  });
+  renderTestContent();
+}
+function renderTestContent(){
+  const t = TESTING_DATA[currentTopicIdx];
+  const inner = document.getElementById('test-inner');
+  const items = t[currentType] || [];
+  if(items.length===0){
+    inner.innerHTML = `<div class="test-empty">No ${currentType} for this topic yet.</div>`;
+    return;
+  }
+  if(currentType==='flashcards') renderFlashcards(inner, items);
+  else if(currentType==='mcq') renderMCQ(inner, items);
+  else renderExercises(inner, items);
+  if(window.renderMathInElement) renderMathInElement(inner, KATEX_OPTS);
+}
+
+function renderFlashcards(inner, items){
+  const card = items[fcIdx];
+  inner.innerHTML = `
+    <div class="fc-wrap">
+      <div class="fc-progress">Card ${fcIdx+1} / ${items.length}</div>
+      <div class="fc-card${fcShowingAnswer?' answer':''}" onclick="flipCard()">
+        ${fcShowingAnswer ? card.a : card.q}
+      </div>
+      <div class="fc-hint">Click the card to ${fcShowingAnswer?'see the question':'reveal the answer'}</div>
+      <div class="fc-controls">
+        <button class="fc-btn" onclick="prevCard()">← Prev</button>
+        <button class="fc-btn primary" onclick="flipCard()">Flip</button>
+        <button class="fc-btn" onclick="nextCard()">Next →</button>
+      </div>
+    </div>`;
+}
+function flipCard(){ fcShowingAnswer = !fcShowingAnswer; renderTestContent(); }
+function nextCard(){
+  const n = TESTING_DATA[currentTopicIdx].flashcards.length;
+  fcIdx = (fcIdx+1) % n; fcShowingAnswer = false; renderTestContent();
+}
+function prevCard(){
+  const n = TESTING_DATA[currentTopicIdx].flashcards.length;
+  fcIdx = (fcIdx-1+n) % n; fcShowingAnswer = false; renderTestContent();
+}
+
+function renderMCQ(inner, items){
+  inner.innerHTML = items.map((m,qi)=>`
+    <div class="mcq-block">
+      <div class="mcq-q">${qi+1}. ${m.q}</div>
+      ${m.options.map((opt,oi)=>
+        `<button class="mcq-opt" id="mcq-${qi}-${oi}" onclick="answerMCQ(${qi},${oi},${m.correct})">${String.fromCharCode(97+oi)}. ${opt}</button>`
+      ).join('')}
+      <div class="mcq-rationale" id="mcq-rat-${qi}">${m.rationale}</div>
+    </div>`).join('');
+}
+function answerMCQ(qi, chosen, correct){
+  const items = TESTING_DATA[currentTopicIdx].mcq;
+  items[qi].options.forEach((_,oi)=>{
+    const el = document.getElementById(`mcq-${qi}-${oi}`);
+    el.disabled = true;
+    if(oi===correct) el.classList.add('correct');
+    else if(oi===chosen) el.classList.add('wrong');
+  });
+  document.getElementById(`mcq-rat-${qi}`).classList.add('shown');
+}
+
+function renderExercises(inner, items){
+  inner.innerHTML = items.map((e,ei)=>`
+    <div class="ex-block">
+      <div class="ex-q">${ei+1}. ${e.q}</div>
+      <button class="ex-toggle" onclick="toggleSolution(${ei})">Show solution</button>
+      <div class="ex-sol" id="ex-sol-${ei}">${e.solution.replace(/\n\n/g,'<br><br>')}</div>
+    </div>`).join('');
+}
+function toggleSolution(ei){
+  const el = document.getElementById(`ex-sol-${ei}`);
+  el.classList.toggle('shown');
+  if(el.classList.contains('shown') && window.renderMathInElement) renderMathInElement(el, KATEX_OPTS);
+}
 </script>
 </body>
 </html>
