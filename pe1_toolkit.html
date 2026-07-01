@@ -75,10 +75,10 @@
   .stub-panel p { font-size:13px; line-height:1.6; }
 
   /* ── Tax incidence module ── */
-  .ti-layout { display:flex; gap:20px; max-width:1120px; align-items:flex-start; flex-wrap:wrap; }
-  .ti-canvas-wrap { flex:1 1 600px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px; min-width:300px; }
+  .ti-layout { display:flex; gap:18px; max-width:1120px; align-items:flex-start; flex-wrap:wrap-reverse; }
+  .ti-canvas-wrap { flex:2 1 400px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px; min-width:280px; }
   canvas { display:block; margin:0 auto; }
-  .ti-panel { flex:1 1 280px; display:flex; flex-direction:column; gap:14px; min-width:264px; }
+  .ti-panel { flex:1 1 320px; display:flex; flex-direction:column; gap:14px; min-width:280px; max-width:400px; }
   .card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:15px 16px; }
   .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
 
@@ -120,9 +120,9 @@
           border:1.5px solid var(--border2); background:var(--surface); color:var(--text); transition:all .15s; }
   .gtab:hover { border-color:var(--accent); }
   .gtab.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:bold; }
-  .module-layout { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap-reverse; }
-  .formulas-col { flex:1 1 400px; max-width:460px; max-height:78vh; overflow-y:auto; padding-right:4px; }
-  .iframe-col { flex:2 1 520px; min-width:320px; }
+  .module-layout { display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap-reverse; }
+  .formulas-col { flex:1 1 320px; max-width:400px; max-height:78vh; overflow-y:auto; padding-right:4px; }
+  .iframe-col { flex:2 1 400px; min-width:280px; }
   .module-iframe { width:100%; height:78vh; min-height:560px; border:1px solid var(--border); border-radius:8px;
                     background:var(--surface); display:block; }
   .module-note { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:12px; line-height:1.5; }
@@ -347,8 +347,6 @@
       <!-- ═══════════ TAX INCIDENCE PANEL ═══════════ -->
       <div class="panel active" id="panel-tax-incidence">
         <div class="ti-layout">
-          <div class="ti-canvas-wrap"><canvas id="cv"></canvas></div>
-
           <div class="ti-panel">
             <div class="card">
               <div class="card-title">Market structure</div>
@@ -411,6 +409,8 @@
               <div class="legend" id="legend-box"></div>
             </div>
           </div>
+
+          <div class="ti-canvas-wrap"><canvas id="cv"></canvas></div>
         </div>
       </div>
 
@@ -2583,9 +2583,12 @@ function generateMockExam(){
   const allExercises = [];
   let paperExercises = [];
   TESTING_DATA.forEach(t=>{
+    if(t.key==='papers') return; // paper MCQs/exercises belong only in Section C, never in Section A/B
     (t.mcq||[]).forEach(m=>allMCQ.push({...m, topic:t.title}));
-    if(t.key==='papers'){ (t.exercises||[]).forEach(e=>paperExercises.push({...e, topic:t.title})); }
-    else { (t.exercises||[]).forEach(e=>allExercises.push({...e, topic:t.title})); }
+    (t.exercises||[]).forEach(e=>allExercises.push({...e, topic:t.title}));
+  });
+  TESTING_DATA.filter(t=>t.key==='papers').forEach(t=>{
+    (t.exercises||[]).forEach(e=>paperExercises.push({...e, topic:t.title}));
   });
   currentExam = {
     mcq: shuffle(allMCQ).slice(0,4),
