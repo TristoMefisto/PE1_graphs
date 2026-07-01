@@ -104,7 +104,48 @@
   .legend .sw.dash { height:0; border-top:2px dashed var(--muted); }
   .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
-  /* ── Formula boxes (contextual, per-module) ── */
+  /* ── Generic module layout: formulas (left) + graph iframe (right) ── */
+  .graph-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  .gtab { font-family:'Georgia',serif; font-size:12.5px; padding:8px 14px; border-radius:20px; cursor:pointer;
+          border:1.5px solid var(--border2); background:var(--surface); color:var(--text); transition:all .15s; }
+  .gtab:hover { border-color:var(--accent); }
+  .gtab.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:bold; }
+  .module-layout { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap-reverse; }
+  .formulas-col { flex:1 1 400px; max-width:460px; max-height:78vh; overflow-y:auto; padding-right:4px; }
+  .iframe-col { flex:2 1 520px; min-width:320px; }
+  .module-iframe { width:100%; height:78vh; min-height:560px; border:1px solid var(--border); border-radius:8px;
+                    background:var(--surface); display:block; }
+  .module-note { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:12px; line-height:1.5; }
+
+  /* ── Ported cheat-sheet card styling, reusable anywhere via .cheatsheet-scope ── */
+  .cheatsheet-scope { --cs-black:#1A1A1E; --cs-orange:#E07B00; --cs-red:#C62828; --cs-blue:#1565C0; --cs-green:#2E7D32; --cs-purple:#6A1B9A; --cs-teal:#00838F; }
+  @media (prefers-color-scheme: dark) {
+    .cheatsheet-scope { --cs-black:#ECECEC; --cs-orange:#FFB74D; --cs-red:#EF6C6C; --cs-blue:#5B9BE8; --cs-green:#66BB6A; --cs-purple:#BA68C8; --cs-teal:#4DD0E1; }
+  }
+  .cheatsheet-scope .board { column-count:1; }
+  .cheatsheet-scope .card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.06); padding:16px 18px 18px; margin-bottom:16px; break-inside:avoid;
+    border-left:5px solid var(--c-accent); }
+  .cheatsheet-scope .card h2 { display:flex; align-items:center; gap:9px; font-size:15px; letter-spacing:.03em;
+    text-transform:uppercase; color:var(--c-accent); margin-bottom:11px; padding-bottom:7px; border-bottom:1px solid var(--border); font-weight:normal; }
+  .cheatsheet-scope .card h2 svg { width:19px; height:19px; flex-shrink:0; }
+  .cheatsheet-scope .block { margin-bottom:11px; }
+  .cheatsheet-scope .block:last-child { margin-bottom:0; }
+  .cheatsheet-scope .lbl { font-weight:bold; font-size:12.5px; margin-bottom:4px; }
+  .cheatsheet-scope .sub-lbl { font-size:11px; color:var(--muted); font-style:italic; margin-bottom:3px; }
+  .cheatsheet-scope .note { font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5; }
+  .cheatsheet-scope .twocol { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .cheatsheet-scope .twocol .half { font-size:12.5px; }
+  .cheatsheet-scope .twocol .half .h { font-weight:bold; font-size:11.5px; margin-bottom:4px; color:var(--c-accent); }
+  .cheatsheet-scope hr.div { border:none; border-top:1px dashed var(--border); margin:10px 0; }
+  .cheatsheet-scope .eq-block { background:color-mix(in srgb, var(--c-accent) 8%, transparent); border-radius:5px; padding:8px 11px; margin:7px 0; }
+  .cheatsheet-scope .eq-stack .eq-block { margin:9px 0; }
+  .cheatsheet-scope .katex { font-size:0.98em; }
+  .cheatsheet-scope .katex-display { overflow-x:auto; overflow-y:hidden; max-width:100%; padding:3px 0; margin:0.5em 0; }
+  .cheatsheet-scope .katex-display > .katex { white-space:nowrap; }
+  .cheatsheet-scope .card, .cheatsheet-scope .twocol .half { min-width:0; overflow-wrap:break-word; }
+  .cheatsheet-scope .ring-red { border:2px solid #D32F2F; border-radius:50%; padding:1px 7px; display:inline-block; }
+  .cheatsheet-scope .ring-green { border:2px solid #2E7D32; border-radius:50%; padding:1px 7px; display:inline-block; }
   .formula-box { font-size:12.5px; line-height:1.5; }
   .formula-box .katex { font-size:0.98em; }
   .formula-box .katex-display { overflow-x:auto; overflow-y:hidden; margin:6px 0; padding:2px 0; }
@@ -157,42 +198,42 @@
       <div class="nav-item active" data-panel="tax-incidence" onclick="switchPanel('tax-incidence',this)">
         <span class="nav-icon">📊</span>Tax incidence &amp; pass-through
       </div>
-      <div class="nav-item stub" data-panel="efficiency-cost" onclick="switchPanel('efficiency-cost',this)">
+      <div class="nav-item" data-panel="efficiency-cost" onclick="switchPanel('efficiency-cost',this)">
         <span class="nav-icon">📐</span>Efficiency cost of taxes
       </div>
 
       <div class="nav-label">Externalities</div>
-      <div class="nav-item stub" data-panel="externality-policy" onclick="switchPanel('externality-policy',this)">
+      <div class="nav-item" data-panel="externality-policy" onclick="switchPanel('externality-policy',this)">
         <span class="nav-icon">🏭</span>Policy comparison
       </div>
-      <div class="nav-item stub" data-panel="abatement-efficiency" onclick="switchPanel('abatement-efficiency',this)">
+      <div class="nav-item" data-panel="abatement-efficiency" onclick="switchPanel('abatement-efficiency',this)">
         <span class="nav-icon">🌿</span>Abatement efficiency
       </div>
-      <div class="nav-item stub" data-panel="private-remedies" onclick="switchPanel('private-remedies',this)">
+      <div class="nav-item" data-panel="private-remedies" onclick="switchPanel('private-remedies',this)">
         <span class="nav-icon">🤝</span>Private remedies
       </div>
-      <div class="nav-item stub" data-panel="uncertainty" onclick="switchPanel('uncertainty',this)">
+      <div class="nav-item" data-panel="uncertainty" onclick="switchPanel('uncertainty',this)">
         <span class="nav-icon">🎲</span>Taxes vs. standards (uncertainty)
       </div>
-      <div class="nav-item stub" data-panel="cap-trade" onclick="switchPanel('cap-trade',this)">
+      <div class="nav-item" data-panel="cap-trade" onclick="switchPanel('cap-trade',this)">
         <span class="nav-icon">🔁</span>Cap and trade
       </div>
 
       <div class="nav-label">Public Goods</div>
-      <div class="nav-item stub" data-panel="public-goods" onclick="switchPanel('public-goods',this)">
+      <div class="nav-item" data-panel="public-goods" onclick="switchPanel('public-goods',this)">
         <span class="nav-icon">🏛️</span>Private provision &amp; Nash
       </div>
 
       <div class="nav-label">Insurance</div>
-      <div class="nav-item stub" data-panel="social-insurance" onclick="switchPanel('social-insurance',this)">
+      <div class="nav-item" data-panel="social-insurance" onclick="switchPanel('social-insurance',this)">
         <span class="nav-icon">🛡️</span>Social insurance &amp; RS
       </div>
-      <div class="nav-item stub" data-panel="moral-hazard" onclick="switchPanel('moral-hazard',this)">
+      <div class="nav-item" data-panel="moral-hazard" onclick="switchPanel('moral-hazard',this)">
         <span class="nav-icon">🏥</span>Moral hazard
       </div>
 
       <div class="nav-label">General Equilibrium</div>
-      <div class="nav-item stub" data-panel="edgeworth" onclick="switchPanel('edgeworth',this)">
+      <div class="nav-item" data-panel="edgeworth" onclick="switchPanel('edgeworth',this)">
         <span class="nav-icon">📦</span>Edgeworth box &amp; tâtonnement
       </div>
 
@@ -754,6 +795,528 @@
 
       </div>
 
+      <!-- ═══════════ EFFICIENCY COST OF TAXES PANEL ═══════════ -->
+      <div class="panel" id="panel-efficiency-cost">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-efficiency-cost','https://tristomefisto.github.io/PE1_graphs/excise_vs_lumpsum.html',this)">Excise vs. Lump-sum</button>
+            <button class="gtab" onclick="setGraphTab('iframe-efficiency-cost','https://tristomefisto.github.io/PE1_graphs/excess_burden_partial_eq.html',this)">Partial-Eq Excess Burden</button>
+            <button class="gtab" onclick="setGraphTab('iframe-efficiency-cost','https://tristomefisto.github.io/PE1_graphs/cv_ev_consumer_choice.html',this)">CV/EV: Consumer Choice</button>
+            <button class="gtab" onclick="setGraphTab('iframe-efficiency-cost','https://tristomefisto.github.io/PE1_graphs/cv_ev_welfare.html',this)">CV/EV: Welfare</button>
+            <button class="gtab" onclick="setGraphTab('iframe-efficiency-cost','https://tristomefisto.github.io/PE1_graphs/cv_ev_excess_burden.html',this)">CV/EV: Excess Burden</button>
+        </div>
+<div class="module-note">Same underlying quasilinear model throughout — a lump-sum tax has only an income effect (no EB); an excise tax adds a substitution effect, which is the source of the excess burden triangle.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 8. Harberger Triangle -->
+  <div class="card" style="--c-accent:var(--cs-red)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L20 20 L4 4 Z"/></svg> Excess Burden — Harberger Triangle</h2>
+    <div class="sub-lbl">Partial equilibrium, quasilinear utility</div>
+    <div class="eq-block">
+      $$EB = -\frac{1}{2}\frac{dQ}{dt}\,t^2, \qquad dQ = D'(q)\,dq$$
+    </div>
+    <div class="note">Derivation:</div>
+    $$EB = -\frac12\,dQ\,dt = -\frac12 D'(q)\,dq\,dt$$
+    $$= -\frac12 D'(q)\,\frac{\varepsilon_S}{\varepsilon_S-\varepsilon_D}\,dt^2 = -\frac12\,\frac{D}{P}\,\frac{\varepsilon_S\varepsilon_D}{\varepsilon_S-\varepsilon_D}\,dt^2$$
+    <hr class="div">
+    <div class="note">using:</div>
+    $$dq = \frac{\varepsilon_S}{\varepsilon_S-\varepsilon_D}\,dt$$
+    $$\varepsilon_D = D'\frac{q}{D} \;\Rightarrow\; D' = \varepsilon_D\frac{D}{P} \;\;(q\approx P)$$
+  </div>
+
+  <!-- 9. Excess Burden in General + MEB -->
+  <div class="card" style="--c-accent:var(--cs-red)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12 C 4 6, 9 4, 12 4 C 15 4, 20 6, 20 12 C 20 18, 15 20, 12 20 C 9 20, 4 18, 4 12 Z"/><path d="M12 4 L12 20"/></svg> Excess Burden — General Case &amp; MEB</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Compensating / Equivalent Variation</div>
+      $$CV = e(P^1,U^0) - e(P^0,U^0) = e(P^1,U^0) - m$$
+      $$EV = e(P^1,U^1) - e(P^0,U^1) = m - e(P^0,U^1)$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Shephard's lemma → bounds on Marshallian CS</div>
+      $$h(P,U) = \frac{\partial e(P,U)}{\partial P}$$
+      $$CV = \int_{P^0}^{P^1}\! h(P,U^0)\,dP, \qquad EV = \int_{P^0}^{P^1}\! h(P,U^1)\,dP$$
+      <div class="eq-block">$$EV \;<\; \text{Marshallian } CS \;<\; CV$$</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Excess burden = total welfare loss − tax revenue</div>
+      $$EB(U^0) = CV - (P^1-P^0)\,h(P^1,U^0)$$
+      $$EB(U^1) = EV - (P^1-P^0)\,h(P^1,U^1)$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Marginal Excess Burden (MEB)</div>
+      $$EB(t) = e(P,U) - e(P+t,U) - t\,h(P+t,U)$$
+      <div class="note">Not usable empirically (requires the expenditure function e) — approximate instead:</div>
+      $$MEB \approx EB(t+\delta t) - EB(t) \approx -t\,\delta t\,\frac{dh}{dt} - \frac12\,\frac{dh}{dt}(\delta t)^2$$
+      <div class="note">Collapses to the Harberger triangle when there's no pre-existing tax.</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Still needs h — exploit the Slutsky equation</div>
+      $$\frac{\partial h(P,U)}{\partial P} = \frac{\partial x(P,m)}{\partial P} + \frac{\partial x(P,m)}{\partial m}\,x(P,m)$$
+    </div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-efficiency-cost" src="https://tristomefisto.github.io/PE1_graphs/excise_vs_lumpsum.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ EXTERNALITY POLICY COMPARISON PANEL ═══════════ -->
+      <div class="panel" id="panel-externality-policy">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/negative_production_externality.html',this)">No Policy</button>
+            <button class="gtab" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/pigouvian_tax.html',this)">Pigouvian Tax</button>
+            <button class="gtab" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/standard_regulation.html',this)">Standard</button>
+        </div>
+<div class="module-note">Same PMC/SMC/PMB diagram under three regimes. Both the tax (t=d) and the standard (Q*) can implement the social optimum — the difference only shows up once costs are uncertain (see Taxes vs. Standards module).</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 11. Externalities -->
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 C 7 3, 4 7, 4 12 C 4 17, 8 21, 13 20 C 11 18, 12 15, 15 15 C 19 15, 20 11, 18 8" stroke-linecap="round"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg> Negative Production Externality Model</h2>
+    <div class="block">
+      $$U(x,y) = U(x) + y - d\,P(x)$$
+      <div class="note">P(x): pollution &nbsp;·&nbsp; d: marginal damage. Consumers maximize U taking pollution as fixed.</div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Privately efficient equilibrium</div>
+    $$\max\, U(x)+y = U(x)+m-Px, \qquad \max\, \pi = Px - C(x)$$
+    <div class="eq-block">
+      $$\underbrace{U'(x^m) = C'(x^m)}_{PMB\,=\,PMC}$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Social welfare &amp; socially efficient equilibrium</div>
+    $$W = \underbrace{U(x)+y}_{\text{consumers}} + \underbrace{(Px-C(x))}_{\text{firms}} - \underbrace{dx}_{\text{pollution}}$$
+    $$= U(x)+m-C(x)-dx$$
+    <div class="eq-block">
+      $$\underbrace{U'(x^o) = C'(x^o) + d}_{SMB\,=\,PMC\,+\,MD}$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Pigouvian tax</div>
+      $$t = d = MD(x^o) \quad\text{such that}\quad PMC \Rightarrow PMC + t$$
+      <div class="note">Setting the tax equal to marginal damage at the optimum makes private and social incentives coincide.</div>
+    </div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-externality-policy" src="https://tristomefisto.github.io/PE1_graphs/negative_production_externality.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ABATEMENT EFFICIENCY FRAMEWORK PANEL ═══════════ -->
+      <div class="panel" id="panel-abatement-efficiency">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-abatement-efficiency','https://tristomefisto.github.io/PE1_graphs/abatement_full_information.html',this)">Full Information</button>
+            <button class="gtab" onclick="setGraphTab('iframe-abatement-efficiency','https://tristomefisto.github.io/PE1_graphs/static_efficiency.html',this)">Static Efficiency</button>
+            <button class="gtab" onclick="setGraphTab('iframe-abatement-efficiency','https://tristomefisto.github.io/PE1_graphs/dynamic_efficiency.html',this)">Dynamic Efficiency</button>
+        </div>
+<div class="module-note">Recasts policy on abatement Q directly (B'(Q)=C'(Q)) rather than the taxed activity. Static efficiency compares uniform standards vs. taxes across heterogeneous firms; dynamic efficiency compares innovation incentives.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 12. General Abatement Framework -->
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L4 4 M4 20 L20 20" stroke-linecap="round"/><path d="M4 16 Q10 14 14 8 Q17 4 20 4" stroke-linecap="round"/></svg> General Abatement Framework</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Optimum defined as</div>
+      $$\max_{Q}\, B(Q)-C(Q) \;\Rightarrow\; B'(Q^*)=C'(Q^*)$$
+    </div>
+    <div class="twocol" style="margin-top:9px">
+      <div class="half">
+        <div class="h">Unregulated</div>
+        $$Q = 0$$
+      </div>
+      <div class="half">
+        <div class="h">Standard</div>
+        <div class="note">Impose Q* directly</div>
+      </div>
+      <div class="half">
+        <div class="h">Tax</div>
+        $$P^* = C'(Q^*)$$
+      </div>
+    </div>
+    <div class="note" style="margin-top:9px"><b>Full information:</b> tax and standard are equivalent (both implement Q*).</div>
+    <hr class="div">
+    <div class="sub-lbl">Cost uncertainty (Weitzman: prices vs quantities)</div>
+    <div class="note">Regulator doesn't know the firm's true cost θ when setting the standard or the tax; compare expected net benefit under each instrument.</div>
+    $$\max_Q\, E_\theta\big[B(Q) - C(Q,\theta)\big]$$
+    <div class="eq-block">
+      $$E_\theta\big[B(Q^*) - C(Q^*,\theta)\big] \;\gtrless\; E_\theta\big[B(Q(p^*)) - C(Q(p^*),\theta)\big]$$
+    </div>
+    <div class="note">Left side: fixed quantity standard Q* (quantity is certain, cost isn't). Right side: price instrument p*, letting the firm choose Q(p*) in response to realized θ (cost is controlled, quantity floats). Which instrument wins depends on the relative curvature (slopes) of marginal benefit vs marginal cost — steeper MC favors quantity control, steeper MB favors price control.</div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-abatement-efficiency" src="https://tristomefisto.github.io/PE1_graphs/abatement_full_information.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ PRIVATE REMEDIES PANEL ═══════════ -->
+      <div class="panel" id="panel-private-remedies">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-private-remedies','https://tristomefisto.github.io/PE1_graphs/coasian_bargaining.html',this)">Coasian Bargaining</button>
+            <button class="gtab" onclick="setGraphTab('iframe-private-remedies','https://tristomefisto.github.io/PE1_graphs/tragedy_of_commons.html',this)">Tragedy of the Commons</button>
+        </div>
+<div class="module-note">Both are private (non-governmental) responses to an externality — bargaining under well-defined property rights, and the over-exploitation that results when property rights are absent altogether.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><path d="M10 12 L14 12"/></svg> Coasian Bargaining</h2>
+    <div class="note">No closed-form condition — the result is qualitative: with well-defined property rights and costless bargaining, negotiation drives excess demand for the externality to zero <i>at the socially efficient quantity</i>, regardless of which party holds the rights. The allocation of rights only determines the <b>direction</b> of compensating payments, not the efficient outcome itself.</div>
+  </div>
+
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4 L12 12 L17 15"/></svg> Tragedy of the Commons</h2>
+    <div class="sub-lbl">B: boats &nbsp;·&nbsp; f(B): catch per boat, f'(B)&lt;0 (congestion) &nbsp;·&nbsp; c: boat rental &nbsp;·&nbsp; w: outside wage</div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Open access (free entry)</div>
+      $$f(B^*) = c + w$$
+      <div class="note">Boats enter until average revenue equals cost — the private entry margin.</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Social optimum</div>
+      $$\max_B\, B\big[f(B)-c-w\big] \;\Rightarrow\; f(B^O) + B^O f'(B^O) = c+w$$
+      <div class="note">The marginal boat's revenue $f(B)+Bf'(B)$ lies below the average $f(B)$, so $B^O < B^*$: open access over-enters.</div>
+    </div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-private-remedies" src="https://tristomefisto.github.io/PE1_graphs/coasian_bargaining.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ TAXES VS. STANDARDS UNDER UNCERTAINTY PANEL ═══════════ -->
+      <div class="panel" id="panel-uncertainty">
+
+
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 12. General Abatement Framework -->
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L4 4 M4 20 L20 20" stroke-linecap="round"/><path d="M4 16 Q10 14 14 8 Q17 4 20 4" stroke-linecap="round"/></svg> General Abatement Framework</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Optimum defined as</div>
+      $$\max_{Q}\, B(Q)-C(Q) \;\Rightarrow\; B'(Q^*)=C'(Q^*)$$
+    </div>
+    <div class="twocol" style="margin-top:9px">
+      <div class="half">
+        <div class="h">Unregulated</div>
+        $$Q = 0$$
+      </div>
+      <div class="half">
+        <div class="h">Standard</div>
+        <div class="note">Impose Q* directly</div>
+      </div>
+      <div class="half">
+        <div class="h">Tax</div>
+        $$P^* = C'(Q^*)$$
+      </div>
+    </div>
+    <div class="note" style="margin-top:9px"><b>Full information:</b> tax and standard are equivalent (both implement Q*).</div>
+    <hr class="div">
+    <div class="sub-lbl">Cost uncertainty (Weitzman: prices vs quantities)</div>
+    <div class="note">Regulator doesn't know the firm's true cost θ when setting the standard or the tax; compare expected net benefit under each instrument.</div>
+    $$\max_Q\, E_\theta\big[B(Q) - C(Q,\theta)\big]$$
+    <div class="eq-block">
+      $$E_\theta\big[B(Q^*) - C(Q^*,\theta)\big] \;\gtrless\; E_\theta\big[B(Q(p^*)) - C(Q(p^*),\theta)\big]$$
+    </div>
+    <div class="note">Left side: fixed quantity standard Q* (quantity is certain, cost isn't). Right side: price instrument p*, letting the firm choose Q(p*) in response to realized θ (cost is controlled, quantity floats). Which instrument wins depends on the relative curvature (slopes) of marginal benefit vs marginal cost — steeper MC favors quantity control, steeper MB favors price control.</div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-uncertainty" src="https://tristomefisto.github.io/PE1_graphs/taxes_vs_standards_uncertainty.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ CAP AND TRADE PANEL ═══════════ -->
+      <div class="panel" id="panel-cap-trade">
+
+
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <div class="card" style="--c-accent:var(--cs-red)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8 L20 8 M4 16 L20 16" stroke-linecap="round"/><path d="M17 5 L20 8 L17 11 M7 13 L4 16 L7 19" stroke-linecap="round"/></svg> Cap and Trade</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Permit market clearing</div>
+      $$WTP = WTA = p^*$$
+      <div class="note">Firms trade until willingness to pay (high-MAC firms buying) equals willingness to accept (low-MAC firms selling).</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Equimarginal principle</div>
+      $$MAC_{\text{dirty}}(x_D^*) = MAC_{\text{clean}}(x_C^*) = p^*$$
+      <div class="note">The fixed cap Q̄ is met at least total cost — each firm faces p* as the opportunity cost of polluting, regardless of the initial permit allocation (Coasian result, organized by the regulator).</div>
+    </div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-cap-trade" src="https://tristomefisto.github.io/PE1_graphs/cap_and_trade.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ PRIVATE PROVISION OF PUBLIC GOODS PANEL ═══════════ -->
+      <div class="panel" id="panel-public-goods">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-public-goods','https://tristomefisto.github.io/PE1_graphs/best_response_derivation.html',this)">Best-Response Derivation</button>
+            <button class="gtab" onclick="setGraphTab('iframe-public-goods','https://tristomefisto.github.io/PE1_graphs/nash_reaction_functions.html',this)">Reaction Functions & Nash</button>
+            <button class="gtab" onclick="setGraphTab('iframe-public-goods','https://tristomefisto.github.io/PE1_graphs/pareto_lens.html',this)">Pareto Lens</button>
+            <button class="gtab" onclick="setGraphTab('iframe-public-goods','https://tristomefisto.github.io/PE1_graphs/planner_optimal_provision.html',this)">Planner's Optimum</button>
+        </div>
+<div class="module-note">A single narrative: individual best responses → Nash equilibrium → why it under-provides relative to the Pareto-efficient (Samuelson) quantity → how a planner would reach that quantity instead.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 13. Public Goods - Private Provision -->
+  <div class="card" style="--c-accent:var(--cs-purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M12 4 L12 11 M8 8 L16 8"/><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/></svg> Public Goods — Private Provision</h2>
+    <div class="block">
+      $$\text{Rival: } X=\sum_H x^H \qquad \text{Non-rival: } G^H = G$$
+      $$M^H = x^H + g^H \qquad MRT_{G,X}=1,\ \ G=g^1+g^2$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Utility problem</div>
+      $$\max\, U^H = U^H(x^H,G) \quad\text{with } U_x^H,U_G^H>0,\ \ U_{xx}^H,U_{GG}^H<0$$
+    </div>
+    <hr class="div">
+    <div class="note">Problem involves strategic interaction (each household's contribution is a best response to the other's):</div>
+    $$g^1=f^1(g^2),\ \ g^2=f^2(g^1) \;\Rightarrow\; g^{1*}=f^1(g^{2*}),\ \ g^{2*}=f^2(g^{1*})$$
+    <div class="note">Obtaining the slope of the IC in (g¹,g²) space — individual 1:</div>
+    $$U^1=U^1(M^1-g^1,\ g^1+g^2)$$
+    $$dU^1 = -U_x^1\,dg^1 + U_G^1\,dg^1 + U_G^1\,dg^2$$
+    <div class="eq-block">
+      $$\left.\frac{dg^2}{dg^1}\right|_{\bar U^1} = \frac{U_x^1-U_G^1}{U_G^1}$$
+    </div>
+    <div class="note">Private optimum (fixed IC, individual best-responds): setting dg²/dg¹=0 ⟹ $U_G^1=U_x^1$ (same for individual 2 by symmetry).</div>
+    <div class="eq-block">
+      $$U_x^1=U_G^1 \;\Rightarrow\; MRS^1_{G,X} = \frac{U_G^1}{U_x^1} = 1 = MRT_{G,X}$$
+    </div>
+    <div class="note">Each individual only equates their <i>own</i> MRS to MRT — ignoring the benefit their contribution gives the other. This is the source of free-riding / underprovision.</div>
+  </div>
+
+  <!-- 14. Samuelson Rule -->
+  <div class="card" style="--c-accent:var(--cs-purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12 A8 8 0 0 1 20 12" stroke-linecap="round"/><path d="M4 12 A8 8 0 0 0 20 12" stroke-linecap="round" stroke-dasharray="2 2"/></svg> Samuelson Rule</h2>
+    <div class="note">Pareto efficiency requires tangency between the ICs of both individuals:</div>
+    $$\left.\frac{dg^2}{dg^1}\right|_{\bar U^1} = \left.\frac{dg^2}{dg^1}\right|_{\bar U^2}$$
+    $$\frac{U_x^1-U_G^1}{U_G^1} = \frac{U_G^2}{U_x^2-U_G^2}$$
+    <div class="eq-block">
+      $$\text{leading to:} \quad MRS^1_{G,X} + MRS^2_{G,X} = 1 = MRT_{G,X}$$
+    </div>
+    <div class="note">The efficient condition sums <i>both</i> individuals' MRS against the MRT — unlike the private-provision result above, which only equates each individual's own MRS. This gap is exactly why private provision under-supplies the public good.</div>
+  </div>
+
+  <!-- 15. Lindahl Prices -->
+  <div class="card" style="--c-accent:var(--cs-purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 20 L6 10 L12 4 L18 10 L18 20 Z"/><path d="M6 20 L18 20"/></svg> Lindahl Prices</h2>
+    <div class="sub-lbl">Individualized tax shares (not rates): $\zeta^1,\ \zeta^2,\ \ \zeta^1+\zeta^2=1$</div>
+    <div class="note">Process:</div>
+    <div class="note">1. Tax shares are announced.<br>2. Individuals optimize and reveal quantities $g^1$ and $g^2$:</div>
+    $$\max\, U^H(x^H,G^H) \;\text{ s.t. } M^H = x^H + \zeta^H G^H$$
+    $$\text{FOC: } U_x^H = \lambda, \qquad U_G^H = \lambda\zeta^H$$
+    <div class="note">3. Adjust $\zeta^i$ until $G^1=G^2=G^*$ and $(\zeta^{1*}+\zeta^{2*})G^*=G^*$.</div>
+    <hr class="div">
+    <div class="sub-lbl">Lindahl equilibrium</div>
+    <div class="eq-block">
+      $$\zeta^{A*}+\zeta^{B*} = MC(G^*)$$
+      $$MRS^A_{G,X} + MRS^B_{G,X} = MRT_{G,X}$$
+    </div>
+    <div class="note">Each individual faces a personalized price ζ<sup>H</sup> for the public good equal to their own marginal benefit — the sum of these personalized prices covers marginal cost, replicating the Samuelson condition without needing a government to know individual preferences (in theory).</div>
+  </div>
+
+  <!-- 16. Tax-Funded Public Provision -->
+  <div class="card" style="--c-accent:var(--cs-purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M7 10 L7 6 L17 6 L17 10"/><path d="M12 14 L12 17"/></svg> Tax-Funded Public Provision — Modified Samuelson Rule</h2>
+    <div class="sub-lbl">X: private good &nbsp;·&nbsp; G: public good &nbsp;·&nbsp; L: labor, −L: leisure &nbsp;·&nbsp; H identical individuals</div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Production function</div>
+      $$F(X,G,L) = pHX + P_G G - HL = 0$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Individuals maximize</div>
+      $$V(X,G,L) \;\text{ s.t. } (p+t)X = L-\bar T$$
+      $$\text{FOC: } U_X = \lambda(p+t), \qquad -U_L=\lambda$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Government maximizes W = HU under the production constraint</div>
+      $$\mathcal{L} = HU(X,L,G) - \lambda\big(pHX+P_G G-HL\big)$$
+      <div class="note">FOC w.r.t. G:</div>
+      $$\frac{d\mathcal{L}}{dG} = HU_G - \lambda\left(pH\frac{dX}{dG}+P_G-H\frac{dL}{dG}\right) = 0$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">This leads to the Modified Samuelson Rule</div>
+    <div class="eq-block">
+      $$\sum MRS_{G,-L} = \frac{\lambda}{\alpha}\left(MRT - tH\frac{dX}{dG}\right) \;\gtrless\; MRT$$
+    </div>
+    <div class="note">$MRT$ = physical marginal rate of transformation. The bracket $\frac{\lambda}{\alpha}\big(MRT - tH\,dX/dG\big)$ is the <b>economic</b> correction term — it diverges from the physical MRT because raising G through taxation distorts the labor/consumption choice, so the shadow cost of public funds differs from the pure production trade-off.</div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-public-goods" src="https://tristomefisto.github.io/PE1_graphs/best_response_derivation.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ SOCIAL INSURANCE & ADVERSE SELECTION PANEL ═══════════ -->
+      <div class="panel" id="panel-social-insurance">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-social-insurance','https://tristomefisto.github.io/PE1_graphs/social_insurance_full_insurance.html',this)">Full Insurance Benchmark</button>
+            <button class="gtab" onclick="setGraphTab('iframe-social-insurance','https://tristomefisto.github.io/PE1_graphs/rothschild_stiglitz_symmetric.html',this)">RS Symmetric Info</button>
+            <button class="gtab" onclick="setGraphTab('iframe-social-insurance','https://tristomefisto.github.io/PE1_graphs/rothschild_stiglitz_pooling.html',this)">Pooling Equilibrium</button>
+            <button class="gtab" onclick="setGraphTab('iframe-social-insurance','https://tristomefisto.github.io/PE1_graphs/rothschild_stiglitz_separating.html',this)">Separating Equilibrium</button>
+            <button class="gtab" onclick="setGraphTab('iframe-social-insurance','https://tristomefisto.github.io/PE1_graphs/rothschild_stiglitz_govt_intervention.html',this)">Govt. Intervention</button>
+        </div>
+<div class="module-note">One continuous story in the (yₕ,yₛ) plane: first-best full insurance → symmetric-info benchmark → why pooling can't survive competition → the separating equilibrium's rationing of low risks → the Pareto improvement from mandatory pooling + supplementary insurance.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 17. Indemnity Insurance Model -->
+  <div class="card" style="--c-accent:var(--cs-teal)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 L19 6 L19 12 C19 17 16 20 12 21 C8 20 5 17 5 12 L5 6 Z"/><path d="M9 12 L11 14.5 L15.5 9.5"/></svg> Indemnity Insurance Model</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Zero-profit (fair) premium</div>
+      $$\underbrace{P(1-\pi)}_{\text{expected cost for insurer}} = \underbrace{(1-P)\pi}_{\text{expected revenue for insurer}} \;\Rightarrow\; \underbrace{\pi = PI}_{\text{fair premium}}$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      $$EU = (1-P)\,U(Y_H) + P\,U(Y_S)$$
+      <div class="note">Slope (MRS<sub>Y_S,Y_H</sub>) is obtained by setting dEU = 0:</div>
+      $$dEU = P\,U'(Y_S)\,dY_S + (1-P)\,U'(Y_H)\,dY_H = 0$$
+      <div class="eq-block">
+        $$\left.\frac{dY_S}{dY_H}\right. = -\frac{1-P}{P}\cdot\frac{U'(Y_H)}{U'(Y_S)}$$
+      </div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Zero-profit line</div>
+    $$P(1-\pi) = (1-P)\pi$$
+    $$P(Y_S - S_E) = (1-P)(H_E - Y_H)$$
+    $$P(Y_S - Y + M) = (1-P)(Y - Y_H)$$
+    <div class="eq-block">
+      $$Y_S = Y - M + \frac{1-P}{P}(Y - Y_H)$$
+    </div>
+    <div class="note">M: medical expense &nbsp;·&nbsp; H_E: healthy-state income (no insurance), $H_E=Y$ &nbsp;·&nbsp; Y_H: healthy-state income with insurance &nbsp;·&nbsp; S_E: sick-state income (no insurance), $S_E=Y-M$ &nbsp;·&nbsp; Y_S: sick-state income with insurance.</div>
+    <hr class="div">
+    <div class="sub-lbl">Demand for full insurance</div>
+    <div class="note">IC tangent to the zero-profit line:</div>
+    $$\frac{1-P}{P}\cdot\frac{U'(Y_H)}{U'(Y_S)} = \frac{1-P}{P} \;\Rightarrow\; U'(Y_H)=U'(Y_S) \;\Rightarrow\; Y_H=Y_S$$
+    <div class="note">At a fair premium, a risk-averse consumer fully insures — equalizing income (and marginal utility) across states.</div>
+  </div>
+
+  <div class="card" style="--c-accent:var(--cs-teal)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M4 20 C4 16 6 14 8 14 C10 14 12 16 12 20 M12 20 C12 16 14 14 16 14 C18 14 20 16 20 20"/></svg> RS Pooling Equilibrium &amp; Government Intervention</h2>
+    <div class="sub-lbl">$P^H > P^L$ &nbsp;·&nbsp; pooling contract $z(\pi_z, l_z)$</div>
+    <div class="block">
+      $$\bar\pi_z = P\,l_z, \qquad P = \lambda P^L + (1-\lambda)P^H$$
+      $$\bar\pi_z = \big[\lambda P^L + (1-\lambda)P^H\big]\,l_z$$
+    </div>
+    <hr class="div">
+    <div class="note">This implies — L-type:</div>
+    <div class="eq-block">
+      $$\bar\pi_z - P^L l_z = (P^H-P^L)(1-\lambda)\,l_z \;>\;0$$
+    </div>
+    <div class="note">H-type:</div>
+    <div class="eq-block">
+      $$\bar\pi_z - P^H l_z = -\lambda(P^H-P^L)\,l_z \;<\;0$$
+    </div>
+    <div class="note">L→H transfer under pooling: $(P^H-P^L)\,l_z$ — the low-risk type pays above their own fair premium, cross-subsidizing the high-risk type. This is the source of L-type's incentive to exit the pool (unraveling toward a separating equilibrium, or requiring mandation).</div>
+    <hr class="div">
+    <div class="sub-lbl">Government intervention</div>
+    <div class="note">Mandatory partial-coverage pooling contract $(\bar\pi_G, l_G)$:</div>
+    $$\bar\pi_G = \big[\lambda P_L + (1-\lambda)P_H\big]\,l_G$$
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-social-insurance" src="https://tristomefisto.github.io/PE1_graphs/social_insurance_full_insurance.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ MORAL HAZARD PANEL ═══════════ -->
+      <div class="panel" id="panel-moral-hazard">
+
+
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <div class="card" style="--c-accent:var(--cs-teal)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 L19 6 L19 12 C19 17 16 20 12 21 C8 20 5 17 5 12 L5 6 Z"/><path d="M9 12 L11 14.5 L15.5 9.5"/></svg> Moral Hazard</h2>
+    <div class="eq-block">
+      $$\underbrace{E(L)}_{\text{exp. loss}} = \underbrace{P(e_P)}_{\substack{\text{effort to reduce}\\ \text{risk of loss}}}\cdot \underbrace{L(e_L)}_{\substack{\text{effort to reduce}\\ \text{loss size}}}$$
+    </div>
+    <div class="note">Insurance dulls the incentive to exert either type of effort — more coverage lowers the marginal private return to reducing P(e_P) or L(e_L), pushing expected loss up. This is the standard equity (risk-pooling) vs. efficiency (effort incentives) trade-off in insurance design.</div>
+    <hr class="div">
+    <div class="sub-lbl">Two forms</div>
+    <div class="note"><b>Ex-ante:</b> behaviour before the loss that changes its probability or size (e.g. skipping prevention).<br><b>Ex-post:</b> behaviour after the loss that inflates its cost (e.g. over-consuming care once insured).</div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-moral-hazard" src="https://tristomefisto.github.io/PE1_graphs/moral_hazard.html"></iframe></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ EDGEWORTH BOX & TÂTONNEMENT PANEL ═══════════ -->
+      <div class="panel" id="panel-edgeworth">
+        <div class="graph-tabs">
+            <button class="gtab active" onclick="setGraphTab('iframe-edgeworth','https://tristomefisto.github.io/PE1_graphs/edgeworth_pareto.html',this)">Edgeworth Box & Contract Curve</button>
+            <button class="gtab" onclick="setGraphTab('iframe-edgeworth','https://tristomefisto.github.io/PE1_graphs/tatonnement.html',this)">Tâtonnement (Walrasian Adjustment)</button>
+        </div>
+<div class="module-note">The contract curve is the set of Pareto-efficient allocations (equal MRS); tâtonnement shows how competitive price adjustment finds one such allocation without any planner.</div>
+        <div class="module-layout">
+          <div class="formulas-col">
+            <div class="cheatsheet-scope"><div class="board">
+  <!-- 1. Utility / MRS -->
+  <div class="card" style="--c-accent:var(--cs-black)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 18 C 8 18, 8 8, 14 8 C 19 8, 19 14, 21 14" stroke-linecap="round"/><circle cx="9" cy="13.6" r="1.4" fill="currentColor" stroke="none"/></svg> Utility &amp; MRS</h2>
+    <div class="block">
+      $$U = U(x_1, x_2)$$
+      $$dU = U_1' \, dx_1 + U_2' \, dx_2$$
+      <div class="eq-block">
+        $$\text{Set } dU = 0 \;\implies\; \frac{dx_2}{dx_1} = -\frac{U_1'}{U_2'} = MRS_{1,2}$$
+      </div>
+      <div class="note">Slope of the indifference curve: the rate at which the consumer is willing to trade x₂ for x₁ while holding utility constant.</div>
+    </div>
+  </div>
+
+  <div class="card" style="--c-accent:var(--cs-black)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4 L4 20 L20 20" stroke-linecap="round"/><path d="M6 17 L10 12 L14 15 L19 6" stroke-linecap="round"/></svg> Tâtonnement &amp; Walras' Law</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Market process (per good i)</div>
+      $$MRS^h_{1,2} = \frac{p_1}{p_2} \qquad p_1x_{h1}+p_2x_{h2} = p_1\omega_{h1}+p_2\omega_{h2}$$
+      <div class="note">Excess demand: $Z_i = \sum_h x_{hi} - \sum_h \omega_{hi}$. Price adjusts: $Z_i>0$ (shortage) → raise $p_i$; $Z_i<0$ (surplus) → lower $p_i$.</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Walras' Law</div>
+      <div class="eq-block">
+        $$p_1 Z_1 + p_2 Z_2 = 0$$
+      </div>
+      <div class="note">If one market clears ($Z_1=0$) the other clears too ($Z_2=0$). With 2 goods and 2 prices but only 1 independent equation, normalize $p_2=1$ (numeraire) — only the relative price matters.</div>
+    </div>
+  </div>
+
+            </div></div>
+          </div>
+          <div class="iframe-col"><iframe class="module-iframe" id="iframe-edgeworth" src="https://tristomefisto.github.io/PE1_graphs/edgeworth_pareto.html"></iframe></div>
+        </div>
+      </div>
+
       <!-- ═══════════ STUB PANELS (future modules) ═══════════ -->
       <div class="panel" id="panel-generic-stub">
         <div class="stub-panel">
@@ -769,16 +1332,31 @@
 
 <script>
 /* ══════════════ SHELL: sidebar navigation ══════════════ */
-const STUB_TITLES = {
+const MODULE_TITLES = {
   'efficiency-cost':'Efficiency Cost of Taxes','externality-policy':'Externality Policy Comparison',
-  'abatement-efficiency':'Abatement Efficiency Framework','private-remedies':'Private Remedies (Coase / Commons)',
+  'abatement-efficiency':'Abatement Efficiency Framework','private-remedies':'Private Remedies',
   'uncertainty':'Taxes vs. Standards under Uncertainty','cap-trade':'Cap and Trade',
   'public-goods':'Private Provision of Public Goods','social-insurance':'Social Insurance & Adverse Selection',
   'moral-hazard':'Moral Hazard','edgeworth':'Edgeworth Box & Tâtonnement'
 };
-const TOPBAR_META = { 'tax-incidence':"Merges 5 graphs: excise (buyer/seller), elasticity, monopoly (linear/isoelastic)",
-  'formulas':"Full LaTeX reference — every derivation from the course, in one place" };
+const TOPBAR_META = {
+  'tax-incidence':"Merges 5 graphs: excise (buyer/seller), elasticity, monopoly (linear/isoelastic)",
+  'formulas':"Full LaTeX reference — every derivation from the course, in one place",
+  'efficiency-cost':"Merges 5 graphs: excise vs. lump-sum, partial-eq EB, CV/EV (choice / welfare / EB)",
+  'externality-policy':"Merges 3 graphs: unregulated market, Pigouvian tax, quantity standard",
+  'abatement-efficiency':"Merges 3 graphs: full information, static efficiency, dynamic efficiency",
+  'private-remedies':"Coasian bargaining and the tragedy of the commons",
+  'uncertainty':"Weitzman (1974) — prices vs. quantities when abatement cost is uncertain",
+  'cap-trade':"Two-firm marginal-abatement-cost trading model",
+  'public-goods':"Merges 4 graphs: best-response derivation, reaction functions & Nash, Pareto lens, planner's optimum",
+  'social-insurance':"Merges 5 graphs: full-insurance benchmark through Rothschild-Stiglitz government intervention",
+  'moral-hazard':"Over-consumption of care under full insurance",
+  'edgeworth':"Contract curve / Pareto efficiency, and the Walrasian price-adjustment mechanism"
+};
+const KATEX_OPTS = { delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],
+                      trust:true, throwOnError:false, strict:false };
 let formulasRendered = false;
+const moduleRendered = {};
 
 function switchPanel(name, el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -795,18 +1373,33 @@ function switchPanel(name, el){
     document.getElementById('topbar-title').textContent='Formula Cheat Sheet';
     document.getElementById('topbar-meta').textContent=TOPBAR_META['formulas'];
     if(!formulasRendered && window.renderMathInElement){
-      renderMathInElement(document.getElementById('panel-formulas'), {
-        delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],
-        trust:true, throwOnError:false, strict:false
-      });
+      renderMathInElement(document.getElementById('panel-formulas'), KATEX_OPTS);
       formulasRendered = true;
+    }
+  } else if(MODULE_TITLES[name]){
+    const panel = document.getElementById('panel-'+name);
+    panel.classList.add('active');
+    document.getElementById('topbar-title').textContent = MODULE_TITLES[name];
+    document.getElementById('topbar-meta').textContent = TOPBAR_META[name] || '';
+    if(!moduleRendered[name] && window.renderMathInElement){
+      renderMathInElement(panel, KATEX_OPTS);
+      moduleRendered[name] = true;
     }
   } else {
     document.getElementById('panel-generic-stub').classList.add('active');
-    document.getElementById('stub-title').textContent = STUB_TITLES[name] || name;
-    document.getElementById('topbar-title').textContent = STUB_TITLES[name] || name;
+    document.getElementById('stub-title').textContent = name;
+    document.getElementById('topbar-title').textContent = name;
     document.getElementById('topbar-meta').textContent = 'Not yet built';
   }
+}
+
+/* Tab switcher for multi-graph modules: swaps the iframe src and the active tab style */
+function setGraphTab(iframeId, src, el){
+  const iframe = document.getElementById(iframeId);
+  if(iframe) iframe.src = src;
+  const row = el.parentElement;
+  row.querySelectorAll('.gtab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
 }
 
 /* ══════════════ TAX INCIDENCE MODULE ══════════════ */
