@@ -3,89 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private Provision of Public Goods — Nash Reaction Functions & Equilibrium</title>
+<title>Private Provision of Public Goods — Nash Reaction Functions</title>
 <style>
   :root {
-    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0;
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
     --text:#1A1A2E; --muted:#75736B;
-    --rf1:#1565C0; --rf1-light:#5B9BE8;   /* individual 1's reaction function g1(g2) */
-    --rf2:#C62828; --rf2-light:#EF6C6C;   /* individual 2's reaction function g2(g1) */
-    --eq:#F9A825; --eq-stroke:#4A3000;
-    --arrow1:#C62828; --arrow2:#1A237E;
-    --accent:#1565C0;
+    --rf1:#1565C0; --rf1-light:#9CC2ED;   /* individual 1: bowls open upward, tangent to horizontal lines */
+    --rf2:#C62828; --rf2-light:#EFA8A8;   /* individual 2: bowls open sideways, tangent to vertical lines */
+    --eq:#F9A825; --eq-stroke:#4A3000; --accent:#1565C0;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40;
+      --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
       --text:#ECECEC; --muted:#9A9A9A;
-      --rf1:#5B9BE8; --rf1-light:#8FC1F2;
-      --rf2:#EF6C6C; --rf2-light:#F4A0A0;
-      --eq:#FFD54F; --eq-stroke:#1A1A1E;
-      --arrow1:#EF6C6C; --arrow2:#7986CB;
-      --accent:#5B9BE8;
+      --rf1:#5B9BE8; --rf1-light:#3E5A80;
+      --rf2:#EF6C6C; --rf2-light:#7A3E3E;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E; --accent:#5B9BE8;
     }
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; padding:22px 16px 30px; }
   header { text-align:center; margin-bottom:6px; }
-  header h1 { font-size:19px; font-weight:bold; }
-  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:3px; }
-  header .relation b { color:var(--accent); font-style:normal; }
-  .nav { text-align:center; margin:10px auto 0; font-size:12px; }
-  .nav a { color:var(--accent); text-decoration:none; margin:0 6px; }
-  .nav a:hover { text-decoration:underline; }
-  .nav .cur { color:var(--muted); font-weight:bold; }
+  header h1 { font-size:19px; font-weight:bold; color:var(--accent); }
+  header .relation { font-size:14px; color:var(--muted); font-style:italic; margin-top:4px; line-height:1.5; }
+  header .relation b.a { color:var(--rf1); } header .relation b.b { color:var(--rf2); }
   .layout { display:flex; gap:20px; max-width:1060px; margin:18px auto 0; align-items:flex-start; flex-wrap:wrap; }
   .canvas-wrap { flex:1 1 580px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:8px; min-width:300px; }
   canvas { display:block; margin:0 auto; }
   .panel { flex:1 1 270px; display:flex; flex-direction:column; gap:14px; min-width:258px; }
   .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:15px 16px; }
-  .mode-row { display:flex; gap:8px; margin-bottom:14px; }
-  .mode-btn { flex:1; font-family:'Georgia',serif; font-size:12.5px; padding:8px 4px; border-radius:5px; cursor:pointer;
-    border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:all .15s; }
-  .mode-btn.active.m1 { background:var(--rf2); color:#fff; border-color:var(--rf2); }
-  .mode-btn.active.m2 { background:var(--rf1); color:#fff; border-color:var(--rf1); }
-  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:9px; }
-  .slider-label { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
-  .slider-label .name { font-size:13px; font-weight:bold; }
-  .slider-label .val { font-family:'Courier New',monospace; font-size:14px; font-weight:bold; }
-  input[type=range] { width:100%; margin:6px 0 2px; accent-color:var(--accent); }
-  .slider-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
   .stepper-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .step-dots { display:flex; gap:6px; }
-  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--border); border:1.5px solid var(--border); transition:all .2s; }
+  .step-dot { width:9px; height:9px; border-radius:50%; background:var(--grid); border:1.5px solid var(--border); transition:all .2s; }
   .step-dot.active { background:var(--accent); border-color:var(--accent); transform:scale(1.25); }
   .step-dot.done { background:var(--accent); border-color:var(--accent); opacity:.45; }
   .step-counter { font-size:11px; color:var(--muted); letter-spacing:.04em; }
   .step-title { font-size:15px; font-weight:bold; margin-bottom:7px; color:var(--accent); }
   .step-body { font-size:13px; line-height:1.62; }
+  .step-body .num { font-family:'Courier New',monospace; font-weight:bold; }
   .nav-row { display:flex; gap:8px; margin-top:14px; }
   button { font-family:'Georgia',serif; font-size:13px; padding:8px 0; flex:1; border-radius:5px; cursor:pointer; border:1.5px solid var(--border); background:var(--surface); color:var(--text); transition:background .15s; }
   button:hover:not(:disabled) { background:var(--bg); }
   button:disabled { opacity:.4; cursor:not-allowed; }
   button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover:not(:disabled) { filter:brightness(.9); }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; margin-top:11px; }
+  .slider-label:first-of-type { margin-top:0; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  .slider-label .val.a { color:var(--rf1); } .slider-label .val.b { color:var(--rf2); }
+  input[type=range] { width:100%; height:4px; cursor:pointer; }
+  #s-g2 { accent-color:var(--rf1); } #s-g1 { accent-color:var(--rf2); }
   .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .res-box { border-radius:4px; padding:9px 11px; font-size:12px; line-height:1.45; }
-  .res-box.a { border-left:3px solid var(--rf2); background:color-mix(in srgb,var(--rf2) 11%,transparent); }
-  .res-box.b { border-left:3px solid var(--eq); background:color-mix(in srgb,var(--eq) 14%,transparent); }
-  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--muted); }
+  .res-box.a { background:color-mix(in srgb,var(--rf1) 13%,transparent); border-left:3px solid var(--rf1); }
+  .res-box.b { background:color-mix(in srgb,var(--rf2) 13%,transparent); border-left:3px solid var(--rf2); }
+  .res-box .lbl { font-size:10.5px; font-weight:bold; margin-bottom:3px; }
+  .res-box.a .lbl { color:var(--rf1); } .res-box.b .lbl { color:var(--rf2); }
   .res-box .big { font-size:15px; font-weight:bold; font-family:'Courier New',monospace; }
-  .legend { font-size:11.5px; line-height:1.8; }
+  .legend { font-size:11.5px; line-height:1.85; }
   .legend .item { display:flex; align-items:center; gap:8px; }
-  .legend .sw { width:24px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { height:0; border-top:2px dashed var(--rf1); }
+  .legend .sw.dash2 { height:0; border-top:2px dashed var(--rf2); }
   .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Nash Reaction Functions and Equilibrium</h1>
-  <div class="relation" id="relationLine">Move <b>g¹</b> and watch individual 2's best response <b>g²</b> slide along the reaction function</div>
-  <div class="nav">
-    <a href="best_response_derivation.html">1 · Best-response derivation</a> ›
-    <span class="cur">2 · Reaction functions</span> ›
-    <a href="pareto_lens.html">3 · Pareto lens</a>
-  </div>
+  <h1>Private Provision of Public Goods — Nash Reaction Functions</h1>
+  <div class="relation">Both individuals' indifference-curve families, in the same (g¹,g²) plane. <b class="a">1's bowls</b> are tangent to horizontal reference lines; <b class="b">2's bowls</b> are tangent to vertical ones — the reaction functions are the loci of those tangencies.</div>
 </header>
 
 <div class="layout">
@@ -93,23 +81,9 @@
 
   <div class="panel">
     <div class="card">
-      <div class="card-title">Whose contribution moves?</div>
-      <div class="mode-row">
-        <button class="mode-btn m1 active" id="modeBtn1">Move g¹ → response of 2</button>
-        <button class="mode-btn m2" id="modeBtn2">Move g² → response of 1</button>
-      </div>
-      <div class="slider-label">
-        <span class="name" id="sliderName">Individual 1's contribution, g¹₀</span>
-        <span class="val" id="sliderVal">1.0</span>
-      </div>
-      <input type="range" id="slider" min="0" max="5" step="0.1" value="1">
-      <div class="slider-ticks"><span>0</span><span id="sliderMaxLbl">5</span></div>
-    </div>
-
-    <div class="card">
       <div class="stepper-head">
         <div class="step-dots" id="dots"></div>
-        <div class="step-counter" id="counter">Step 1 / 5</div>
+        <div class="step-counter" id="counter">Step 0 / 4</div>
       </div>
       <div class="step-title" id="stitle">—</div>
       <div class="step-body" id="sbody">—</div>
@@ -119,14 +93,31 @@
       </div>
     </div>
 
-    <div class="results" id="results">
-      <div class="res-box a"><div class="lbl" id="r-resp-lbl">2's best response g²</div><div class="big" id="r-resp">0</div></div>
-      <div class="res-box b"><div class="lbl">slope dg²/dg¹</div><div class="big" id="r-slope">0</div></div>
+    <div class="results">
+      <div class="res-box a"><div class="lbl">1's best response to g²</div><div class="big" id="r-g1">—</div></div>
+      <div class="res-box b"><div class="lbl">2's best response to g¹</div><div class="big" id="r-g2">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Move the reference levels</div>
+      <div class="slider-label"><span>Other's contribution g² (for 1's problem)</span><span class="val a" id="v-g2">2.0</span></div>
+      <input type="range" id="s-g2" min="0.2" max="4" step="0.1" value="2">
+      <div class="slider-label"><span>Other's contribution g¹ (for 2's problem)</span><span class="val b" id="v-g1">2.0</span></div>
+      <input type="range" id="s-g1" min="0.2" max="4" step="0.1" value="2">
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5">
+        Cobb-Douglas u(x,G) = x^α G^(1−α), α = 2/3, M¹ = M² = 10. Each individual's own budget constraint sits far to the right/top of this window; only the relevant region near the equilibrium is shown.
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">Legend</div>
-      <div class="legend" id="legend"></div>
+      <div class="legend">
+        <div class="item"><span class="sw" style="background:var(--rf1)"></span> 1's indifference curves (bowls, min = best response)</div>
+        <div class="item"><span class="sw" style="background:var(--rf2)"></span> 2's indifference curves (bowls, leftmost = best response)</div>
+        <div class="item"><span class="sw dash"></span> g¹(g²) — 1's reaction function</div>
+        <div class="item"><span class="sw dash2"></span> g²(g¹) — 2's reaction function</div>
+        <div class="item"><span class="dt" style="background:var(--eq)"></span> Nash equilibrium (ĝ¹,ĝ²)</div>
+      </div>
     </div>
   </div>
 </div>
@@ -135,209 +126,189 @@
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 let T={};
-function loadTheme(){ T={ plotBg:cssvar('--plot-bg'), text:cssvar('--text'), muted:cssvar('--muted'),
-  rf1:cssvar('--rf1'), rf1Light:cssvar('--rf1-light'), rf2:cssvar('--rf2'), rf2Light:cssvar('--rf2-light'),
-  eq:cssvar('--eq'), eqStroke:cssvar('--eq-stroke'), arrow1:cssvar('--arrow1'), arrow2:cssvar('--arrow2') }; }
+function loadTheme(){
+  T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),border:cssvar('--border'),text:cssvar('--text'),muted:cssvar('--muted'),
+      rf1:cssvar('--rf1'),rf1Light:cssvar('--rf1-light'),rf2:cssvar('--rf2'),rf2Light:cssvar('--rf2-light'),
+      eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),accent:cssvar('--accent') };
+}
 loadTheme();
-if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
 
-const LW=580,LH=470,padL=58,padR=26,padT=30,padB=52;
+const LW=580,LH=520,padL=54,padR=24,padT=26,padB=50;
 const plotW=LW-padL-padR, plotH=LH-padT-padB;
 const AXIS_MAX=5.6;
-
-// ---- Economics: same model as file 1 (Cobb-Douglas, alpha=2/3, M=10) ----
 const ALPHA=2/3, M1=10, M2=10;
-// Reaction functions:
-//   individual 1: g1 = R1(g2) = (1-a)M1 - a g2  -> in (g1,g2) plane: g2 = ((1-a)M1 - g1)/a  (STEEP)
-//   individual 2: g2 = R2(g1) = (1-a)M2 - a g1                                               (SHALLOW)
-function R1(g2){ return (1-ALPHA)*M1 - ALPHA*g2; }
-function R2(g1){ return (1-ALPHA)*M2 - ALPHA*g1; }
-function rf1_g2(g1){ return ((1-ALPHA)*M1 - g1)/ALPHA; } // steep line, g2 as fn of g1
-function rf2_g2(g1){ return R2(g1); }                    // shallow line
-const GN1=2, GN2=2; // Nash equilibrium (verified)
+const R1=g2=>(1-ALPHA)*M1-ALPHA*g2, R2=g1=>(1-ALPHA)*M2-ALPHA*g1;
+const U1=(g1,g2)=>Math.pow(M1-g1,ALPHA)*Math.pow(g1+g2,1-ALPHA);
+const U2=(g1,g2)=>Math.pow(M2-g2,ALPHA)*Math.pow(g1+g2,1-ALPHA);
+const GN1=2, GN2=2; // Nash equilibrium (verified analytically)
 
-function qx(g1){ return padL + (g1/AXIS_MAX)*plotW; }
-function py(g2){ return padT + plotH - (g2/AXIS_MAX)*plotH; }
-
+function qx(g1){ return padL+(g1/AXIS_MAX)*plotW; }
+function py(g2){ return padT+plotH-(g2/AXIS_MAX)*plotH; }
 function setupCanvas(){
-  const dpr=window.devicePixelRatio||1;
-  const avail=Math.max(300,cv.parentElement.clientWidth-16), cssW=Math.min(avail,760), cssH=cssW*LH/LW;
+  const dpr=window.devicePixelRatio||1, avail=Math.max(300,cv.parentElement.clientWidth-16);
+  const cssW=Math.min(avail,720), cssH=cssW*LH/LW;
   cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
   cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
-  ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);
+  const s=(cssW/LW)*dpr; ctx.setTransform(s,0,0,s,0,0);
 }
-let rTO; addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
+let resizeTO; window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{setupCanvas();draw();},120);});
 
-let mode=1;        // 1: move g1, response of 2 ; 2: move g2, response of 1
-let sliderVal=1.0; // g1_0 (mode 1) or g2_0 (mode 2)
-const slider=document.getElementById('slider');
+let g2ref=2.0, g1ref=2.0;
 
-function model(){
-  if(mode===1){
-    const g10=sliderVal;
-    const g20=R2(g10);              // individual 2's best response
-    return { g10, g20, slope:-ALPHA, eqX:GN1, eqY:GN2 };
-  } else {
-    const g20=sliderVal;
-    const g10=R1(g20);             // individual 1's best response
-    return { g10, g20, slope:-1/ALPHA, eqX:GN1, eqY:GN2 };
+// indifference curve generators (level curve through the tangency point implied by a reference level)
+function curve1(g2t){ // individual 1: fixed ubar1, returns g2 as function of g1
+  const g1t=R1(g2t), ubar1=U1(g1t,g2t);
+  const pts=[];
+  for(let g1=0.02; g1<M1-0.02; g1+=M1/500){
+    const g2=Math.pow(ubar1*Math.pow(M1-g1,-ALPHA),1/(1-ALPHA))-g1;
+    if(g2>-0.3 && g2<AXIS_MAX*1.15) pts.push([g1,g2]); else if(pts.length) break;
   }
+  return pts;
+}
+function curve2(g1t){ // individual 2: fixed ubar2, returns g1 as function of g2
+  const g2t=R2(g1t), ubar2=U2(g1t,g2t);
+  const pts=[];
+  for(let g2=0.02; g2<M2-0.02; g2+=M2/500){
+    const g1=Math.pow(ubar2*Math.pow(M2-g2,-ALPHA),1/(1-ALPHA))-g2;
+    if(g1>-0.3 && g1<AXIS_MAX*1.15) pts.push([g1,g2]); else if(pts.length) break;
+  }
+  return pts;
 }
 
-// ---- draw helpers ----
-function line(x1,y1,x2,y2,col,w,dash){ ctx.beginPath(); ctx.setLineDash(dash||[]); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.moveTo(qx(x1),py(y1)); ctx.lineTo(qx(x2),py(y2)); ctx.stroke(); ctx.setLineDash([]); }
-function dotMark(g1,g2,r,f){ ctx.beginPath(); ctx.arc(qx(g1),py(g2),r,0,7); ctx.fillStyle=f; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
-function label(txt,g1,g2,dx,dy,col,sz,wt,al,halo){
-  ctx.save(); sz=sz||12; ctx.font=(wt||'bold')+' '+sz+'px Georgia'; ctx.textAlign=al||'left';
-  const px_=qx(g1)+dx, py_=py(g2)+dy;
-  if(halo){ const w=ctx.measureText(txt).width; let lx=px_; if(al==='right')lx=px_-w; else if(al==='center')lx=px_-w/2;
-    ctx.fillStyle=T.plotBg; ctx.globalAlpha=0.82; ctx.fillRect(lx-3,py_-sz+2,w+6,sz+4); ctx.globalAlpha=1; }
-  ctx.fillStyle=col; ctx.fillText(txt,px_,py_); ctx.restore();
+function poly(pts,color,w,dash,alpha){
+  if(pts.length<2) return;
+  ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.lineJoin='round';
+  ctx.beginPath();pts.forEach((p,i)=>{const X=qx(p[0]),Y=py(p[1]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.stroke();ctx.restore();
 }
-function xTick(g1,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='center'; ctx.fillText(txt,qx(g1),padT+plotH+16); ctx.restore(); }
-function yTick(g2,txt,col){ ctx.save(); ctx.font='11px Georgia'; ctx.fillStyle=col||T.muted; ctx.textAlign='right'; ctx.fillText(txt,padL-7,py(g2)+4); ctx.restore(); }
-// arrow in data coords (straight)
-function arrow(x1,y1,x2,y2,col,w){
-  const X1=qx(x1),Y1=py(y1),X2=qx(x2),Y2=py(y2);
-  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w;
-  ctx.beginPath(); ctx.moveTo(X1,Y1); ctx.lineTo(X2,Y2); ctx.stroke();
-  const ang=Math.atan2(Y2-Y1,X2-X1), hl=9;
-  ctx.beginPath(); ctx.moveTo(X2,Y2);
-  ctx.lineTo(X2-hl*Math.cos(ang-0.4),Y2-hl*Math.sin(ang-0.4));
-  ctx.lineTo(X2-hl*Math.cos(ang+0.4),Y2-hl*Math.sin(ang+0.4));
-  ctx.closePath(); ctx.fill(); ctx.restore();
+function seg(x1,y1,x2,y2,color,w,dash,alpha){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.moveTo(qx(x1),py(y1));ctx.lineTo(qx(x2),py(y2));ctx.stroke();ctx.restore();}
+function dot(g1,g2,r,fill){ctx.beginPath();ctx.arc(qx(g1),py(g2),r,0,7);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T.plotBg;ctx.stroke();}
+function lab(txt,g1,g2,dx,dy,color,size,align,halo,alpha){
+  ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;size=size||12;ctx.font='bold '+size+'px Georgia';ctx.textAlign=align||'left';
+  const X=qx(g1)+dx,Y=py(g2)+dy;
+  if(halo){const w=ctx.measureText(txt).width;let lx=X;if(align==='right')lx=X-w;else if(align==='center')lx=X-w/2;ctx.fillStyle=T.plotBg;ctx.globalAlpha=(alpha===undefined?1:alpha)*0.85;ctx.fillRect(lx-3,Y-size+2,w+6,size+4);ctx.globalAlpha=alpha===undefined?1:alpha;}
+  ctx.fillStyle=color;ctx.fillText(txt,X,Y);ctx.restore();
 }
 
+let step=0;
 function draw(){
   ctx.clearRect(0,0,LW,LH);
-  ctx.fillStyle=T.plotBg; ctx.fillRect(0,0,LW,LH);
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let v=1;v<AXIS_MAX;v++){ ctx.beginPath();ctx.moveTo(padL,py(v));ctx.lineTo(padL+plotW,py(v));ctx.stroke();
+                                 ctx.beginPath();ctx.moveTo(qx(v),padT);ctx.lineTo(qx(v),padT+plotH);ctx.stroke(); }
 
-  // axes
-  ctx.strokeStyle=T.muted; ctx.lineWidth=1.4;
-  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(AXIS_MAX*0.99),py(0)); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(qx(0),py(0)); ctx.lineTo(qx(0),py(AXIS_MAX*0.99)); ctx.stroke();
-  label('g¹', AXIS_MAX*0.99, 0, 6, 4, T.text,14,'bold','left');
-  label('g²', 0, AXIS_MAX*0.99, -6, -6, T.text,14,'bold','right');
+  ctx.save();ctx.beginPath();ctx.rect(padL,padT,plotW,plotH);ctx.clip();
 
-  // reaction function 1 (steep, blue): from (0,5) to (3.333,0)
-  line(0, rf1_g2(0), (1-ALPHA)*M1, 0, T.rf1, 2.6);
-  label('g¹(g²)', 0.45, rf1_g2(0.45), 6, -6, T.rf1, 13,'bold','left',true);
-  // reaction function 2 (shallow, red): from (0,3.333) to (5,0)
-  line(0, rf2_g2(0), (1-ALPHA)*M2/ALPHA, 0, T.rf2, 2.6);
-  label('g²(g¹)', 4.55, rf2_g2(4.55), 4, 16, T.rf2, 13,'bold','left',true);
+  // context bowls for individual 1 (low & high reference), always faint background
+  const ctxAlpha = 0.5;
+  poly(curve1(0.7), T.rf1Light, 1.6, [], ctxAlpha);
+  poly(curve1(3.6), T.rf1Light, 1.6, [], ctxAlpha);
+  // context bowls for individual 2
+  if(step>=1){
+    poly(curve2(0.7), T.rf2Light, 1.6, [], ctxAlpha);
+    poly(curve2(3.6), T.rf2Light, 1.6, [], ctxAlpha);
+  }
+
+  // highlighted (slider-driven) curves
+  const c1 = curve1(g2ref);
+  poly(c1, T.rf1, 2.6);
+  if(step>=1){
+    const c2 = curve2(g1ref);
+    poly(c2, T.rf2, 2.6);
+  }
+
+  // reaction function lines drawn after clip is released (below), so they aren't clipped to the plot box mid-curve
+  ctx.restore();
+
+  if(step>=2){
+    // sample two axis-safe points per line and draw (unclipped, so full extent is visible)
+    const g2a=0, g1a=R1(g2a), g2b=AXIS_MAX, g1b=R1(g2b);
+    seg(g1a,g2a,g1b,g2b,T.rf1,1.6,[6,4]);
+    const g1c=0, g2c=R2(g1c), g1d=AXIS_MAX, g2d=R2(g1d);
+    seg(g1c,g2c,g1d,g2d,T.rf2,1.6,[6,4]);
+    lab('g¹(g²)',R1(4.6),4.6,6,0,T.rf1,11,'left',true);
+    lab('g²(g¹)',4.6,R2(4.6),0,-10,T.rf2,11,'left',true);
+  }
+
+  // reference lines for the highlighted curves
+  seg(0,g2ref,AXIS_MAX,g2ref,T.rf1,1.1,[2,3],0.85);
+  lab('g² = '+g2ref.toFixed(1),AXIS_MAX,g2ref,-4,-7,T.rf1,10.5,'right',true);
+  if(step>=1){
+    seg(g1ref,0,g1ref,AXIS_MAX,T.rf2,1.1,[2,3],0.85);
+    lab('g¹ = '+g1ref.toFixed(1),g1ref,AXIS_MAX,4,12,T.rf2,10.5,'left',true);
+  }
+
+  // tangency points on the highlighted curves
+  const g1best=R1(g2ref);
+  dot(g1best,g2ref,5.5,T.rf1);
+  if(step>=1){
+    const g2best=R2(g1ref);
+    dot(g1ref,g2best,5.5,T.rf2);
+  }
 
   // Nash equilibrium
-  line(GN1,0,GN1,GN2,T.muted,1,[2,3]);
-  line(0,GN2,GN1,GN2,T.muted,1,[2,3]);
-  dotMark(GN1,GN2,6,T.eq);
-  label('Nash eq. (ĝ¹, ĝ²)', GN1, GN2, 10, -8, T.eqStroke, 12,'bold','left',true);
-  xTick(GN1,'ĝ¹',T.eqStroke); yTick(GN2,'ĝ²',T.eqStroke);
-
-  const m=model();
-  if(mode===1){
-    // current g1_0, individual 2 best-responds to g2_0 on the SHALLOW (red) curve
-    line(m.g10,0,m.g10,m.g20,T.arrow1,1.4,[4,3]);
-    line(0,m.g20,m.g10,m.g20,T.arrow2,1.4,[4,3]);
-    dotMark(m.g10,m.g20,5,T.rf2Light);
-    // arrows toward equilibrium, set just inside the axes
-    if(Math.abs(m.g10-GN1)>0.06){ const dir=Math.sign(GN1-m.g10);
-      arrow(m.g10, 0.30, m.g10+dir*Math.min(0.7,Math.abs(GN1-m.g10)), 0.30, T.arrow1, 3); }
-    if(Math.abs(m.g20-GN2)>0.06){ const dir=Math.sign(GN2-m.g20);
-      arrow(0.30, m.g20, 0.30, m.g20+dir*Math.min(0.7,Math.abs(GN2-m.g20)), T.arrow2, 3); }
-    xTick(m.g10,'g¹₀',T.arrow1); yTick(m.g20,'g²₀',T.arrow2);
-  } else {
-    line(m.g10,0,m.g10,m.g20,T.arrow1,1.4,[4,3]);
-    line(0,m.g20,m.g10,m.g20,T.arrow2,1.4,[4,3]);
-    dotMark(m.g10,m.g20,5,T.rf1Light);
-    if(Math.abs(m.g20-GN2)>0.06){ const dir=Math.sign(GN2-m.g20);
-      arrow(0.30, m.g20, 0.30, m.g20+dir*Math.min(0.7,Math.abs(GN2-m.g20)), T.arrow2, 3); }
-    if(Math.abs(m.g10-GN1)>0.06){ const dir=Math.sign(GN1-m.g10);
-      arrow(m.g10, 0.30, m.g10+dir*Math.min(0.7,Math.abs(GN1-m.g10)), 0.30, T.arrow1, 3); }
-    xTick(m.g10,'g¹₀',T.arrow1); yTick(m.g20,'g²₀',T.arrow2);
+  if(step>=3){
+    seg(GN1,0,GN1,GN2,T.muted,1,[2,3]); seg(0,GN2,GN1,GN2,T.muted,1,[2,3]);
+    dot(GN1,GN2,7,T.eq);
+    lab('Nash eq. (ĝ¹,ĝ²)=(2,2)',GN1,GN2,10,-9,T.eqStroke,12,'left',true);
   }
+
+  // axes
+  ctx.strokeStyle=T.text;ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath();ctx.moveTo(padL,padT-2);ctx.lineTo(padL-4,padT+8);ctx.lineTo(padL+4,padT+8);ctx.fill();
+  ctx.beginPath();ctx.moveTo(padL+plotW,padT+plotH);ctx.lineTo(padL+plotW-8,padT+plotH-4);ctx.lineTo(padL+plotW-8,padT+plotH+4);ctx.fill();
+  lab('g²',0,AXIS_MAX,-padL+8,-4,T.text,14,'left');
+  ctx.save();ctx.font='bold 14px Georgia';ctx.fillStyle=T.text;ctx.textAlign='right';ctx.fillText('g¹',padL+plotW-2,padT+plotH+30);ctx.restore();
+
+  // readouts
+  document.getElementById('v-g2').textContent=g2ref.toFixed(1);
+  document.getElementById('v-g1').textContent=g1ref.toFixed(1);
+  document.getElementById('r-g1').textContent='ĝ¹ = '+R1(g2ref).toFixed(2);
+  document.getElementById('r-g2').textContent='ĝ² = '+R2(g1ref).toFixed(2);
 }
 
-// ---- UI ----
-const modeBtn1=document.getElementById('modeBtn1'), modeBtn2=document.getElementById('modeBtn2');
-const sliderName=document.getElementById('sliderName'), sliderValEl=document.getElementById('sliderVal');
-const relationLine=document.getElementById('relationLine'), legend=document.getElementById('legend');
-const rRespLbl=document.getElementById('r-resp-lbl'), rResp=document.getElementById('r-resp'), rSlope=document.getElementById('r-slope');
-
-function refreshUI(){
-  const m=model();
-  if(mode===1){
-    modeBtn1.classList.add('active'); modeBtn2.classList.remove('active');
-    sliderName.textContent="Individual 1's contribution, g¹₀";
-    relationLine.innerHTML='Move <b>g¹</b> and watch individual 2\'s best response <b>g²</b> slide along its reaction function';
-    rRespLbl.textContent="2's best response g²";
-    rResp.textContent=m.g20.toFixed(2);
-    rSlope.textContent=m.slope.toFixed(2);
-    sliderValEl.textContent=sliderVal.toFixed(1);
-    legend.innerHTML=`
-      <div class="item"><span class="sw" style="background:var(--rf2)"></span> g²(g¹): individual 2's reaction function (shallow, slope −α)</div>
-      <div class="item"><span class="sw" style="background:var(--rf1)"></span> g¹(g²): individual 1's reaction function (steep, slope −1/α)</div>
-      <div class="item"><span class="dt" style="background:var(--eq)"></span> Nash equilibrium — mutual best responses</div>
-      <div class="item"><span class="sw" style="background:var(--arrow1)"></span> g¹ adjusts toward ĝ¹</div>
-      <div class="item"><span class="sw" style="background:var(--arrow2)"></span> g² adjusts toward ĝ²</div>`;
-  } else {
-    modeBtn2.classList.add('active'); modeBtn1.classList.remove('active');
-    sliderName.textContent="Individual 2's contribution, g²₀";
-    relationLine.innerHTML='Move <b>g²</b> and watch individual 1\'s best response <b>g¹</b> slide along its reaction function';
-    rRespLbl.textContent="1's best response g¹";
-    rResp.textContent=m.g10.toFixed(2);
-    rSlope.textContent=m.slope.toFixed(2);
-    sliderValEl.textContent=sliderVal.toFixed(1);
-    legend.innerHTML=`
-      <div class="item"><span class="sw" style="background:var(--rf1)"></span> g¹(g²): individual 1's reaction function (steep)</div>
-      <div class="item"><span class="sw" style="background:var(--rf2)"></span> g²(g¹): individual 2's reaction function (shallow)</div>
-      <div class="item"><span class="dt" style="background:var(--eq)"></span> Nash equilibrium — mutual best responses</div>
-      <div class="item"><span class="sw" style="background:var(--arrow1)"></span> g¹ adjusts toward ĝ¹</div>
-      <div class="item"><span class="sw" style="background:var(--arrow2)"></span> g² adjusts toward ĝ²</div>`;
-  }
-}
-
-modeBtn1.addEventListener('click',()=>{ if(mode!==1){ mode=1; sliderVal=Math.min(sliderVal,5); slider.value=sliderVal; refreshUI(); renderStep(); draw(); }});
-modeBtn2.addEventListener('click',()=>{ if(mode!==2){ mode=2; sliderVal=Math.min(sliderVal,5); slider.value=sliderVal; refreshUI(); renderStep(); draw(); }});
-slider.addEventListener('input',()=>{ sliderVal=parseFloat(slider.value); refreshUI(); renderStep(); draw(); });
-
-// ---- stepper ----
 function stepContent(){
-  const m=model();
-  if(mode===1){
-    return [
-      { title:"Two reaction functions, one plane", body:`Both best-response rules live in the same (g¹,g²) plane. <b>g²(g¹)</b> (red) is individual 2's reaction function; <b>g¹(g²)</b> (blue) is individual 1's. Both slope downward — free riding.` },
-      { title:"Why downward-sloping?", body:`From the Cobb-Douglas best response, g² = (1−α)M − α·g¹. When the other contributes more, each individual contributes less and shifts spending to the private good. Here dg²/dg¹ = −α = ${(-ALPHA).toFixed(2)} along 2's curve.` },
-      { title:"Pick a contribution for 1", body:`Set g¹₀ = <b>${m.g10.toFixed(2)}</b> with the slider. Individual 2's best response reads straight off the red curve: g² = R²(g¹₀) = <b>${m.g20.toFixed(2)}</b>.` },
-      { title:"Off equilibrium → adjustment", body:`${Math.abs(m.g10-GN1)<0.06 ? 'You are at the Nash equilibrium: both are simultaneously best-responding, so nothing moves.' : `Since g¹₀ = ${m.g10.toFixed(2)} ${m.g10<GN1?'<':'>'} ĝ¹ = 2, the induced g² = ${m.g20.toFixed(2)} ${m.g20>GN2?'>':'<'} ĝ². The arrows show g¹ ${m.g10<GN1?'rising':'falling'} and g² ${m.g20>GN2?'falling':'rising'} toward the equilibrium.`}` },
-      { title:"The Nash equilibrium", body:`The crossing point (ĝ¹, ĝ²) = (2, 2) is where each is the other's best response, so neither wants to deviate. Total provision G = 4. Diagram 3 shows this is privately efficient but <i>not</i> Pareto-efficient.` }
-    ];
-  } else {
-    return [
-      { title:"Two reaction functions, one plane", body:`Same plane, now we move individual 2. <b>g¹(g²)</b> (blue, steep) is individual 1's reaction function; read 1's best response off it.` },
-      { title:"Slope from 1's side", body:`Individual 1's rule g¹ = (1−α)M − α·g² means, drawn as g² against g¹, a steep line with dg²/dg¹ = −1/α = ${(-1/ALPHA).toFixed(2)}.` },
-      { title:"Pick a contribution for 2", body:`Set g²₀ = <b>${m.g20.toFixed(2)}</b>. Individual 1's best response is g¹ = R¹(g²₀) = <b>${m.g10.toFixed(2)}</b>, read off the blue curve.` },
-      { title:"Off equilibrium → adjustment", body:`${Math.abs(m.g20-GN2)<0.06 ? 'At the Nash equilibrium — mutual best responses, no movement.' : `g²₀ = ${m.g20.toFixed(2)} ${m.g20<GN2?'<':'>'} ĝ² induces g¹ = ${m.g10.toFixed(2)} ${m.g10>GN1?'>':'<'} ĝ¹; arrows point toward the equilibrium.`}` },
-      { title:"The Nash equilibrium", body:`(ĝ¹, ĝ²) = (2, 2), G = 4 — mutual best responses. Continue to diagram 3 for the Pareto comparison.` }
-    ];
-  }
+  return [
+    {t:"Step 0 · Individual 1's indifference curves",
+     b:`Fixing individual 2's contribution at a reference level (horizontal dashed line), individual 1 chooses g¹ to reach the highest indifference curve touching that line. These curves are U-shaped: more of one's own g¹ substitutes for less private consumption, so utility falls, then rises again as g¹ approaches the budget. The <b>minimum</b> of each bowl — where it is tangent to the horizontal line — is individual 1's best response.`},
+    {t:"Step 1 · Individual 2's indifference curves",
+     b:`Symmetrically, fixing individual 1's contribution (vertical dashed line), individual 2's indifference curves are bowls opening <i>sideways</i>: tangent to the vertical line at their <b>leftmost</b> point, which is individual 2's best response g². Both families now sit in the same plane — drag either slider and watch each person's tangency point move independently.`},
+    {t:"Step 2 · Reaction functions as loci of tangencies",
+     b:`As the reference level varies continuously, the tangency point traces a straight line: g¹(g²) = (1−α)M¹ − α·g² for individual 1, g²(g¹) = (1−α)M² − α·g¹ for individual 2. These are exactly the minima/leftmost-points of every bowl in each family — the dashed lines thread through them.`},
+    {t:"Step 3 · The Nash equilibrium",
+     b:`Set both reference levels to <span class="num">2</span>: individual 1's bowl is tangent to g²=2 exactly at g¹=2, and individual 2's bowl is tangent to g¹=2 exactly at g²=2 — the <b>same point</b> is simultaneously each person's best response to the other. That is the Nash equilibrium (ĝ¹,ĝ²)=(2,2), total provision G=4.`},
+    {t:"Step 4 · Privately optimal, not Pareto efficient",
+     b:`At the crossing, neither individual wants to unilaterally change their own contribution. But each ignores the benefit their contribution gives the <i>other</i> person — the free-rider problem. The Nash equilibrium under-provides the public good relative to the Pareto-efficient outcome, which would require both marginal benefits (not just one's own) to be weighed against the cost.`}
+  ];
 }
-let step=0;
-const dotsEl=document.getElementById('dots'), counterEl=document.getElementById('counter');
-const stitleEl=document.getElementById('stitle'), sbodyEl=document.getElementById('sbody');
-const backBtn=document.getElementById('back'), nextBtn=document.getElementById('next');
-function renderStep(){
-  const steps=stepContent();
-  if(step>=steps.length) step=steps.length-1;
-  dotsEl.innerHTML='';
-  for(let i=0;i<steps.length;i++){ const d=document.createElement('div'); d.className='step-dot'+(i===step?' active':i<step?' done':''); dotsEl.appendChild(d); }
-  counterEl.textContent=`Step ${step+1} / ${steps.length}`;
-  stitleEl.textContent=steps[step].title; sbodyEl.innerHTML=steps[step].body;
-  backBtn.disabled=step===0; nextBtn.textContent=step===steps.length-1?'Restart ⟲':'Next ▶';
-}
-backBtn.addEventListener('click',()=>{ if(step>0){step--;renderStep();} });
-nextBtn.addEventListener('click',()=>{ const s=stepContent(); if(step===s.length-1)step=0; else step++; renderStep(); });
 
-setupCanvas(); refreshUI(); renderStep(); draw();
+function render(){
+  const c=stepContent()[step];
+  document.getElementById('stitle').innerHTML=c.t;
+  document.getElementById('sbody').innerHTML=c.b;
+  document.getElementById('counter').textContent=`Step ${step} / 4`;
+  const dots=document.getElementById('dots');dots.innerHTML='';
+  for(let i=0;i<=4;i++){const d=document.createElement('div');d.className='step-dot'+(i===step?' active':(i<step?' done':''));dots.appendChild(d);}
+  document.getElementById('back').disabled=(step===0);
+  document.getElementById('next').disabled=(step===4);
+  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+  draw();
+}
+
+document.getElementById('next').addEventListener('click',()=>{
+  if(step<4){
+    if(step===2){ g2ref=2; g1ref=2; document.getElementById('s-g2').value=2; document.getElementById('s-g1').value=2; } // snap to Nash on entering step 3
+    step++; render();
+  }
+});
+document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;render();}});
+document.getElementById('s-g2').addEventListener('input',e=>{g2ref=parseFloat(e.target.value);render();});
+document.getElementById('s-g1').addEventListener('input',e=>{g1ref=parseFloat(e.target.value);render();});
+
+setupCanvas();render();
 </script>
 </body>
 </html>
