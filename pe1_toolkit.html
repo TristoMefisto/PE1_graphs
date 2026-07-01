@@ -31,11 +31,9 @@
   body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; overflow:hidden; }
 
   /* ── Theory / Testing mode split ── */
-  .mode-switch { position:fixed; top:10px; right:14px; z-index:500; display:flex; gap:2px;
-                 background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:2px;
-                 box-shadow:0 2px 8px rgba(0,0,0,.08); }
-  .mode-btn { border:none; background:transparent; font-family:'Georgia',serif; font-size:12px; font-weight:bold;
-              padding:6px 13px; border-radius:5px; cursor:pointer; color:var(--muted); letter-spacing:.02em; }
+  .mode-switch-inline { display:flex; gap:2px; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:2px; margin-top:8px; }
+  .mode-btn { flex:1; border:none; background:transparent; font-family:'Georgia',serif; font-size:11.5px; font-weight:bold;
+              padding:6px 4px; border-radius:5px; cursor:pointer; color:var(--muted); letter-spacing:.02em; }
   .mode-btn.active { background:var(--accent); color:#fff; }
   .mode-panel { display:none; height:100vh; }
   .mode-panel.active { display:flex; }
@@ -274,17 +272,15 @@
 </head>
 <body>
 
-<div class="mode-switch">
-  <button class="mode-btn active" id="mode-btn-theory" onclick="switchMode('theory')">📚 Theory</button>
-  <button class="mode-btn" id="mode-btn-testing" onclick="switchMode('testing')">✏️ Testing</button>
-</div>
-
 <div class="mode-panel active" id="mode-theory">
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">PE1 Toolkit</div>
-      <div class="sidebar-sub">Public Economics · Bologna<br>Interactive reference graphs</div>
+      <div class="mode-switch-inline">
+        <button class="mode-btn active" data-mode="theory" onclick="switchMode('theory')">📚 Theory</button>
+        <button class="mode-btn" data-mode="testing" onclick="switchMode('testing')">✏️ Testing</button>
+      </div>
     </div>
     <nav class="sidebar-nav" id="nav">
       <div class="nav-label">Taxation</div>
@@ -308,9 +304,6 @@
       <div class="nav-item" data-panel="uncertainty" onclick="switchPanel('uncertainty',this)">
         <span class="nav-icon">🎲</span>Taxes vs. standards (uncertainty)
       </div>
-      <div class="nav-item" data-panel="cap-trade" onclick="switchPanel('cap-trade',this)">
-        <span class="nav-icon">🔁</span>Cap and trade
-      </div>
 
       <div class="nav-label">Public Goods</div>
       <div class="nav-item" data-panel="public-goods" onclick="switchPanel('public-goods',this)">
@@ -329,12 +322,12 @@
       <div class="nav-item" data-panel="edgeworth" onclick="switchPanel('edgeworth',this)">
         <span class="nav-icon">📦</span>Edgeworth box &amp; tâtonnement
       </div>
-
-      <div class="nav-label">Reference</div>
+    </nav>
+    <div class="test-sidebar-footer">
       <div class="nav-item" data-panel="formulas" onclick="switchPanel('formulas',this)">
         <span class="nav-icon">📐</span>Formula cheat sheet
       </div>
-    </nav>
+    </div>
   </aside>
 
   <div class="main">
@@ -965,8 +958,9 @@
             <button class="gtab active" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/negative_production_externality.html',this)">No Policy</button>
             <button class="gtab" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/pigouvian_tax.html',this)">Pigouvian Tax</button>
             <button class="gtab" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/standard_regulation.html',this)">Standard</button>
+            <button class="gtab" onclick="setGraphTab('iframe-externality-policy','https://tristomefisto.github.io/PE1_graphs/cap_and_trade.html',this)">Cap and Trade</button>
         </div>
-<div class="module-note">Same PMC/SMC/PMB diagram under three regimes. Both the tax (t=d) and the standard (Q*) can implement the social optimum — the difference only shows up once costs are uncertain (see Taxes vs. Standards module).</div>
+<div class="module-note">Same PMC/SMC/PMB diagram under three regimes, plus a two-firm tradable-permit market. The tax (t=d) and the standard (Q*) both implement the social optimum — the difference only shows up once costs are uncertain (see Taxes vs. Standards module). Cap and trade decentralizes the same optimum via a market-clearing permit price.</div>
         <div class="module-layout">
           <div class="formulas-col">
             <div class="cheatsheet-scope"><div class="board">
@@ -995,6 +989,21 @@
       <div class="lbl" style="font-size:12px">Pigouvian tax</div>
       $$t = d = MD(x^o) \quad\text{such that}\quad PMC \Rightarrow PMC + t$$
       <div class="note">Setting the tax equal to marginal damage at the optimum makes private and social incentives coincide.</div>
+    </div>
+  </div>
+
+  <div class="card" style="--c-accent:var(--cs-green)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8 L20 8 M4 16 L20 16" stroke-linecap="round"/><path d="M17 5 L20 8 L17 11 M7 13 L4 16 L7 19" stroke-linecap="round"/></svg> Cap and Trade</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Permit market clearing</div>
+      $$WTP = WTA = p^*$$
+      <div class="note">Firms trade until willingness to pay (high-MAC firms buying) equals willingness to accept (low-MAC firms selling).</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Equimarginal principle</div>
+      $$MAC_{\text{dirty}}(x_D^*) = MAC_{\text{clean}}(x_C^*) = p^*$$
+      <div class="note">The fixed cap Q̄ is met at least total cost — each firm faces p* as the opportunity cost of polluting, regardless of the initial permit allocation (Coasian result, organized by the regulator).</div>
     </div>
   </div>
 
@@ -1132,34 +1141,6 @@
             </div></div>
           </div>
           <div class="iframe-col"><iframe class="module-iframe" id="iframe-uncertainty" src="https://tristomefisto.github.io/PE1_graphs/taxes_vs_standards_uncertainty.html"></iframe></div>
-        </div>
-      </div>
-
-      <!-- ═══════════ CAP AND TRADE PANEL ═══════════ -->
-      <div class="panel" id="panel-cap-trade">
-
-
-        <div class="module-layout">
-          <div class="formulas-col">
-            <div class="cheatsheet-scope"><div class="board">
-  <div class="card" style="--c-accent:var(--cs-red)">
-    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8 L20 8 M4 16 L20 16" stroke-linecap="round"/><path d="M17 5 L20 8 L17 11 M7 13 L4 16 L7 19" stroke-linecap="round"/></svg> Cap and Trade</h2>
-    <div class="block">
-      <div class="lbl" style="font-size:12px">Permit market clearing</div>
-      $$WTP = WTA = p^*$$
-      <div class="note">Firms trade until willingness to pay (high-MAC firms buying) equals willingness to accept (low-MAC firms selling).</div>
-    </div>
-    <hr class="div">
-    <div class="block">
-      <div class="lbl" style="font-size:12px">Equimarginal principle</div>
-      $$MAC_{\text{dirty}}(x_D^*) = MAC_{\text{clean}}(x_C^*) = p^*$$
-      <div class="note">The fixed cap Q̄ is met at least total cost — each firm faces p* as the opportunity cost of polluting, regardless of the initial permit allocation (Coasian result, organized by the regulator).</div>
-    </div>
-  </div>
-
-            </div></div>
-          </div>
-          <div class="iframe-col"><iframe class="module-iframe" id="iframe-cap-trade" src="https://tristomefisto.github.io/PE1_graphs/cap_and_trade.html"></iframe></div>
         </div>
       </div>
 
@@ -1429,7 +1410,10 @@
     <aside class="test-sidebar">
       <div class="test-sidebar-header">
         <div class="test-sidebar-logo">PE1 Testing</div>
-        <div class="test-sidebar-sub">Flashcards · MCQ · Exercises<br>Sourced from course exams + notes</div>
+        <div class="mode-switch-inline">
+          <button class="mode-btn" data-mode="theory" onclick="switchMode('theory')">📚 Theory</button>
+          <button class="mode-btn active" data-mode="testing" onclick="switchMode('testing')">✏️ Testing</button>
+        </div>
       </div>
       <nav class="test-nav" id="test-nav"></nav>
       <div class="test-sidebar-footer">
@@ -1457,7 +1441,7 @@
 const MODULE_TITLES = {
   'efficiency-cost':'Efficiency Cost of Taxes','externality-policy':'Externality Policy Comparison',
   'abatement-efficiency':'Abatement Efficiency Framework','private-remedies':'Private Remedies',
-  'uncertainty':'Taxes vs. Standards under Uncertainty','cap-trade':'Cap and Trade',
+  'uncertainty':'Taxes vs. Standards under Uncertainty',
   'public-goods':'Private Provision of Public Goods','social-insurance':'Social Insurance & Adverse Selection',
   'moral-hazard':'Moral Hazard','edgeworth':'Edgeworth Box & Tâtonnement'
 };
@@ -1465,11 +1449,10 @@ const TOPBAR_META = {
   'tax-incidence':"Merges 5 graphs: excise (buyer/seller), elasticity, monopoly (linear/isoelastic)",
   'formulas':"Full LaTeX reference — every derivation from the course, in one place",
   'efficiency-cost':"Merges 5 graphs: excise vs. lump-sum, partial-eq EB, CV/EV (choice / welfare / EB)",
-  'externality-policy':"Merges 3 graphs: unregulated market, Pigouvian tax, quantity standard",
+  'externality-policy':"Merges 4 graphs: unregulated market, Pigouvian tax, quantity standard, cap-and-trade",
   'abatement-efficiency':"Merges 3 graphs: full information, static efficiency, dynamic efficiency",
   'private-remedies':"Coasian bargaining and the tragedy of the commons",
   'uncertainty':"Weitzman (1974) — prices vs. quantities when abatement cost is uncertain",
-  'cap-trade':"Two-firm marginal-abatement-cost trading model",
   'public-goods':"Merges 4 graphs: best-response derivation, reaction functions & Nash, Pareto lens, planner's optimum",
   'social-insurance':"Merges 5 graphs: full-insurance benchmark through Rothschild-Stiglitz government intervention",
   'moral-hazard':"Over-consumption of care under full insurance",
@@ -1541,7 +1524,7 @@ const plotW=LW-padL-padR, plotH=LH-padT-padB;
 
 function setupCanvas(){
   const dpr=window.devicePixelRatio||1, avail=Math.max(300,cv.parentElement.clientWidth-16);
-  const cssW=Math.min(avail,700), cssH=cssW*LH/LW;
+  const cssW=Math.min(avail,1000), cssH=cssW*LH/LW;
   cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
   cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
   const s=(cssW/LW)*dpr; ctx.setTransform(s,0,0,s,0,0);
@@ -2336,6 +2319,16 @@ const TESTING_DATA = [
         "correct": 1,
         "rationale": "The classic RS instability result: any pooling contract can be broken by a rival offering a slightly-less-generous contract that only low-risk types prefer, stealing the profitable low-risk customers and leaving the incumbent pooling insurer with a loss-making, high-risk-only pool."
       }
+    ],
+    "exercises": [
+      {
+        "q": "An individual has wealth $W=100$, faces a loss $L=36$ with probability $p=0.25$, and has utility $u(x)=\\sqrt{x}$. Insurance is actuarially fair (competitive, zero profit) and priced per unit of coverage at $p$. (a) What premium buys full coverage? (b) Show that full insurance is optimal for this risk-averse individual. (c) What is the resulting sure wealth?",
+        "solution": "**(a)** Fair premium for full coverage: $pL = 0.25\\times36 = 9$.\n\n**(b)** Let $c\\in[0,L]$ be the indemnity paid in the loss state, with fair premium $pc$. Wealth in the two states: no-loss $W_1=W-pc$; loss $W_2=W-L-pc+c=W-L+c(1-p)$. Differentiating expected utility $EU=(1-p)u(W_1)+p\\,u(W_2)$ with respect to $c$ gives $\\dfrac{dEU}{dc}=p(1-p)\\big[u'(W_2)-u'(W_1)\\big]$. Since $u$ is strictly concave, $u'$ is strictly decreasing, so this is zero only when $W_1=W_2$ — which happens exactly at full coverage ($c=L$). So full insurance is the unique optimum whenever insurance is priced at the actuarially fair rate: a risk-averse agent facing a fair price always fully equalizes consumption across states.\n\n**(c)** Full coverage sets $W_1=W_2=W-pL=100-9=\\mathbf{91}$ in both states — the individual trades the gamble for a certain $91."
+      },
+      {
+        "q": "In the Rothschild–Stiglitz separating equilibrium, write the incentive-compatibility (IC) constraint that pins down the low-risk type's contract, and explain intuitively why it must bind with equality.",
+        "solution": "The IC constraint requires the high-risk type to (weakly) prefer their own contract $C_H$ (full insurance, priced at the high-risk actuarially fair rate) over the low-risk contract $C_L$: $EU_H(C_H) \\ge EU_H(C_L)$. In equilibrium this binds with **equality**: if it held with slack, a rival insurer could profitably offer low-risk types a contract with slightly *more* coverage than $C_L$ (still priced fairly for low risk, still unattractive to high-risk types) and steal the low-risk business — profitable entry that breaks the candidate equilibrium. So $C_L$ is pushed out exactly to the point where the high-risk type is indifferent between mimicking and taking their own contract — the maximum coverage low-risk types can get without inducing high-risk types to pool in with them."
+      }
     ]
   },
   {
@@ -2439,8 +2432,7 @@ const EXAM_BONUS = [
 function switchMode(mode){
   document.getElementById('mode-theory').classList.toggle('active', mode==='theory');
   document.getElementById('mode-testing').classList.toggle('active', mode==='testing');
-  document.getElementById('mode-btn-theory').classList.toggle('active', mode==='theory');
-  document.getElementById('mode-btn-testing').classList.toggle('active', mode==='testing');
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
   if(mode==='testing' && !testingInitialized){ initTesting(); testingInitialized = true; }
 }
 
