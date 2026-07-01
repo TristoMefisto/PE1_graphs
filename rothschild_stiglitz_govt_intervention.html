@@ -184,15 +184,16 @@
   function setupCanvas(){const dpr=window.devicePixelRatio||1;const avail=Math.max(300,cv.parentElement.clientWidth-16),cssW=Math.min(avail,640),cssH=cssW*LH/LW;
     cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);ctx.setTransform((cssW/LW)*dpr,0,0,(cssW/LW)*dpr,0,0);}
   let rTO;window.addEventListener('resize',()=>{clearTimeout(rTO);rTO=setTimeout(()=>{setupCanvas();draw();},120);});
-  function segE(x1,y1,x2,y2,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||1.4;ctx.setLineDash(d||[]);ctx.beginPath();ctx.moveTo(gx(x1),gy(y1));ctx.lineTo(gx(x2),gy(y2));ctx.stroke();ctx.restore();}
-  function curveFn(fn,c,w,d){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=w||2;ctx.setLineDash(d||[]);ctx.lineJoin='round';ctx.beginPath();let pen=false;
-    for(let x=1;x<=AX;x+=AX/440){const y=fn(x);if(!isFinite(y)||y<-2||y>AX*1.12){pen=false;continue;}const Px=gx(x),Py=gy(y);if(!pen){ctx.moveTo(Px,Py);pen=true;}else ctx.lineTo(Px,Py);}ctx.stroke();ctx.restore();}
-  function ptGold(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--pt'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();ctx.restore();}
-  function ptRing(x,y,r,c){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.lineWidth=2.4;ctx.strokeStyle=c||T['--pt'];ctx.stroke();ctx.restore();}
+  function segE(x1,y1,x2,y2,c,w,d,alpha){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.strokeStyle=c;ctx.lineWidth=w||1.4;ctx.setLineDash(d||[]);ctx.beginPath();ctx.moveTo(gx(x1),gy(y1));ctx.lineTo(gx(x2),gy(y2));ctx.stroke();ctx.restore();}
+  function curveFn(fn,c,w,d,alpha,xMin,xMax){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.strokeStyle=c;ctx.lineWidth=w||2;ctx.setLineDash(d||[]);ctx.lineJoin='round';ctx.beginPath();let pen=false;
+    xMin=xMin===undefined?1:xMin; xMax=xMax===undefined?AX:xMax;
+    for(let x=xMin;x<=xMax;x+=(xMax-xMin)/300){const y=fn(x);if(!isFinite(y)||y<-2||y>AX*1.12){pen=false;continue;}const Px=gx(x),Py=gy(y);if(!pen){ctx.moveTo(Px,Py);pen=true;}else ctx.lineTo(Px,Py);}ctx.stroke();ctx.restore();}
+  function ptGold(x,y,r,alpha){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--pt'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--pt-stroke'];ctx.stroke();ctx.restore();}
+  function ptRing(x,y,r,c,alpha){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.lineWidth=2.4;ctx.strokeStyle=c||T['--pt'];ctx.stroke();ctx.restore();}
   function ptGov(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--gov'];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T['--plot-bg'];ctx.stroke();ctx.restore();}
   function ptDark(x,y,r){ctx.save();ctx.beginPath();ctx.arc(gx(x),gy(y),r,0,7);ctx.fillStyle=T['--endow'];ctx.fill();ctx.restore();}
-  function lab(t,x,y,c,sz,al,halo){ctx.save();sz=sz||13;ctx.font='bold '+sz+'px Georgia';ctx.textAlign=al||'left';ctx.textBaseline='middle';
-    if(halo){const w=ctx.measureText(t).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=1;}
+  function lab(t,x,y,c,sz,al,halo,alpha){ctx.save();ctx.globalAlpha=alpha===undefined?1:alpha;sz=sz||13;ctx.font='bold '+sz+'px Georgia';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    if(halo){const w=ctx.measureText(t).width,ax=al==='center'?x-w/2:(al==='right'?x-w:x);ctx.fillStyle=T['--plot-bg'];ctx.globalAlpha=(alpha===undefined?1:alpha)*.85;ctx.fillRect(ax-3,y-sz/2-2,w+6,sz+4);ctx.globalAlpha=alpha===undefined?1:alpha;}
     ctx.fillStyle=c;ctx.fillText(t,x,y);ctx.restore();}
   function headUp(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x-4,y+2);ctx.lineTo(x+4,y+2);ctx.closePath();ctx.fill();ctx.restore();}
   function headRt(x,y){ctx.save();ctx.fillStyle=T['--text'];ctx.beginPath();ctx.moveTo(x+7,y);ctx.lineTo(x-2,y-4);ctx.lineTo(x-2,y+4);ctx.closePath();ctx.fill();ctx.restore();}
@@ -210,46 +211,52 @@
 
     segE(0,0,AX,AX,T['--line45'],1.8); lab('yₛ = yₕ',gx(AX-3),gy(AX-1),T['--line45'],12,'right',true);
 
-    // fair lines from A
-    curveFn(yh=>bud(yh,pH),T['--hi'],2.2); curveFn(yh=>bud(yh,pL),T['--lo'],2.2);
-    {const yhH=Math.max(2,Y+(AX-12-(Y-M))/slope(pH)); lab('bₕ',gx(yhH)-6,gy(bud(yhH,pH)),T['--hi'],12.5,'right',true);}
-    {const yhL=Math.max(2,Y+(AX-12-(Y-M))/slope(pL)); lab('bₗ',gx(yhL)+6,gy(bud(yhL,pL)),T['--lo'],12.5,'left',true);}
+    const baseAlpha = step>=2 ? 0.30 : 1;      // original A-centered elements fade once G appears
+    const supAlpha  = step>=4 ? 0.35 : 1;      // supplementary bH'/bL' fade once EU curves take over
 
-    // rationing dashed segment C'_L -> C_L (first best) : the rationing of L
-    segE(m.CpL.yh,m.CpL.ys,m.CLfb.yh,m.CLfb.ys,T['--lo'],1.5,[3,4]);
+    // fair lines from A (fade once G is introduced — kept only for context)
+    curveFn(yh=>bud(yh,pH),T['--hi'],2.2,[],baseAlpha); curveFn(yh=>bud(yh,pL),T['--lo'],2.2,[],baseAlpha);
+    if(step<2){
+      const yhH=Math.max(2,Y+(AX-12-(Y-M))/slope(pH)); lab('bₕ',gx(yhH)-6,gy(bud(yhH,pH)),T['--hi'],12.5,'right',true);
+      const yhL=Math.max(2,Y+(AX-12-(Y-M))/slope(pL)); lab('bₗ',gx(yhL)+6,gy(bud(yhL,pL)),T['--lo'],12.5,'left',true);
+    }
 
-    // population pooling line
-    if(step>=1){ curveFn(yh=>bud(yh,m.pbar),T['--pool'],1.8,[6,4]); lab('p (pooling)',gx(112),gy(bud(112,m.pbar))+11,T['--pool'],11,'left',true); }
+    // rationing dashed segment C'_L -> C_L (only relevant pre-mandate)
+    if(step<2){ segE(m.CpL.yh,m.CpL.ys,m.CLfb.yh,m.CLfb.ys,T['--lo'],1.5,[3,4]); }
 
-    // H-IC through C_H (original binding constraint)
-    if(step>=0){ curveFn(yh=>icY(yh,m.EUH0,pH),T['--hi'],1.4,[2,3]); }
+    // population pooling line — only shown transiently at step 1 (existence test), then dropped
+    if(step===1){ curveFn(yh=>bud(yh,m.pbar),T['--pool'],1.8,[6,4],1,55,120); lab('p (pooling)',gx(112),gy(bud(112,m.pbar))+11,T['--pool'],11,'left',true); }
+
+    // H-IC through C_H (original binding constraint) — fades out once G supersedes it
+    if(step<3){ curveFn(yh=>icY(yh,m.EUH0,pH),T['--hi'],1.4,[2,3],baseAlpha,55,120); }
 
     // ---- government mandate G ----
     if(step>=2){
-      // projections + brackets for piG and IG-piG
-      segE(m.G.yh,0,m.G.yh,m.G.ys,T['--muted'],1,[3,4]);
-      segE(0,m.G.ys,m.G.yh,m.G.ys,T['--muted'],1,[3,4]);
-      lab('π_G',gx((m.G.yh+Y)/2),gy(0)+14,T['--gov'],11,'center');
-      segE(Y,0.6,Y,2.4,T['--muted'],1); // tiny tick under Y handled by A projection already
-      lab('I_G−π_G',gx(0)-6,gy((m.G.ys+(Y-M))/2),T['--gov'],10.5,'right',true);
-      arrow(m.A.yh,m.A.ys,m.G.yh,m.G.ys,T['--transfer'],2.6);
-      lab('transfer L→H',gx((m.A.yh+m.G.yh)/2)+4,gy((m.A.ys+m.G.ys)/2)-9,T['--transfer'],10.5,'left',true);
+      const gAlpha = step>=3 ? 0.4 : 1;   // brackets/arrow fade once G's role is established
+      segE(m.G.yh,0,m.G.yh,m.G.ys,T['--muted'],1,[3,4],gAlpha);
+      segE(0,m.G.ys,m.G.yh,m.G.ys,T['--muted'],1,[3,4],gAlpha);
+      lab('π_G',gx((m.G.yh+Y)/2),gy(0)+14,T['--gov'],11,'center',false,gAlpha);
+      lab('I_G−π_G',gx(0)-6,gy((m.G.ys+(Y-M))/2),T['--gov'],10.5,'right',true,gAlpha);
+      arrow(m.A.yh,m.A.ys,m.G.yh,m.G.ys,T['--transfer'],2.6*Math.max(gAlpha,0.55));
+      if(step===2){ lab('transfer L→H',gx((m.A.yh+m.G.yh)/2)+4,gy((m.A.ys+m.G.ys)/2)-9,T['--transfer'],10.5,'left',true); }
     }
 
-    // ---- supplementary RS from G ----
+    // ---- supplementary RS from G (restricted to the relevant window, fades once EU curves arrive) ----
     if(step>=3){
-      curveFn(yh=>m.G.ys+m.sH*(yh-m.G.yh),T['--gov'],1.6,[7,3,2,3]);  // bH' fair from G
-      curveFn(yh=>m.G.ys+m.sL*(yh-m.G.yh),T['--gov'],1.6,[7,3,2,3]);  // bL' fair from G
-      lab('bₕ′',gx(m.CHs.yh)-7,gy(m.CHs.ys)+12,T['--gov'],11,'right',true);
-      lab('bₗ′',gx(m.CLs.yh)+7,gy(m.CLs.ys)+12,T['--gov'],11,'left',true);
+      curveFn(yh=>m.G.ys+m.sH*(yh-m.G.yh),T['--gov'],1.6,[7,3,2,3],supAlpha,70,95);
+      curveFn(yh=>m.G.ys+m.sL*(yh-m.G.yh),T['--gov'],1.6,[7,3,2,3],supAlpha,75,100);
+      if(step===3){
+        lab('bₕ′',gx(m.CHs.yh)-7,gy(m.CHs.ys)+14,T['--gov'],11,'right',true);
+        lab('bₗ′',gx(m.CLs.yh)+7,gy(m.CLs.ys)+14,T['--gov'],11,'left',true);
+      }
     }
 
-    // ---- welfare indifference curves through the new contracts ----
+    // ---- welfare indifference curves through the new contracts (final proof layer) ----
     if(step>=4){
-      curveFn(yh=>icY(yh,m.EUH_CHs,pH),T['--hi'],1.8);
-      curveFn(yh=>icY(yh,m.EUL_CLs,pL),T['--lo'],1.8);
-      lab('EU_H(C*ₕ)',gx(118),gy(Math.max(6,icY(118,m.EUH_CHs,pH))),T['--hi'],10.5,'left',true);
-      lab('EU_L(C*ₗ)',gx(120),gy(Math.max(6,icY(120,m.EUL_CLs,pL))),T['--lo'],10.5,'left',true);
+      curveFn(yh=>icY(yh,m.EUH_CHs,pH),T['--hi'],1.8,[],1,68,118);
+      curveFn(yh=>icY(yh,m.EUL_CLs,pL),T['--lo'],1.8,[],1,72,124);
+      lab('EU_H(C*ₕ)',gx(116),gy(Math.max(6,icY(116,m.EUH_CHs,pH))),T['--hi'],10.5,'left',true);
+      lab('EU_L(C*ₗ)',gx(118),gy(Math.max(6,icY(118,m.EUL_CLs,pL))),T['--lo'],10.5,'left',true);
     }
 
     // axes
@@ -258,20 +265,25 @@
     lab('yₛ',padL-8,padT+4,T['--text'],15,'right'); lab('yₕ',padL+PW+18,padT+PH,T['--text'],14);
 
     // endowment projections + labels
-    segE(m.A.yh,0,m.A.yh,m.A.ys,T['--muted'],1,[3,4]); segE(0,m.A.ys,m.A.yh,m.A.ys,T['--muted'],1,[3,4]);
-    lab('Y',gx(m.A.yh),gy(0)+14,T['--muted'],12,'center'); lab('Y−M',gx(0)-6,gy(m.A.ys),T['--muted'],11.5,'right');
+    const aAlpha = step>=2 ? 0.35 : 1;
+    segE(m.A.yh,0,m.A.yh,m.A.ys,T['--muted'],1,[3,4],aAlpha); segE(0,m.A.ys,m.A.yh,m.A.ys,T['--muted'],1,[3,4],aAlpha);
+    lab('Y',gx(m.A.yh),gy(0)+14,T['--muted'],12,'center',false,aAlpha); lab('Y−M',gx(0)-6,gy(m.A.ys),T['--muted'],11.5,'right',false,aAlpha);
 
-    // points: originals
-    ptRing(m.CLfb.yh,m.CLfb.ys,5.5,T['--muted']); lab('Cₗ',gx(m.CLfb.yh)+9,gy(m.CLfb.ys)-2,T['--muted'],11.5,'left',true);
-    ptGold(m.CH.yh,m.CH.ys,5.5); lab('Cₕ',gx(m.CH.yh)-9,gy(m.CH.ys)+2,T['--muted'],12,'right',true);
-    ptGold(m.CpL.yh,m.CpL.ys,5.5); lab('C′ₗ',gx(m.CpL.yh)+9,gy(m.CpL.ys)+3,T['--muted'],12,'left',true);
-    ptDark(m.A.yh,m.A.ys,5); lab('A',gx(m.A.yh)+9,gy(m.A.ys)+9,T['--text'],13,'left',true);
+    // points: originals (fade once G appears; drop text labels once superseded to avoid collision)
+    if(step<2){ ptRing(m.CLfb.yh,m.CLfb.ys,5.5,T['--muted']); lab('Cₗ',gx(m.CLfb.yh)+9,gy(m.CLfb.ys)-2,T['--muted'],11.5,'left',true); }
+    ptGold(m.CH.yh,m.CH.ys,5.5,baseAlpha);
+    ptGold(m.CpL.yh,m.CpL.ys,5.5,baseAlpha);
+    if(step<2){
+      lab('Cₕ',gx(m.CH.yh)-9,gy(m.CH.ys)+2,T['--muted'],12,'right',true);
+      lab('C′ₗ',gx(m.CpL.yh)+9,gy(m.CpL.ys)+3,T['--muted'],12,'left',true);
+    }
+    ptDark(m.A.yh,m.A.ys,5); lab('A',gx(m.A.yh)+9,gy(m.A.ys)+9,T['--text'],13,'left',true,aAlpha);
     // G
-    if(step>=2){ ptGov(m.G.yh,m.G.ys,6); lab('G',gx(m.G.yh)-9,gy(m.G.ys)+1,T['--gov'],13,'right',true); }
+    if(step>=2){ const gDotA=step>=4?0.55:1; ptGov(m.G.yh,m.G.ys,6); ctx.save();ctx.globalAlpha=gDotA;lab('G',gx(m.G.yh)-9,gy(m.G.ys)+1,T['--gov'],13,'right',true);ctx.restore(); }
     // new contracts
     if(step>=3){
-      ptGold(m.CHs.yh,m.CHs.ys,6); ptRing(m.CHs.yh,m.CHs.ys,9,T['--gov']); lab('C*ₕ',gx(m.CHs.yh)-10,gy(m.CHs.ys)-7,T['--text'],12.5,'right',true);
-      ptGold(m.CLs.yh,m.CLs.ys,6); ptRing(m.CLs.yh,m.CLs.ys,9,T['--gov']); lab('C*ₗ',gx(m.CLs.yh)+10,gy(m.CLs.ys)-2,T['--text'],12.5,'left',true);
+      ptGold(m.CHs.yh,m.CHs.ys,6); ptRing(m.CHs.yh,m.CHs.ys,9,T['--gov']); lab('C*ₕ',gx(m.CHs.yh)-11,gy(m.CHs.ys)-9,T['--text'],12.5,'right',true);
+      ptGold(m.CLs.yh,m.CLs.ys,6); ptRing(m.CLs.yh,m.CLs.ys,9,T['--gov']); lab('C*ₗ',gx(m.CLs.yh)+11,gy(m.CLs.ys)-9,T['--text'],12.5,'left',true);
     }
 
     // readouts
