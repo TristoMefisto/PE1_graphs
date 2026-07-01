@@ -8,13 +8,13 @@
   :root {
     --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --grid:#E8E6DF;
     --text:#1A1A2E; --muted:#75736B; --mb:#2E7D32; --cmean:#1A1A2E; --cband:#C62828; --dwl:#1565C0;
-    --inst:#6A1B9A; --eq:#F9A825; --eq-stroke:#4A3000; --accent:#8E1B1B; --win:#2E7D32;
+    --inst:#6A1B9A; --eq:#F9A825; --eq-stroke:#4A3000; --accent:#8E1B1B; --win:#2E7D32; --band:#E67E22;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg:#1A1A1E; --surface:#252529; --plot-bg:#1E1E22; --border:#3A3A40; --grid:#33333A;
       --text:#ECECEC; --muted:#9A9A9A; --mb:#66BB6A; --cmean:#ECECEC; --cband:#EF6C6C; --dwl:#5B9BE8;
-      --inst:#B57BE0; --eq:#FFD54F; --eq-stroke:#1A1A1E; --accent:#E57373; --win:#66BB6A;
+      --inst:#B57BE0; --eq:#FFD54F; --eq-stroke:#1A1A1E; --accent:#E57373; --win:#66BB6A; --band:#F0A860;
     }
   }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -73,7 +73,7 @@
     <div class="card">
       <div class="stepper-head">
         <div class="step-dots" id="dots"></div>
-        <div class="step-counter" id="counter">Step 0 / 4</div>
+        <div class="step-counter" id="counter">Step 0 / 5</div>
       </div>
       <div class="step-title" id="stitle">—</div>
       <div class="step-body" id="sbody">—</div>
@@ -113,12 +113,13 @@ let T={};
 function loadTheme(){
   T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),border:cssvar('--border'),text:cssvar('--text'),muted:cssvar('--muted'),
       mb:cssvar('--mb'),cmean:cssvar('--cmean'),cband:cssvar('--cband'),dwl:cssvar('--dwl'),inst:cssvar('--inst'),
+      band:cssvar('--band'),
       eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),accent:cssvar('--accent'),win:cssvar('--win') };
 }
 loadTheme();
 if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
 
-const LW=640,LH=384,padT=30,padB=40,GAP=40,axL=30;
+const LW=640,LH=420,padT=30,padB=52,GAP=44,axL=40;
 const pw=(LW-axL-16-GAP)/2, plotH=LH-padT-padB;
 const X0L=axL, X0R=axL+pw+GAP;
 const a=100, Q_MAX=140, P_MAX=125;
@@ -139,7 +140,10 @@ function model(){
   const q2=(pstar-u)/m, q1=(pstar+u)/m;
   const EQ=u*u/(2*(b+m));
   const EP=b*b*u*u/(2*m*m*(b+m));
-  return {qstar,pstar,qUP,qLO,q1,q2,EQ,EP};
+  // true optimal price under each realization = B' at the realization-specific optimal quantity
+  const pUPopt=Bp(qUP), pLOopt=Bp(qLO);
+  const qBandW=qLO-qUP, pBandW=pUPopt-pLOopt;
+  return {qstar,pstar,qUP,qLO,q1,q2,EQ,EP,pUPopt,pLOopt,qBandW,pBandW};
 }
 
 // panel-local mappers
@@ -147,6 +151,23 @@ const qx=(x0,q)=>x0+(q/Q_MAX)*pw, py=p=>padT+plotH-(p/P_MAX)*plotH;
 function seg(x0,q1,p1,q2,p2,color,w,dash){ctx.beginPath();ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=w;ctx.moveTo(qx(x0,q1),py(p1));ctx.lineTo(qx(x0,q2),py(p2));ctx.stroke();ctx.setLineDash([]);}
 function curve(x0,fn,color,w,dash){seg(x0,0,fn(0),Q_MAX,fn(Q_MAX),color,w,dash);}
 function tri(x0,pts,color,alpha){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();pts.forEach((p,i)=>{const X=qx(x0,p[0]),Y=py(p[1]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.fill();ctx.restore();}
+function triOutline(x0,pts,color){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.3;ctx.globalAlpha=0.85;ctx.beginPath();pts.forEach((p,i)=>{const X=qx(x0,p[0]),Y=py(p[1]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.stroke();ctx.restore();}
+function hBracket(x0,qA,qB,pRef,color,label){
+  // horizontal bracket below the axis spanning [qA,qB] at fixed pixel offset below x-axis
+  const y=padT+plotH+30, xA=qx(x0,qA), xB=qx(x0,qB);
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.6;ctx.beginPath();
+  ctx.moveTo(xA,y-5);ctx.lineTo(xA,y);ctx.lineTo(xB,y);ctx.lineTo(xB,y-5);ctx.stroke();ctx.restore();
+  ctx.save();ctx.font='bold 10.5px Georgia';ctx.fillStyle=color;ctx.textAlign='center';
+  ctx.fillText(label,(xA+xB)/2,y+13);ctx.restore();
+}
+function vBracket(x0,pA,pB,color,label){
+  // vertical bracket to the left of the y-axis spanning [pA,pB]
+  const x=x0-14, yA=py(pA), yB=py(pB);
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.6;ctx.beginPath();
+  ctx.moveTo(x+5,yA);ctx.lineTo(x,yA);ctx.lineTo(x,yB);ctx.lineTo(x+5,yB);ctx.stroke();ctx.restore();
+  ctx.save();ctx.font='bold 10.5px Georgia';ctx.fillStyle=color;ctx.textAlign='center';ctx.translate(x-11,(yA+yB)/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText(label,0,0);ctx.restore();
+}
 function dotP(x0,q,p,r,fill){ctx.beginPath();ctx.arc(qx(x0,q),py(p),r,0,7);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=T.plotBg;ctx.stroke();}
 function lab(x0,txt,q,p,dx,dy,color,size,align,halo){
   ctx.save();size=size||11;ctx.font='bold '+size+'px Georgia';ctx.textAlign=align||'left';
@@ -167,13 +188,19 @@ function drawPanel(x0,mode){
   const showTax = (mode==='tax' && step>=3);
   if(showStd){
     // too restrictive (cost UP): between C'_UP and B' from qUP to qstar
-    tri(x0,[[M.qUP,Bp(M.qUP)],[M.qstar,Bp(M.qstar)],[M.qstar,Cup(M.qstar)]],T.dwl,0.5);
+    tri(x0,[[M.qUP,Bp(M.qUP)],[M.qstar,Bp(M.qstar)],[M.qstar,Cup(M.qstar)]],T.dwl,0.55);
     // too lenient (cost LO): between B' and C'_LO from qstar to qLO
-    tri(x0,[[M.qstar,Bp(M.qstar)],[M.qstar,Clo(M.qstar)],[M.qLO,Bp(M.qLO)]],T.dwl,0.5);
+    tri(x0,[[M.qstar,Bp(M.qstar)],[M.qstar,Clo(M.qstar)],[M.qLO,Bp(M.qLO)]],T.dwl,0.55);
+    triOutline(x0,[[M.qUP,Bp(M.qUP)],[M.qstar,Bp(M.qstar)],[M.qstar,Cup(M.qstar)]],T.dwl);
+    triOutline(x0,[[M.qstar,Bp(M.qstar)],[M.qstar,Clo(M.qstar)],[M.qLO,Bp(M.qLO)]],T.dwl);
+    lab(x0,'E[DWL]='+M.EQ.toFixed(0),M.qstar,Math.max(Bp(M.qstar),Cup(M.qstar))+2,0,10,T.dwl,11,'center',true);
   }
   if(showTax){
-    tri(x0,[[M.q2,Bp(M.q2)],[M.q2,M.pstar],[M.qUP,Bp(M.qUP)]],T.dwl,0.5);
-    tri(x0,[[M.q1,Bp(M.q1)],[M.q1,M.pstar],[M.qLO,Bp(M.qLO)]],T.dwl,0.5);
+    tri(x0,[[M.q2,Bp(M.q2)],[M.q2,M.pstar],[M.qUP,Bp(M.qUP)]],T.dwl,0.55);
+    tri(x0,[[M.q1,Bp(M.q1)],[M.q1,M.pstar],[M.qLO,Bp(M.qLO)]],T.dwl,0.55);
+    triOutline(x0,[[M.q2,Bp(M.q2)],[M.q2,M.pstar],[M.qUP,Bp(M.qUP)]],T.dwl);
+    triOutline(x0,[[M.q1,Bp(M.q1)],[M.q1,M.pstar],[M.qLO,Bp(M.qLO)]],T.dwl);
+    lab(x0,'E[DWL]='+M.EP.toFixed(0),M.qstar,Bp(M.qstar)+10,0,10,T.dwl,11,'center',true);
   }
 
   // cost band + curves
@@ -195,6 +222,15 @@ function drawPanel(x0,mode){
       seg(x0,M2.q1,0,M2.q1,M2.pstar,T.muted,1,[3,3]); lab(x0,'q₁',M2.q1,0,0,16,T.muted,11,'center');
     }
     lab(x0,'q*',M2.qstar,0,0,16,T.muted,11,'center');
+  }
+
+  // band brackets (step 4): quantity band on standard panel, price band on tax panel
+  if(step>=4){
+    if(mode==='standard'){
+      hBracket(x0,M.qUP,M.qLO,0,T.band,'quantity band, width '+M.qBandW.toFixed(0));
+    } else {
+      vBracket(x0,M.pLOopt,M.pUPopt,T.band,'price band, width '+M.pBandW.toFixed(0));
+    }
   }
 
   // axes
@@ -246,7 +282,9 @@ function stepContent(){
     {t:"Step 3 · The tax's error (right panel)",
      b:`A fixed price p* lets firms choose quantity: they abate to <span class="num">q₂</span> if cost is high, <span class="num">q₁</span> if low. Because quantity now swings with the cost shock, the blue triangles sit far from the realised optimum.`},
     {t:"Step 4 · The slope rule",
-     b:`Compare the triangles: DWL<sub>tax</sub> / DWL<sub>standard</sub> = (|B′| / C′)². <b>Steep MB</b> (|B′| &gt; C′) ⇒ the standard wins (quantity matters, so pin it down). <b>Flat MB</b> ⇒ the tax wins (quantity barely matters, so pin the price). Move the |B′| slider across C′ to flip the verdict.`}
+     b:`Compare the triangles: DWL<sub>tax</sub> / DWL<sub>standard</sub> = (|B′| / C′)². <b>Steep MB</b> (|B′| &gt; C′) ⇒ the standard wins (quantity matters, so pin it down). <b>Flat MB</b> ⇒ the tax wins (quantity barely matters, so pin the price). Move the |B′| slider across C′ to flip the verdict.`},
+    {t:"Step 5 · Price band vs. quantity band",
+     b:`Now compare the truly optimal outcome under each realisation, not the fixed instrument. The optimal <b>quantity</b> ranges over <span class="num">[${M.qUP.toFixed(0)}, ${M.qLO.toFixed(0)}]</span> — width <span class="num">${M.qBandW.toFixed(0)}</span>. The optimal <b>price</b> ranges over <span class="num">[${M.pLOopt.toFixed(0)}, ${M.pUPopt.toFixed(0)}]</span> — width <span class="num">${M.pBandW.toFixed(0)}</span>. Their ratio is exactly |B′| = <span class="num">${b.toFixed(2)}</span>: with steep MB the price band is wide and the quantity band narrow, so committing to a quantity is the safer bet.`}
   ];
 }
 
@@ -254,16 +292,16 @@ function render(){
   const c=stepContent()[step];
   document.getElementById('stitle').innerHTML=c.t;
   document.getElementById('sbody').innerHTML=c.b;
-  document.getElementById('counter').textContent=`Step ${step} / 4`;
+  document.getElementById('counter').textContent=`Step ${step} / 5`;
   const dots=document.getElementById('dots');dots.innerHTML='';
-  for(let i=0;i<=4;i++){const d=document.createElement('div');d.className='step-dot'+(i===step?' active':(i<step?' done':''));dots.appendChild(d);}
+  for(let i=0;i<=5;i++){const d=document.createElement('div');d.className='step-dot'+(i===step?' active':(i<step?' done':''));dots.appendChild(d);}
   document.getElementById('back').disabled=(step===0);
-  document.getElementById('next').disabled=(step===4);
-  document.getElementById('next').textContent=step===4?'Done':'Next ▶';
+  document.getElementById('next').disabled=(step===5);
+  document.getElementById('next').textContent=step===5?'Done':'Next ▶';
   draw();
 }
 
-document.getElementById('next').addEventListener('click',()=>{if(step<4){step++;render();}});
+document.getElementById('next').addEventListener('click',()=>{if(step<5){step++;render();}});
 document.getElementById('back').addEventListener('click',()=>{if(step>0){step--;render();}});
 document.getElementById('s-b').addEventListener('input',e=>{b=parseFloat(e.target.value);render();});
 document.getElementById('s-m').addEventListener('input',e=>{m=parseFloat(e.target.value);render();});
