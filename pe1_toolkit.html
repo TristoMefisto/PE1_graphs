@@ -797,7 +797,7 @@ function switchPanel(name, el){
     if(!formulasRendered && window.renderMathInElement){
       renderMathInElement(document.getElementById('panel-formulas'), {
         delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],
-        trust:true, throwOnError:false
+        trust:true, throwOnError:false, strict:false
       });
       formulasRendered = true;
     }
@@ -1056,7 +1056,7 @@ function setFormulaBox(html){
   if(window.renderMathInElement){
     renderMathInElement(el, {
       delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],
-      trust:true, throwOnError:false
+      trust:true, throwOnError:false, strict:false
     });
   }
 }
