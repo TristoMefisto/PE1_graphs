@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PE1 Toolkit — Public Economics Interactive Graphs</title>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --plot-bg:#FCFCFA; --border:#DDD9D0; --border2:#CFCABE; --grid:#E8E6DF;
+    --text:#1A1A2E; --muted:#75736B; --muted2:#9A968A;
+    --accent:#1565C0; --accent2:#0D47A1;
+    --buyer:#C62828; --seller:#E67E22; --demand:#1565C0; --supply:#2E7D32; --mr:#6A1B9A; --mc:#C62828;
+    --eq:#F9A825; --eq-stroke:#4A3000;
+    --green:#2E7D32; --amber:#B8860B; --red:#C62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#17171A; --surface:#212126; --plot-bg:#1B1B1F; --border:#33333A; --border2:#3E3E46; --grid:#2A2A30;
+      --text:#ECECEC; --muted:#9A9A9A; --muted2:#77776F;
+      --accent:#5B9BE8; --accent2:#8FC1F2;
+      --buyer:#EF6C6C; --seller:#F0A860; --demand:#5B9BE8; --supply:#66BB6A; --mr:#B57BE0; --mc:#EF6C6C;
+      --eq:#FFD54F; --eq-stroke:#1A1A1E;
+      --green:#66BB6A; --amber:#E0B84D; --red:#EF6C6C;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; overflow:hidden; }
+
+  .app { display:flex; height:100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar { width:238px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border);
+             display:flex; flex-direction:column; }
+  .sidebar-header { padding:20px 18px 14px; border-bottom:1px solid var(--border); }
+  .sidebar-logo { font-size:13px; font-weight:bold; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:3px; }
+  .sidebar-sub { font-size:11px; color:var(--muted); line-height:1.5; font-style:italic; }
+  .sidebar-nav { padding:12px 8px; flex:1; overflow-y:auto; }
+  .nav-label { font-size:10px; font-weight:bold; letter-spacing:.09em; text-transform:uppercase; color:var(--muted2); padding:12px 10px 5px; }
+  .nav-label:first-child { padding-top:4px; }
+  .nav-item { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:5px; cursor:pointer;
+              font-size:13px; color:var(--muted); transition:all .15s; margin-bottom:1px; border-left:2.5px solid transparent; }
+  .nav-item:hover { background:var(--bg); color:var(--text); }
+  .nav-item.active { background:var(--bg); color:var(--text); border-left-color:var(--accent); font-weight:bold; }
+  .nav-item.stub { opacity:.6; }
+  .nav-icon { font-size:13px; width:16px; text-align:center; flex-shrink:0; }
+  .nav-count { margin-left:auto; font-size:10px; color:var(--muted2); font-family:'Courier New',monospace; }
+
+  /* ── Main ── */
+  .main { flex:1; overflow:hidden; display:flex; flex-direction:column; min-width:0; }
+  .topbar { padding:14px 26px; border-bottom:1px solid var(--border); display:flex; align-items:baseline;
+            justify-content:space-between; background:var(--surface); flex-shrink:0; flex-wrap:wrap; gap:6px; }
+  .topbar-title { font-size:17px; font-weight:bold; color:var(--accent); }
+  .topbar-meta { font-size:12px; color:var(--muted); font-style:italic; }
+  .content { flex:1; overflow-y:auto; padding:22px 26px 34px; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  .stub-panel { max-width:520px; margin:60px auto 0; text-align:center; color:var(--muted); }
+  .stub-panel .big { font-size:34px; margin-bottom:14px; }
+  .stub-panel h2 { font-size:17px; color:var(--text); margin-bottom:8px; }
+  .stub-panel p { font-size:13px; line-height:1.6; }
+
+  /* ── Tax incidence module ── */
+  .ti-layout { display:flex; gap:20px; max-width:1120px; align-items:flex-start; flex-wrap:wrap; }
+  .ti-canvas-wrap { flex:1 1 600px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px; min-width:300px; }
+  canvas { display:block; margin:0 auto; }
+  .ti-panel { flex:1 1 280px; display:flex; flex-direction:column; gap:14px; min-width:264px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:15px 16px; }
+  .card-title { font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:11px; }
+
+  .toggle-row { display:flex; gap:6px; margin-bottom:10px; }
+  .toggle-row:last-child { margin-bottom:0; }
+  .tbtn { flex:1; font-family:'Georgia',serif; font-size:12.5px; padding:9px 4px; border-radius:5px; cursor:pointer;
+          border:1.5px solid var(--border2); background:var(--surface); color:var(--text); transition:all .15s; text-align:center; }
+  .tbtn:hover { background:var(--bg); }
+  .tbtn.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:bold; }
+  .sub-toggle { max-height:0; overflow:hidden; transition:max-height .2s ease; }
+  .sub-toggle.open { max-height:60px; margin-top:10px; }
+
+  .slider-label { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; margin-top:12px; }
+  .slider-label:first-of-type { margin-top:0; }
+  .slider-label .val { font-family:'Courier New',monospace; font-weight:bold; }
+  input[type=range] { width:100%; height:4px; cursor:pointer; accent-color:var(--accent); }
+
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-box { border-radius:5px; padding:10px 12px; font-size:12px; line-height:1.5; }
+  .res-box.buyer { background:color-mix(in srgb,var(--buyer) 13%,transparent); border-left:3px solid var(--buyer); }
+  .res-box.seller { background:color-mix(in srgb,var(--seller) 13%,transparent); border-left:3px solid var(--seller); }
+  .res-box.wide { grid-column:1/3; border-left:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+  .res-box .lbl { font-size:10px; font-weight:bold; margin-bottom:3px; text-transform:uppercase; letter-spacing:.04em; }
+  .res-box.buyer .lbl { color:var(--buyer); } .res-box.seller .lbl { color:var(--seller); } .res-box.wide .lbl { color:var(--accent); }
+  .res-box .big { font-family:'Courier New',monospace; font-weight:bold; font-size:14.5px; }
+
+  .insight { font-size:12.5px; line-height:1.6; color:var(--text); background:var(--bg); border-radius:5px; padding:11px 13px; border:1px solid var(--border); }
+  .insight b { color:var(--accent); }
+
+  .legend { font-size:11.5px; line-height:1.85; }
+  .legend .item { display:flex; align-items:center; gap:8px; }
+  .legend .sw { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
+  .legend .sw.dash { height:0; border-top:2px dashed var(--muted); }
+  .legend .dt { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">PE1 Toolkit</div>
+      <div class="sidebar-sub">Public Economics · Bologna<br>Interactive reference graphs</div>
+    </div>
+    <nav class="sidebar-nav" id="nav">
+      <div class="nav-label">Taxation</div>
+      <div class="nav-item active" data-panel="tax-incidence" onclick="switchPanel('tax-incidence',this)">
+        <span class="nav-icon">📊</span>Tax incidence &amp; pass-through
+      </div>
+      <div class="nav-item stub" data-panel="efficiency-cost" onclick="switchPanel('efficiency-cost',this)">
+        <span class="nav-icon">📐</span>Efficiency cost of taxes
+      </div>
+
+      <div class="nav-label">Externalities</div>
+      <div class="nav-item stub" data-panel="externality-policy" onclick="switchPanel('externality-policy',this)">
+        <span class="nav-icon">🏭</span>Policy comparison
+      </div>
+      <div class="nav-item stub" data-panel="abatement-efficiency" onclick="switchPanel('abatement-efficiency',this)">
+        <span class="nav-icon">🌿</span>Abatement efficiency
+      </div>
+      <div class="nav-item stub" data-panel="private-remedies" onclick="switchPanel('private-remedies',this)">
+        <span class="nav-icon">🤝</span>Private remedies
+      </div>
+      <div class="nav-item stub" data-panel="uncertainty" onclick="switchPanel('uncertainty',this)">
+        <span class="nav-icon">🎲</span>Taxes vs. standards (uncertainty)
+      </div>
+      <div class="nav-item stub" data-panel="cap-trade" onclick="switchPanel('cap-trade',this)">
+        <span class="nav-icon">🔁</span>Cap and trade
+      </div>
+
+      <div class="nav-label">Public Goods</div>
+      <div class="nav-item stub" data-panel="public-goods" onclick="switchPanel('public-goods',this)">
+        <span class="nav-icon">🏛️</span>Private provision &amp; Nash
+      </div>
+
+      <div class="nav-label">Insurance</div>
+      <div class="nav-item stub" data-panel="social-insurance" onclick="switchPanel('social-insurance',this)">
+        <span class="nav-icon">🛡️</span>Social insurance &amp; RS
+      </div>
+      <div class="nav-item stub" data-panel="moral-hazard" onclick="switchPanel('moral-hazard',this)">
+        <span class="nav-icon">🏥</span>Moral hazard
+      </div>
+
+      <div class="nav-label">General Equilibrium</div>
+      <div class="nav-item stub" data-panel="edgeworth" onclick="switchPanel('edgeworth',this)">
+        <span class="nav-icon">📦</span>Edgeworth box &amp; tâtonnement
+      </div>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Tax Incidence &amp; Pass-Through</div>
+      <div class="topbar-meta" id="topbar-meta">Merges 5 graphs: excise (buyer/seller), elasticity, monopoly (linear/isoelastic)</div>
+    </div>
+    <div class="content">
+
+      <!-- ═══════════ TAX INCIDENCE PANEL ═══════════ -->
+      <div class="panel active" id="panel-tax-incidence">
+        <div class="ti-layout">
+          <div class="ti-canvas-wrap"><canvas id="cv"></canvas></div>
+
+          <div class="ti-panel">
+            <div class="card">
+              <div class="card-title">Market structure</div>
+              <div class="toggle-row">
+                <button class="tbtn active" id="mode-competitive" onclick="setMode('competitive')">Competitive</button>
+                <button class="tbtn" id="mode-monopoly" onclick="setMode('monopoly')">Monopoly</button>
+              </div>
+
+              <div class="sub-toggle open" id="sub-competitive">
+                <div class="toggle-row">
+                  <button class="tbtn active" id="side-buyer" onclick="setSide('buyer')">Levied on buyers</button>
+                  <button class="tbtn" id="side-seller" onclick="setSide('seller')">Levied on sellers</button>
+                </div>
+              </div>
+              <div class="sub-toggle" id="sub-monopoly">
+                <div class="toggle-row">
+                  <button class="tbtn active" id="shape-linear" onclick="setShape('linear')">Linear demand</button>
+                  <button class="tbtn" id="shape-isoelastic" onclick="setShape('isoelastic')">Isoelastic demand</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" id="results-card">
+              <div class="card-title">Incidence</div>
+              <div class="results" id="results-grid"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Adjust the model</div>
+              <div id="sliders-competitive">
+                <div class="slider-label"><span>Demand elasticity |ε_D|</span><span class="val" id="v-epsD">0.83</span></div>
+                <input type="range" id="s-epsD" min="0.3" max="2.5" step="0.01" value="0.83">
+                <div class="slider-label"><span>Supply elasticity ε_S</span><span class="val" id="v-epsS">1.25</span></div>
+                <input type="range" id="s-epsS" min="0.3" max="2.5" step="0.01" value="1.25">
+                <div class="slider-label"><span>Tax t ($)</span><span class="val" id="v-t">7.5</span></div>
+                <input type="range" id="s-t" min="1" max="15" step="0.5" value="7.5">
+              </div>
+              <div id="sliders-monopoly" style="display:none">
+                <div class="slider-label"><span>Demand elasticity ε (isoelastic only)</span><span class="val" id="v-eps">2.0</span></div>
+                <input type="range" id="s-eps" min="1.2" max="4" step="0.1" value="2.0">
+                <div class="slider-label"><span>Marginal cost c'</span><span class="val" id="v-mc0">10</span></div>
+                <input type="range" id="s-mc0" min="4" max="20" step="0.5" value="10">
+                <div class="slider-label"><span>Tax t ($)</span><span class="val" id="v-tm">5.0</span></div>
+                <input type="range" id="s-tm" min="1" max="12" step="0.5" value="5.0">
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Key insight</div>
+              <div class="insight" id="insight-box">—</div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">Legend</div>
+              <div class="legend" id="legend-box"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ STUB PANELS (future modules) ═══════════ -->
+      <div class="panel" id="panel-generic-stub">
+        <div class="stub-panel">
+          <div class="big">🚧</div>
+          <h2 id="stub-title">Coming soon</h2>
+          <p>This module hasn't been consolidated yet. The original graphs for this topic are still live and unchanged on GitHub / Notion in the meantime.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════ SHELL: sidebar navigation ══════════════ */
+const STUB_TITLES = {
+  'efficiency-cost':'Efficiency Cost of Taxes','externality-policy':'Externality Policy Comparison',
+  'abatement-efficiency':'Abatement Efficiency Framework','private-remedies':'Private Remedies (Coase / Commons)',
+  'uncertainty':'Taxes vs. Standards under Uncertainty','cap-trade':'Cap and Trade',
+  'public-goods':'Private Provision of Public Goods','social-insurance':'Social Insurance & Adverse Selection',
+  'moral-hazard':'Moral Hazard','edgeworth':'Edgeworth Box & Tâtonnement'
+};
+const TOPBAR_META = { 'tax-incidence':"Merges 5 graphs: excise (buyer/seller), elasticity, monopoly (linear/isoelastic)" };
+
+function switchPanel(name, el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+
+  if(name==='tax-incidence'){
+    document.getElementById('panel-tax-incidence').classList.add('active');
+    document.getElementById('topbar-title').textContent='Tax Incidence & Pass-Through';
+    document.getElementById('topbar-meta').textContent=TOPBAR_META['tax-incidence'];
+    setupCanvas(); draw();
+  } else {
+    document.getElementById('panel-generic-stub').classList.add('active');
+    document.getElementById('stub-title').textContent = STUB_TITLES[name] || name;
+    document.getElementById('topbar-title').textContent = STUB_TITLES[name] || name;
+    document.getElementById('topbar-meta').textContent = 'Not yet built';
+  }
+}
+
+/* ══════════════ TAX INCIDENCE MODULE ══════════════ */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let T={};
+function loadTheme(){
+  T={ plotBg:cssvar('--plot-bg'),grid:cssvar('--grid'),border:cssvar('--border'),text:cssvar('--text'),muted:cssvar('--muted'),
+      buyer:cssvar('--buyer'),seller:cssvar('--seller'),demand:cssvar('--demand'),supply:cssvar('--supply'),
+      mr:cssvar('--mr'),mc:cssvar('--mc'),eq:cssvar('--eq'),eqStroke:cssvar('--eq-stroke'),accent:cssvar('--accent') };
+}
+loadTheme();
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{loadTheme();draw();});
+
+const LW=600,LH=460,padL=54,padR=26,padT=26,padB=50;
+const plotW=LW-padL-padR, plotH=LH-padT-padB;
+
+function setupCanvas(){
+  const dpr=window.devicePixelRatio||1, avail=Math.max(300,cv.parentElement.clientWidth-16);
+  const cssW=Math.min(avail,700), cssH=cssW*LH/LW;
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const s=(cssW/LW)*dpr; ctx.setTransform(s,0,0,s,0,0);
+}
+let resizeTO; window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{if(state.mode)setupCanvas();draw();},120);});
+
+// ---- state ----
+let state = { mode:'competitive', side:'buyer', shape:'linear',
+  epsD:0.83, epsS:1.25, t:7.5,
+  eps:2.0, mc0:10, tm:5.0 };
+
+function setMode(m){
+  state.mode=m;
+  document.getElementById('mode-competitive').classList.toggle('active',m==='competitive');
+  document.getElementById('mode-monopoly').classList.toggle('active',m==='monopoly');
+  document.getElementById('sub-competitive').classList.toggle('open',m==='competitive');
+  document.getElementById('sub-monopoly').classList.toggle('open',m==='monopoly');
+  document.getElementById('sliders-competitive').style.display = m==='competitive'?'block':'none';
+  document.getElementById('sliders-monopoly').style.display = m==='monopoly'?'block':'none';
+  draw();
+}
+function setSide(s){ state.side=s;
+  document.getElementById('side-buyer').classList.toggle('active',s==='buyer');
+  document.getElementById('side-seller').classList.toggle('active',s==='seller');
+  draw();
+}
+function setShape(s){ state.shape=s;
+  document.getElementById('shape-linear').classList.toggle('active',s==='linear');
+  document.getElementById('shape-isoelastic').classList.toggle('active',s==='isoelastic');
+  draw();
+}
+
+// ---- economics ----
+const Q0=1500, P0=22.5; // competitive reference equilibrium
+function competitiveModel(){
+  const {epsD,epsS,t}=state;
+  const md=P0/(epsD*Q0), ms=P0/(epsS*Q0);
+  const Qe = Q0 - t/(md+ms);
+  const Pb = P0 - md*(Qe-Q0);
+  const Ps = P0 + ms*(Qe-Q0);
+  const buyerShare=(Pb-P0)/t, sellerShare=(P0-Ps)/t;
+  return {md,ms,Qe,Pb,Ps,buyerShare,sellerShare};
+}
+function monopolyModel(){
+  if(state.shape==='linear'){
+    const a=50,b=3,mc0=state.mc0,t=state.tm;
+    const Sbefore=(a-mc0)/(2*b), Pbefore=a-b*Sbefore;
+    const Safter=(a-mc0-t)/(2*b), Pafter=a-b*Safter;
+    return {a,b,mc0,t,Sbefore,Pbefore,Safter,Pafter,passthrough:(Pafter-Pbefore)/t,
+            Bp:q=>a-b*q, MRp:q=>a-2*b*q};
+  } else {
+    const A=50, eps=state.eps, mc0=state.mc0, t=state.tm;
+    const Sbefore=Math.pow(A*(1-1/eps)/mc0,eps), Pbefore=A*Math.pow(Sbefore,-1/eps);
+    const Safter=Math.pow(A*(1-1/eps)/(mc0+t),eps), Pafter=A*Math.pow(Safter,-1/eps);
+    return {A,eps,mc0,t,Sbefore,Pbefore,Safter,Pafter,passthrough:(Pafter-Pbefore)/t,
+            Bp:q=>A*Math.pow(Math.max(q,0.05),-1/eps), MRp:q=>A*(1-1/eps)*Math.pow(Math.max(q,0.05),-1/eps)};
+  }
+}
+
+// ---- drawing primitives (axis-agnostic, set per draw call) ----
+let qx,py, Q_MAX,P_MAX;
+function setAxes(qmax,pmax){ Q_MAX=qmax; P_MAX=pmax;
+  qx=q=>padL+(q/Q_MAX)*plotW; py=p=>padT+plotH-(p/P_MAX)*plotH; }
+function seg(q1,p1,q2,p2,color,w,dash,alpha){ ctx.save(); ctx.globalAlpha=alpha===undefined?1:alpha; ctx.setLineDash(dash||[]);
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(qx(q1),py(p1)); ctx.lineTo(qx(q2),py(p2)); ctx.stroke(); ctx.restore(); }
+function curveFn(fn,qa,qb,color,w,dash,alpha){ ctx.save(); ctx.globalAlpha=alpha===undefined?1:alpha; ctx.setLineDash(dash||[]);
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.beginPath(); let pen=false;
+  for(let q=qa;q<=qb;q+=(qb-qa)/300){ const p=fn(q); if(!isFinite(p)||p<0||p>P_MAX*1.15){pen=false;continue;}
+    const X=qx(q),Y=py(p); if(!pen){ctx.moveTo(X,Y);pen=true;} else ctx.lineTo(X,Y); }
+  ctx.stroke(); ctx.restore(); }
+function dot(q,p,r,fill){ ctx.beginPath(); ctx.arc(qx(q),py(p),r,0,7); ctx.fillStyle=fill; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle=T.plotBg; ctx.stroke(); }
+function rect(q1,q2,p1,p2,color,alpha){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=color;
+  const X1=qx(q1),X2=qx(q2),Y1=py(p1),Y2=py(p2); ctx.fillRect(Math.min(X1,X2),Math.min(Y1,Y2),Math.abs(X2-X1),Math.abs(Y2-Y1)); ctx.restore(); }
+function lab(txt,q,p,dx,dy,color,size,align,halo){ ctx.save(); size=size||12; ctx.font='bold '+size+'px Georgia'; ctx.textAlign=align||'left';
+  const X=qx(q)+dx,Y=py(p)+dy;
+  if(halo){ const w=ctx.measureText(txt).width; let lx=X; if(align==='right')lx=X-w; else if(align==='center')lx=X-w/2;
+    ctx.fillStyle=T.plotBg; ctx.globalAlpha=.85; ctx.fillRect(lx-3,Y-size+2,w+6,size+4); ctx.globalAlpha=1; }
+  ctx.fillStyle=color; ctx.fillText(txt,X,Y); ctx.restore(); }
+
+function drawFrame(qLabel,pLabel){
+  ctx.fillStyle=T.plotBg; ctx.fillRect(padL,padT,plotW,plotH);
+  ctx.strokeStyle=T.grid; ctx.lineWidth=1;
+  for(let i=1;i<6;i++){ const p=P_MAX*i/6; ctx.beginPath();ctx.moveTo(padL,py(p));ctx.lineTo(padL+plotW,py(p));ctx.stroke(); }
+  for(let i=1;i<6;i++){ const q=Q_MAX*i/6; ctx.beginPath();ctx.moveTo(qx(q),padT);ctx.lineTo(qx(q),padT+plotH);ctx.stroke(); }
+  ctx.strokeStyle=T.text; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+  ctx.fillStyle=T.text;
+  ctx.beginPath(); ctx.moveTo(padL,padT-2); ctx.lineTo(padL-4,padT+8); ctx.lineTo(padL+4,padT+8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(padL+plotW,padT+plotH); ctx.lineTo(padL+plotW-8,padT+plotH-4); ctx.lineTo(padL+plotW-8,padT+plotH+4); ctx.fill();
+  lab(pLabel,0,P_MAX,-padL+6,-2,T.text,13,'left');
+  ctx.save(); ctx.font='12px Georgia'; ctx.fillStyle=T.muted; ctx.textAlign='right'; ctx.fillText(qLabel,padL+plotW-2,padT+plotH+30); ctx.restore();
+}
+
+function drawCompetitive(){
+  setAxes(2200,45);
+  drawFrame('Q','$');
+  const m=competitiveModel();
+  const {epsD,epsS,t,side}=state;
+  const Dfn=q=>P0 - m.md*(q-Q0), Sfn=q=>P0 + m.ms*(q-Q0);
+
+  ctx.save(); ctx.beginPath(); ctx.rect(padL,padT,plotW,plotH); ctx.clip();
+  // incidence rectangles
+  rect(0,m.Qe,P0,m.Pb,T.buyer,0.14);
+  rect(0,m.Qe,m.Ps,P0,T.seller,0.14);
+  // original curves
+  curveFn(Dfn,20,2150,T.demand,2.4);
+  curveFn(Sfn,20,2150,T.supply,2.4);
+  // shifted curve for the statutory side selected (visualizes mechanism; equilibrium is identical either way)
+  if(side==='buyer'){ curveFn(q=>Dfn(q)-t,20,2150,T.demand,1.6,[5,4],0.55); }
+  else { curveFn(q=>Sfn(q)+t,20,2150,T.supply,1.6,[5,4],0.55); }
+  ctx.restore();
+
+  lab('D',2130,Dfn(2130),4,4,T.demand,13,'left',true);
+  lab('S',2130,Sfn(2130),4,-4,T.supply,13,'left',true);
+  lab(side==='buyer'?"D(p+t)":"S(p−t)",2130,(side==='buyer'?Dfn(2130)-t:Sfn(2130)+t),4,4,T.muted,11,'left',true);
+
+  // tax wedge + prices
+  seg(m.Qe,0,m.Qe,Math.max(m.Pb,P0),T.eqStroke,1.3,[3,3]);
+  seg(0,m.Pb,m.Qe,m.Pb,T.buyer,1.4,[2,3]);
+  seg(0,m.Ps,m.Qe,m.Ps,T.seller,1.4,[2,3]);
+  seg(0,P0,Q0,P0,T.muted,1,[2,3],0.5);
+  dot(m.Qe,m.Pb,5.5,T.buyer); dot(m.Qe,m.Ps,5.5,T.seller); dot(Q0,P0,4.5,T.muted);
+  lab('P_b='+m.Pb.toFixed(1),0,m.Pb,4,-6,T.buyer,11.5,'left',true);
+  lab('P_s='+m.Ps.toFixed(1),0,m.Ps,4,14,T.seller,11.5,'left',true);
+  lab('Q_e='+m.Qe.toFixed(0),m.Qe,0,0,16,T.eqStroke,11.5,'center');
+
+  updateResultsCompetitive(m);
+  updateInsightCompetitive(m);
+  updateLegendCompetitive();
+}
+
+function drawMonopoly(){
+  const mm=monopolyModel();
+  const qmax = state.shape==='linear' ? 20 : 14;
+  const pmax = state.shape==='linear' ? 60 : 60;
+  setAxes(qmax,pmax);
+  drawFrame('S','$');
+
+  ctx.save(); ctx.beginPath(); ctx.rect(padL,padT,plotW,plotH); ctx.clip();
+  curveFn(mm.Bp,0.2,qmax*0.98,T.demand,2.4);
+  curveFn(mm.MRp,0.2,qmax*0.98,T.mr,2,[6,3]);
+  seg(0,mm.mc0,qmax,mm.mc0,T.mc,2.2);
+  seg(0,mm.mc0+mm.t,qmax,mm.mc0+mm.t,T.mc,2.2,[5,4]);
+  ctx.restore();
+
+  lab('Demand',qmax*0.86,mm.Bp(qmax*0.86),4,-4,T.demand,12,'left',true);
+  lab('MR',qmax*0.5,mm.MRp(qmax*0.5),4,-4,T.mr,12,'left',true);
+  lab("MC",qmax*0.9,mm.mc0,4,-6,T.mc,11.5,'left',true);
+  lab("MC+t",qmax*0.9,mm.mc0+mm.t,4,14,T.mc,11.5,'left',true);
+
+  // before/after equilibria
+  seg(mm.Sbefore,0,mm.Sbefore,mm.Pbefore,T.muted,1.2,[2,3],0.6);
+  seg(mm.Safter,0,mm.Safter,mm.Pafter,T.eqStroke,1.4,[2,3]);
+  dot(mm.Sbefore,mm.Pbefore,5,T.muted);
+  dot(mm.Safter,mm.Pafter,6,T.eq);
+  lab('before: P='+mm.Pbefore.toFixed(1),mm.Sbefore,mm.Pbefore,6,-8,T.muted,11,'left',true);
+  lab('after: P='+mm.Pafter.toFixed(1),mm.Safter,mm.Pafter,6,-8,T.eqStroke,11,'left',true);
+
+  updateResultsMonopoly(mm);
+  updateInsightMonopoly(mm);
+  updateLegendMonopoly();
+}
+
+function draw(){
+  ctx.clearRect(0,0,LW,LH);
+  if(state.mode==='competitive') drawCompetitive(); else drawMonopoly();
+}
+
+// ---- results / insight / legend panels ----
+function updateResultsCompetitive(m){
+  document.getElementById('results-grid').innerHTML = `
+    <div class="res-box buyer"><div class="lbl">Buyers bear</div><div class="big">${(m.buyerShare*100).toFixed(0)}%</div></div>
+    <div class="res-box seller"><div class="lbl">Sellers bear</div><div class="big">${(m.sellerShare*100).toFixed(0)}%</div></div>
+    <div class="res-box wide"><div class="lbl">Tax wedge P_b − P_s</div><div class="big">$${(m.Pb-m.Ps).toFixed(2)} = t</div></div>`;
+}
+function updateInsightCompetitive(m){
+  document.getElementById('insight-box').innerHTML =
+    `Buyer share = ε_S/(ε_S+ε_D) = <b>${(state.epsS/(state.epsS+state.epsD)).toFixed(2)}</b>. Switch "levied on buyers/sellers" — the split is <b>identical</b> either way: statutory incidence doesn't affect economic incidence.`;
+}
+function updateLegendCompetitive(){
+  document.getElementById('legend-box').innerHTML = `
+    <div class="item"><span class="sw" style="background:var(--demand)"></span> Demand D(p)</div>
+    <div class="item"><span class="sw" style="background:var(--supply)"></span> Supply S(p)</div>
+    <div class="item"><span class="sw dash"></span> Shifted curve (statutory side)</div>
+    <div class="item"><span class="dt" style="background:var(--buyer)"></span> P_b (buyer price)</div>
+    <div class="item"><span class="dt" style="background:var(--seller)"></span> P_s (seller price)</div>`;
+}
+function updateResultsMonopoly(mm){
+  const overshift = mm.passthrough>1;
+  document.getElementById('results-grid').innerHTML = `
+    <div class="res-box wide"><div class="lbl">Pass-through dP/dt</div><div class="big">${mm.passthrough.toFixed(2)}</div></div>
+    <div class="res-box buyer"><div class="lbl">ΔP</div><div class="big">$${(mm.Pafter-mm.Pbefore).toFixed(2)}</div></div>
+    <div class="res-box seller"><div class="lbl">ΔS</div><div class="big">${(mm.Safter-mm.Sbefore).toFixed(2)}</div></div>`;
+}
+function updateInsightMonopoly(mm){
+  const txt = state.shape==='linear'
+    ? `Linear demand pins pass-through at exactly <b>1/2</b>, regardless of the tax size or marginal cost — the monopolist absorbs half the tax.`
+    : `Isoelastic demand gives pass-through = ε/(ε−1) = <b>${(state.eps/(state.eps-1)).toFixed(2)}</b>. With ε=${state.eps.toFixed(1)} &gt; 1 this exceeds 1: <b>overshifting</b> — price rises by more than the tax.`;
+  document.getElementById('insight-box').innerHTML = txt;
+}
+function updateLegendMonopoly(){
+  document.getElementById('legend-box').innerHTML = `
+    <div class="item"><span class="sw" style="background:var(--demand)"></span> Demand (= average revenue)</div>
+    <div class="item"><span class="sw dash" style="border-top-color:var(--mr)"></span> Marginal revenue MR</div>
+    <div class="item"><span class="sw" style="background:var(--mc)"></span> MC (before tax)</div>
+    <div class="item"><span class="sw dash" style="border-top-color:var(--mc)"></span> MC + t (after tax)</div>
+    <div class="item"><span class="dt" style="background:var(--eq)"></span> Post-tax equilibrium</div>`;
+}
+
+// ---- slider wiring ----
+document.getElementById('s-epsD').addEventListener('input',e=>{state.epsD=parseFloat(e.target.value);document.getElementById('v-epsD').textContent=state.epsD.toFixed(2);draw();});
+document.getElementById('s-epsS').addEventListener('input',e=>{state.epsS=parseFloat(e.target.value);document.getElementById('v-epsS').textContent=state.epsS.toFixed(2);draw();});
+document.getElementById('s-t').addEventListener('input',e=>{state.t=parseFloat(e.target.value);document.getElementById('v-t').textContent=state.t.toFixed(1);draw();});
+document.getElementById('s-eps').addEventListener('input',e=>{state.eps=parseFloat(e.target.value);document.getElementById('v-eps').textContent=state.eps.toFixed(1);draw();});
+document.getElementById('s-mc0').addEventListener('input',e=>{state.mc0=parseFloat(e.target.value);document.getElementById('v-mc0').textContent=state.mc0.toFixed(1);draw();});
+document.getElementById('s-tm').addEventListener('input',e=>{state.tm=parseFloat(e.target.value);document.getElementById('v-tm').textContent=state.tm.toFixed(1);draw();});
+
+setupCanvas(); draw();
+</script>
+</body>
+</html>
