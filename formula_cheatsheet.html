@@ -397,6 +397,91 @@
     <div class="note">Left side: fixed quantity standard Q* (quantity is certain, cost isn't). Right side: price instrument p*, letting the firm choose Q(p*) in response to realized θ (cost is controlled, quantity floats). Which instrument wins depends on the relative curvature (slopes) of marginal benefit vs marginal cost — steeper MC favors quantity control, steeper MB favors price control.</div>
   </div>
 
+  <!-- 13. Public Goods - Private Provision -->
+  <div class="card" style="--c-accent:var(--purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M12 4 L12 11 M8 8 L16 8"/><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/></svg> Public Goods — Private Provision</h2>
+    <div class="block">
+      $$\text{Rival: } X=\sum_H x^H \qquad \text{Non-rival: } G^H = G$$
+      $$M^H = x^H + g^H \qquad MRT_{G,X}=1,\ \ G=g^1+g^2$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Utility problem</div>
+      $$\max\, U^H = U^H(x^H,G) \quad\text{with } U_x^H,U_G^H>0,\ \ U_{xx}^H,U_{GG}^H<0$$
+    </div>
+    <hr class="div">
+    <div class="note">Problem involves strategic interaction (each household's contribution is a best response to the other's):</div>
+    $$g^1=f^1(g^2),\ \ g^2=f^2(g^1) \;\Rightarrow\; g^{1*}=f^1(g^{2*}),\ \ g^{2*}=f^2(g^{1*})$$
+    <div class="note">Obtaining the slope of the IC in (g¹,g²) space — individual 1:</div>
+    $$U^1=U^1(M^1-g^1,\ g^1+g^2)$$
+    $$dU^1 = -U_x^1\,dg^1 + U_G^1\,dg^1 + U_G^1\,dg^2$$
+    <div class="eq-block">
+      $$\left.\frac{dg^2}{dg^1}\right|_{\bar U^1} = \frac{U_x^1-U_G^1}{U_G^1}$$
+    </div>
+    <div class="note">Private optimum (fixed IC, individual best-responds): setting dg²/dg¹=0 ⟹ $U_G^1=U_x^1$ (same for individual 2 by symmetry).</div>
+    <div class="eq-block">
+      $$U_x^1=U_G^1 \;\Rightarrow\; MRS^1_{G,X} = \frac{U_G^1}{U_x^1} = 1 = MRT_{G,X}$$
+    </div>
+    <div class="note">Each individual only equates their <i>own</i> MRS to MRT — ignoring the benefit their contribution gives the other. This is the source of free-riding / underprovision.</div>
+  </div>
+
+  <!-- 14. Samuelson Rule -->
+  <div class="card" style="--c-accent:var(--purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12 A8 8 0 0 1 20 12" stroke-linecap="round"/><path d="M4 12 A8 8 0 0 0 20 12" stroke-linecap="round" stroke-dasharray="2 2"/></svg> Samuelson Rule</h2>
+    <div class="note">Pareto efficiency requires tangency between the ICs of both individuals:</div>
+    $$\left.\frac{dg^2}{dg^1}\right|_{\bar U^1} = \left.\frac{dg^2}{dg^1}\right|_{\bar U^2}$$
+    $$\frac{U_x^1-U_G^1}{U_G^1} = \frac{U_G^2}{U_x^2-U_G^2}$$
+    <div class="eq-block">
+      $$\text{leading to:} \quad MRS^1_{G,X} + MRS^2_{G,X} = 1 = MRT_{G,X}$$
+    </div>
+    <div class="note">The efficient condition sums <i>both</i> individuals' MRS against the MRT — unlike the private-provision result above, which only equates each individual's own MRS. This gap is exactly why private provision under-supplies the public good.</div>
+  </div>
+
+  <!-- 15. Lindahl Prices -->
+  <div class="card" style="--c-accent:var(--purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 20 L6 10 L12 4 L18 10 L18 20 Z"/><path d="M6 20 L18 20"/></svg> Lindahl Prices</h2>
+    <div class="sub-lbl">Individualized tax shares (not rates): $\zeta^1,\ \zeta^2,\ \ \zeta^1+\zeta^2=1$</div>
+    <div class="note">Process:</div>
+    <div class="note">1. Tax shares are announced.<br>2. Individuals optimize and reveal quantities $g^1$ and $g^2$:</div>
+    $$\max\, U^H(x^H,G^H) \;\text{ s.t. } M^H = x^H + \zeta^H G^H$$
+    $$\text{FOC: } U_x^H = \lambda, \qquad U_G^H = \lambda\zeta^H$$
+    <div class="note">3. Adjust $\zeta^i$ until $G^1=G^2=G^*$ and $(\zeta^{1*}+\zeta^{2*})G^*=G^*$.</div>
+    <hr class="div">
+    <div class="sub-lbl">Lindahl equilibrium</div>
+    <div class="eq-block">
+      $$\zeta^{A*}+\zeta^{B*} = MC(G^*)$$
+      $$MRS^A_{G,X} + MRS^B_{G,X} = MRT_{G,X}$$
+    </div>
+    <div class="note">Each individual faces a personalized price ζ<sup>H</sup> for the public good equal to their own marginal benefit — the sum of these personalized prices covers marginal cost, replicating the Samuelson condition without needing a government to know individual preferences (in theory).</div>
+  </div>
+
+  <!-- 16. Tax-Funded Public Provision -->
+  <div class="card" style="--c-accent:var(--purple)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M7 10 L7 6 L17 6 L17 10"/><path d="M12 14 L12 17"/></svg> Tax-Funded Public Provision — Modified Samuelson Rule</h2>
+    <div class="sub-lbl">X: private good &nbsp;·&nbsp; G: public good &nbsp;·&nbsp; L: labor, −L: leisure &nbsp;·&nbsp; H identical individuals</div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Production function</div>
+      $$F(X,G,L) = pHX + P_G G - HL = 0$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Individuals maximize</div>
+      $$V(X,G,L) \;\text{ s.t. } (p+t)X = L-\bar T$$
+      $$\text{FOC: } U_X = \lambda(p+t), \qquad -U_L=\lambda$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Government maximizes W = HU under the production constraint</div>
+      $$\mathcal{L} = HU(X,L,G) - \lambda\big(pHX+P_G G-HL\big)$$
+      <div class="note">FOC w.r.t. G:</div>
+      $$\frac{d\mathcal{L}}{dG} = HU_G - \lambda\left(pH\frac{dX}{dG}+P_G-H\frac{dL}{dG}\right) = 0$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">This leads to the Modified Samuelson Rule</div>
+    <div class="eq-block">
+      $$\sum MRS_{G,-L} = \frac{\lambda}{\alpha}\left(MRT - tH\frac{dX}{dG}\right) \;\gtrless\; MRT$$
+    </div>
+    <div class="note">$MRT$ = physical marginal rate of transformation. The bracket $\frac{\lambda}{\alpha}\big(MRT - tH\,dX/dG\big)$ is the <b>economic</b> correction term — it diverges from the physical MRT because raising G through taxation distorts the labor/consumption choice, so the shadow cost of public funds differs from the pure production trade-off.</div>
+  </div>
+
 </div>
 
 <script>
