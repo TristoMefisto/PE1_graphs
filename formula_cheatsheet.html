@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PE1 Formula Cheat Sheet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg:#F7F6F2; --surface:#FFFFFF; --border:#DDD9D0; --text:#1A1A2E; --muted:#75736B;
+    --accent:#1565C0;
+    --c1:#1565C0; --c2:#2E7D32; --c3:#6A1B9A; --c5:#E07B00; --c6:#AD1457; --c7:#00838F; --c8:#5D4037;
+    --c4:#C62828; --c9:#3949AB; --c10:#00695C; --c11:#EF6C00; --c12:#4527A0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1A1A1E; --surface:#242428; --border:#3A3A40; --text:#ECECEC; --muted:#9A9A9A;
+      --accent:#5B9BE8;
+      --c1:#5B9BE8; --c2:#66BB6A; --c3:#BA68C8; --c5:#FFB74D; --c6:#F06292; --c7:#4DD0E1; --c8:#A1887F;
+      --c4:#EF6C6C; --c9:#8C9EFF; --c10:#4DB6AC; --c11:#FFA726; --c12:#9575CD;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:Georgia,serif; padding:26px 18px 50px; }
+
+  .board {
+    max-width:1700px; margin:0 auto; column-count:3; column-gap:22px;
+  }
+  @media (max-width:1300px){ .board{ column-count:2; } }
+  @media (max-width:760px){ .board{ column-count:1; } }
+
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+    padding:18px 20px 20px; margin-bottom:22px; break-inside:avoid;
+    border-left:5px solid var(--c-accent);
+  }
+  .card h2 {
+    display:flex; align-items:center; gap:9px;
+    font-size:16.5px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--c-accent); margin-bottom:13px; padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+  .card h2 svg { width:22px; height:22px; flex-shrink:0; }
+  .block { margin-bottom:13px; }
+  .block:last-child { margin-bottom:0; }
+  .lbl { font-weight:bold; font-size:13px; margin-bottom:4px; }
+  .sub-lbl { font-size:11.5px; color:var(--muted); font-style:italic; margin-bottom:3px; }
+  .note { font-size:12px; color:var(--muted); margin-top:3px; line-height:1.5; }
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .twocol .half { font-size:13.5px; }
+  .twocol .half .h { font-weight:bold; font-size:12px; margin-bottom:5px; color:var(--c-accent); }
+  hr.div { border:none; border-top:1px dashed var(--border); margin:12px 0; }
+
+  .eq-block { background:color-mix(in srgb, var(--c-accent) 8%, transparent); border-radius:5px; padding:9px 12px; margin:8px 0; }
+  .eq-stack .eq-block { margin:10px 0; }
+  .katex { font-size:1.04em; }
+  .katex-display { overflow-x:auto; overflow-y:hidden; max-width:100%; padding:3px 0; margin:0.5em 0; }
+  .katex-display > .katex { white-space:nowrap; }
+  .card, .twocol .half { min-width:0; overflow-wrap:break-word; }
+  .ring-red { border:2.2px solid #D32F2F; border-radius:50%; padding:2px 9px; display:inline-block; }
+  .ring-green { border:2.2px solid #2E7D32; border-radius:50%; padding:2px 8px; display:inline-block; }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <!-- 1. Utility / MRS -->
+  <div class="card" style="--c-accent:var(--c1)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 18 C 8 18, 8 8, 14 8 C 19 8, 19 14, 21 14" stroke-linecap="round"/><circle cx="9" cy="13.6" r="1.4" fill="currentColor" stroke="none"/></svg> Utility &amp; MRS</h2>
+    <div class="block">
+      $$U = U(x_1, x_2)$$
+      $$dU = U_1' \, dx_1 + U_2' \, dx_2$$
+      <div class="eq-block">
+        $$\text{Set } dU = 0 \;\implies\; \frac{dx_2}{dx_1} = -\frac{U_1'}{U_2'} = MRS_{1,2}$$
+      </div>
+      <div class="note">Slope of the indifference curve: the rate at which the consumer is willing to trade x₂ for x₁ while holding utility constant.</div>
+    </div>
+  </div>
+
+  <!-- 2. Tax incidence - competitive markets -->
+  <div class="card" style="--c-accent:var(--c2)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20 L21 4" stroke-linecap="round"/><path d="M3 4 L21 20" stroke-linecap="round"/></svg> Tax Incidence — Competitive Markets</h2>
+    <div class="sub-lbl">Equilibrium condition (either side): $Q = S(P) = D(P)$</div>
+    <div class="twocol">
+      <div class="half">
+        <div class="h">Consumer-imposed (t on buyers)</div>
+        $$Q = S(P) = D(P+t)$$
+        <hr class="div">
+        <div class="lbl" style="font-size:12px">PRE</div>
+        $\max\, U(x)+y \text{ s.t. } Px+y=Z$<br>FOC: $P = U_x'$
+        <div class="lbl" style="font-size:12px;margin-top:7px">POST</div>
+        $\max\, U(x)+y \text{ s.t. } (P+t)x+y=Z$<br>FOC: $P = U_x' - t$
+      </div>
+      <div class="half">
+        <div class="h">Producer-imposed (t on sellers)</div>
+        $$Q = S(P-t) = D(P)$$
+        <hr class="div">
+        <div class="lbl" style="font-size:12px">PRE</div>
+        $\max\, \pi(s) = Ps - C(s)$<br>FOC: $P = C'(s)$
+        <div class="lbl" style="font-size:12px;margin-top:7px">POST</div>
+        $\max\, \pi(s) = (P-t)s - C(s)$<br>FOC: $P-t = C'(s)$
+      </div>
+    </div>
+    <div class="eq-block">
+      $$U_x' - t = C'(s) \quad\equiv\quad C'(s) + t = U_x'$$
+    </div>
+    <div class="note">Statutory incidence (who the tax is levied on) doesn't determine economic incidence — same equilibrium either way.</div>
+  </div>
+
+  <!-- 3. Elasticity + elasticity-based incidence -->
+  <div class="card" style="--c-accent:var(--c3)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 Q 10 20 14 10 Q 17 3 20 3" stroke-linecap="round"/><path d="M20 3 l-4 0 M20 3 l0 4" stroke-linecap="round"/></svg> Elasticity</h2>
+    <div class="block">
+      $$\varepsilon = \frac{dx}{dy}\cdot\frac{y}{x} \qquad \left(\text{log form: } \varepsilon = \frac{d\log y}{d\log x}\right)$$
+    </div>
+    <hr class="div">
+    <div class="twocol">
+      <div class="half">
+        <div class="h">Demand</div>
+        $$\varepsilon_D = \frac{dD}{dQ}\cdot\frac{Q}{D}$$
+      </div>
+      <div class="half">
+        <div class="h">Supply</div>
+        $$\varepsilon_S = \frac{dS}{dP}\cdot\frac{P}{S(P)}$$
+      </div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Elasticity-based incidence (who bears the tax)</div>
+    <div class="twocol">
+      <div class="half">
+        <div class="h">Sellers (price drop)</div>
+        $$\frac{dP}{dt} = \frac{\varepsilon_D}{\varepsilon_S - \varepsilon_D}$$
+      </div>
+      <div class="half">
+        <div class="h">Buyers (quantity drop)</div>
+        $$\frac{dQ}{dt} = \frac{\varepsilon_S}{\varepsilon_S - \varepsilon_D}$$
+      </div>
+    </div>
+    <div class="note">The more inelastic side bears more of the tax — its ε dominates the ratio.</div>
+  </div>
+
+  <!-- 4. Monopoly - linear demand -->
+  <div class="card" style="--c-accent:var(--c5)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5 L21 19 M3 19 L21 5" stroke-linecap="round"/></svg> Tax Incidence — Monopoly, Linear Demand</h2>
+    <div class="eq-stack">
+      <div class="eq-block">$$P = a - bS$$</div>
+      <div class="eq-block">$$R = PS = aS - bS^2$$</div>
+      <div class="eq-block">$$MR = \frac{dR}{dS} = a - 2bS$$</div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">EQ: MR = MC</div>
+    $$a - 2bS = C'(S) + t$$
+    <div class="note">Add a to both sides → $2(a-bS) = a + C'(S) + t$ → $2P = a + C'(S) + t$:</div>
+    <div class="eq-block">
+      $$P = \frac{a + C'(S) + t}{2} \qquad\implies\qquad \frac{dP}{dt} = \frac{1}{2}$$
+    </div>
+    <div class="note">Pass-through of <b>½</b> — identical to the competitive-market benchmark. Linear demand has no curvature, so the markup doesn't react to the tax.</div>
+  </div>
+
+  <!-- 5. Monopoly - isoelastic demand -->
+  <div class="card" style="--c-accent:var(--c6)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20 Q 6 7 21 4" stroke-linecap="round"/></svg> Tax Incidence — Monopoly, Isoelastic Demand</h2>
+    <div class="sub-lbl">EQ: MR = MC</div>
+    $$P\left(1 - \frac{1}{\varepsilon_D}\right) = C'(S) + t$$
+    <div class="twocol" style="margin-top:9px">
+      <div class="half">
+        <div class="h">Pre-tax</div>
+        $$P = \frac{C'(S)}{1 - 1/\varepsilon_D}$$
+      </div>
+      <div class="half">
+        <div class="h">Post-tax</div>
+        $$P = \frac{C'(S) + t}{1 - 1/\varepsilon_D}$$
+      </div>
+    </div>
+    <div class="eq-block">
+      $$\Delta P = \frac{t}{1 - 1/\varepsilon_D}$$
+    </div>
+  </div>
+
+  <!-- 6. Specific vs ad valorem -->
+  <div class="card" style="--c-accent:var(--c7)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M4 20 L20 4" stroke-linecap="round"/></svg> Specific vs Ad-Valorem Tax (Monopoly)</h2>
+    <div class="block">
+      <div class="h">Specific tax t</div>
+      $$\pi_t = qx - (c + t)x$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="h">Ad-valorem rate τ</div>
+      $$\pi_\tau = \htmlClass{ring-red}{\frac{1}{1+\tau}}\big[qx - (c + \htmlClass{ring-green}{\tau c})x\big] = \htmlClass{ring-red}{\frac{1}{1+\tau}}\,\pi'$$
+    </div>
+    <div class="note">In monopoly, the ad-valorem tax is equivalent to the combination of:</div>
+    <div class="note">• a <b>specific tax</b> of value <span style="color:#2E7D32;font-weight:bold">τc</span><br>
+    • a <b>profit tax</b> at rate $\gamma = \dfrac{\tau}{1+\tau}$ &nbsp;→&nbsp; profit net of tax: $(1-\gamma)\pi' = \dfrac{1}{1+\tau}\pi'$</div>
+    <div class="note" style="margin-top:6px">A profit tax has no effect on the firm's optimal Q and pre-tax price p — but it raises revenue.</div>
+  </div>
+
+  <!-- 7. Harberger -->
+  <div class="card" style="--c-accent:var(--c8)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M8 6 L16 6 M6 8 L6 16 M18 8 L18 16 M8 18 L16 18 M8 8 L16 16 M16 8 L8 16"/></svg> Harberger General-Equilibrium Model</h2>
+    <div class="sub-lbl">Two sectors, two mobile factors — 10 equations, 10 unknowns</div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Production sets</div>
+      $$X_1 = F_1(K_1, L_1) \qquad X_2 = F_2(K_2, L_2)$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Full employment</div>
+      $$K_1 + K_2 = K \qquad L_1 + L_2 = L$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Mobile factors (price equalization)</div>
+      $$w = P_1 F_{1L} = P_2 F_{2L} \qquad r = P_1 F_{1K} = P_2 F_{2K}$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Demand</div>
+      $$X_1 = X_1(P_1/P_2) \qquad X_2 = X_2(P_1/P_2)$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Introduce tax dτ on K₂ — solve comparative statics for:</div>
+    $$\frac{dw}{d\tau},\quad \frac{dr}{d\tau},\quad \frac{dP_1}{d\tau},\quad \frac{dP_2}{d\tau}$$
+    <div class="note">Tracks how the tax burden splits between K↔L (factor substitution) and Sector 1↔Sector 2 (output substitution).</div>
+  </div>
+
+  <!-- 8. Harberger Triangle -->
+  <div class="card" style="--c-accent:var(--c4)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L20 20 L4 4 Z"/></svg> Excess Burden — Harberger Triangle</h2>
+    <div class="sub-lbl">Partial equilibrium, quasilinear utility</div>
+    <div class="eq-block">
+      $$EB = -\frac{1}{2}\frac{dQ}{dt}\,t^2, \qquad dQ = D'(q)\,dq$$
+    </div>
+    <div class="note">Derivation:</div>
+    $$EB = -\frac12\,dQ\,dt = -\frac12 D'(q)\,dq\,dt$$
+    $$= -\frac12 D'(q)\,\frac{\varepsilon_S}{\varepsilon_S-\varepsilon_D}\,dt^2 = -\frac12\,\frac{D}{P}\,\frac{\varepsilon_S\varepsilon_D}{\varepsilon_S-\varepsilon_D}\,dt^2$$
+    <hr class="div">
+    <div class="note">using:</div>
+    $$dq = \frac{\varepsilon_S}{\varepsilon_S-\varepsilon_D}\,dt$$
+    $$\varepsilon_D = D'\frac{q}{D} \;\Rightarrow\; D' = \varepsilon_D\frac{D}{P} \;\;(q\approx P)$$
+  </div>
+
+  <!-- 9. Excess Burden in General + MEB -->
+  <div class="card" style="--c-accent:var(--c9)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12 C 4 6, 9 4, 12 4 C 15 4, 20 6, 20 12 C 20 18, 15 20, 12 20 C 9 20, 4 18, 4 12 Z"/><path d="M12 4 L12 20"/></svg> Excess Burden — General Case &amp; MEB</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Compensating / Equivalent Variation</div>
+      $$CV = e(P^1,U^0) - e(P^0,U^0) = e(P^1,U^0) - m$$
+      $$EV = e(P^1,U^1) - e(P^0,U^1) = m - e(P^0,U^1)$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Shephard's lemma → bounds on Marshallian CS</div>
+      $$h(P,U) = \frac{\partial e(P,U)}{\partial P}$$
+      $$CV = \int_{P^0}^{P^1}\! h(P,U^0)\,dP, \qquad EV = \int_{P^0}^{P^1}\! h(P,U^1)\,dP$$
+      <div class="eq-block">$$EV \;<\; \text{Marshallian } CS \;<\; CV$$</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Excess burden = total welfare loss − tax revenue</div>
+      $$EB(U^0) = CV - (P^1-P^0)\,h(P^1,U^0)$$
+      $$EB(U^1) = EV - (P^1-P^0)\,h(P^1,U^1)$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Marginal Excess Burden (MEB)</div>
+      $$EB(t) = e(P,U) - e(P+t,U) - t\,h(P+t,U)$$
+      <div class="note">Not usable empirically (requires the expenditure function e) — approximate instead:</div>
+      $$MEB \approx EB(t+\delta t) - EB(t) \approx -t\,\delta t\,\frac{dh}{dt} - \frac12\,\frac{dh}{dt}(\delta t)^2$$
+      <div class="note">Collapses to the Harberger triangle when there's no pre-existing tax.</div>
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Still needs h — exploit the Slutsky equation</div>
+      $$\frac{\partial h(P,U)}{\partial P} = \frac{\partial x(P,m)}{\partial P} + \frac{\partial x(P,m)}{\partial m}\,x(P,m)$$
+    </div>
+  </div>
+
+  <!-- 10. Ramsey Model -->
+  <div class="card" style="--c-accent:var(--c10)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4 L4 20 L20 20" stroke-linecap="round"/><path d="M7 17 L11 11 L14 14 L20 6" stroke-linecap="round"/></svg> Ramsey Model — Optimal Commodity Taxation</h2>
+    <div class="block">
+      $$\hat q \hat x \le m + w(T-\ell), \qquad m=0,\ \ q_i = P_i+t_i,\ \ N=2 \text{ goods}$$
+      <div class="note">w: wage &nbsp;·&nbsp; m: non-wage earnings &nbsp;·&nbsp; T: time endowment &nbsp;·&nbsp; ℓ: leisure. Wage normalized to 1, perfectly elastic labor supply:</div>
+      $$q_1x_1 + q_2x_2 = T - \ell$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Uniform tax on all goods, incl. leisure ⟹ equivalent to a lump-sum tax</div>
+      $$(1+t)(P_1x_1+P_2x_2+\ell) = T$$
+      $$\Rightarrow\; \left(1-\frac{t}{1+t}\right)T = (1-\gamma)T, \quad \gamma=\frac{t}{1+t}$$
+    </div>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Leaving leisure untaxed ⟹ only distortionary taxation is possible</div>
+      $$(1+t)(P_1x_1+P_2x_2) = w(T-\ell)$$
+      $$\Rightarrow\; P_1x_1+P_2x_2 = \frac{w(T-\ell)}{1+t}$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Inverse Elasticity Rule</div>
+    <div class="twocol">
+      <div class="half">
+        <div class="h">Consumer problem</div>
+        $$\max_{x_1,x_2,\ell} U(x_1,x_2,\ell) \;\text{ s.t. }\; q_1x_1+q_2x_2=T-\ell$$
+        $$\text{FOC: } U_1' = \lambda q_1, \quad U_\ell' = \lambda$$
+      </div>
+      <div class="half">
+        <div class="h">Gov. revenue</div>
+        $$R = q_1x_1+q_2x_2-(P_1x_1+P_2x_2)$$
+      </div>
+    </div>
+    <div class="block" style="margin-top:9px">
+      <div class="lbl" style="font-size:12px">Planner's problem: max social welfare W(consumer's U), s.t. revenue R</div>
+      $$\max_{x_1,x_2} \mathcal{L} = U(x_1,x_2,\ell) + \alpha\big(q_1x_1+q_2x_2-R-P_1x_1-P_2x_2\big)$$
+    </div>
+    <div class="eq-block">
+      $$\tau_i = \frac{t_i}{q_i} = -\frac{1}{\varepsilon_{Di}}\cdot\frac{\alpha-\lambda}{\alpha} = -\frac{k}{\varepsilon_{Di}} \;\ge 0$$
+      $$k=\frac{\alpha-\lambda}{\alpha}$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Extended rule — many households, $W=\sum_H \theta_H V_H$</div>
+    <div class="note">$V_H$: utility of household H &nbsp;·&nbsp; $\theta_H$: social weight</div>
+    <div class="eq-block">
+      $$\frac{t_i}{q_i} \;\propto\; \frac{1-\bar\theta_i}{\varepsilon_{Di}}$$
+    </div>
+    <div class="note">Goods with more inelastic demand are taxed more heavily; under the extended rule, $\bar\theta_i$ reflects how much of that good's consumption comes from low-weight (richer) households.</div>
+  </div>
+
+  <!-- 11. Externalities -->
+  <div class="card" style="--c-accent:var(--c11)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 C 7 3, 4 7, 4 12 C 4 17, 8 21, 13 20 C 11 18, 12 15, 15 15 C 19 15, 20 11, 18 8" stroke-linecap="round"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg> Negative Production Externality Model</h2>
+    <div class="block">
+      $$U(x,y) = U(x) + y - d\,P(x)$$
+      <div class="note">P(x): pollution &nbsp;·&nbsp; d: marginal damage. Consumers maximize U taking pollution as fixed.</div>
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Privately efficient equilibrium</div>
+    $$\max\, U(x)+y = U(x)+m-Px, \qquad \max\, \pi = Px - C(x)$$
+    <div class="eq-block">
+      $$\underbrace{U'(x^m) = C'(x^m)}_{PMB\,=\,PMC}$$
+    </div>
+    <hr class="div">
+    <div class="sub-lbl">Social welfare &amp; socially efficient equilibrium</div>
+    $$W = \underbrace{U(x)+y}_{\text{consumers}} + \underbrace{(Px-C(x))}_{\text{firms}} - \underbrace{dx}_{\text{pollution}}$$
+    $$= U(x)+m-C(x)-dx$$
+    <div class="eq-block">
+      $$\underbrace{U'(x^o) = C'(x^o) + d}_{SMB\,=\,PMC\,+\,MD}$$
+    </div>
+    <hr class="div">
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Pigouvian tax</div>
+      $$t = d = MD(x^o) \quad\text{such that}\quad PMC \Rightarrow PMC + t$$
+      <div class="note">Setting the tax equal to marginal damage at the optimum makes private and social incentives coincide.</div>
+    </div>
+  </div>
+
+  <!-- 12. General Abatement Framework -->
+  <div class="card" style="--c-accent:var(--c12)">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20 L4 4 M4 20 L20 20" stroke-linecap="round"/><path d="M4 16 Q10 14 14 8 Q17 4 20 4" stroke-linecap="round"/></svg> General Abatement Framework</h2>
+    <div class="block">
+      <div class="lbl" style="font-size:12px">Optimum defined as</div>
+      $$\max_{Q}\, B(Q)-C(Q) \;\Rightarrow\; B'(Q^*)=C'(Q^*)$$
+    </div>
+    <div class="twocol" style="margin-top:9px">
+      <div class="half">
+        <div class="h">Unregulated</div>
+        $$Q = 0$$
+      </div>
+      <div class="half">
+        <div class="h">Standard</div>
+        <div class="note">Impose Q* directly</div>
+      </div>
+      <div class="half">
+        <div class="h">Tax</div>
+        $$P^* = C'(Q^*)$$
+      </div>
+    </div>
+    <div class="note" style="margin-top:9px"><b>Full information:</b> tax and standard are equivalent (both implement Q*).</div>
+    <hr class="div">
+    <div class="sub-lbl">Cost uncertainty (Weitzman: prices vs quantities)</div>
+    <div class="note">Regulator doesn't know the firm's true cost θ when setting the standard or the tax; compare expected net benefit under each instrument.</div>
+    $$\max_Q\, E_\theta\big[B(Q) - C(Q,\theta)\big]$$
+    <div class="eq-block">
+      $$E_\theta\big[B(Q^*) - C(Q^*,\theta)\big] \;\gtrless\; E_\theta\big[B(Q(p^*)) - C(Q(p^*),\theta)\big]$$
+    </div>
+    <div class="note">Left side: fixed quantity standard Q* (quantity is certain, cost isn't). Right side: price instrument p*, letting the firm choose Q(p*) in response to realized θ (cost is controlled, quantity floats). Which instrument wins depends on the relative curvature (slopes) of marginal benefit vs marginal cost — steeper MC favors quantity control, steeper MB favors price control.</div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ],
+      trust: true,
+      throwOnError: false
+    });
+  });
+</script>
+
+</body>
+</html>
